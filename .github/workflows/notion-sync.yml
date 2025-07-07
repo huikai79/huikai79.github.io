@@ -1,0 +1,24 @@
+name: Sync Notion to Hugo
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # 每 30 分钟
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: golang/setup-go@v5
+        with: { go-version: '1.22' }
+      - run: go install github.com/HEIGE-PCloud/Notion-Hugo@latest
+      - run: notion-hugo export \
+             --token "$NOTION_TOKEN" \
+             --database "$NOTION_DATABASE_ID" \
+             --output "./content"
+      - name: Commit & Push
+        run: |
+          git config user.name "bot"
+          git config user.email "bot@example.com"
+          git add content
+          git commit -m "sync: notion update" || echo "nothing to commit"
+          git push
