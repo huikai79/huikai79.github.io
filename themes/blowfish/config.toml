@@ -3,3 +3,5 @@
 extended = true
 min = "0.137.0"
 max = "0.147.8"
+
+baseURL = "https://huikai.com.kg/"
