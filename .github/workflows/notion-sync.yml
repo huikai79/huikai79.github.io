@@ -28,4 +28,4 @@ jobs:
           git commit -m "sync: notion update" || echo "nothing to commit"
           git push
 
-fix: install Notion-Hugo via binary (wget)
+         fix: install Notion-Hugo via binary (wget)
