@@ -10,14 +10,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with: { go-version: '1.22' }
-
-- name: Install Notion-Hugo binary
-  run: |
+      - name: Install Notion-Hugo binary
+        run: |
     wget https://github.com/HEIGE-PCloud/Notion-Hugo/releases/download/v0.1.12/notion-hugo_Linux_x86_64.tar.gz
     tar -xzf notion-hugo_Linux_x86_64.tar.gz
     chmod +x notion-hugo
     sudo mv notion-hugo /usr/local/bin/
-
       - run: notion-hugo export \
              --token "$NOTION_TOKEN" \
              --database "$NOTION_DATABASE_ID" \
