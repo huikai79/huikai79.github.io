@@ -20,7 +20,7 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: | 
-          hugo_notion \
+          hugo-notion \
              --token "$NOTION_TOKEN" \
              --database "$NOTION_DATABASE_ID" \
              --output "./content"
