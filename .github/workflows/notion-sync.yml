@@ -8,11 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v4
         with: { go-version: '1.22' }
       - name: Install hugo-notion
         run: |
-          go install github.com/nisanthchunduru/hugo-notion@latest
+          go install github.com/nisanthchunduru/hugo-notion@latest  # 会生成 ~/go/bin/hugo-notion
           
       - name: Export from Notion
         env:
@@ -28,8 +29,8 @@ jobs:
       - name: Commit & Push
         run: |
           git config user.name "bot"
-          git config user.email "bot@example.com"
-          git add content
+          git config user.email "[email protected]"
+          git add content || true
           git commit -m "sync: notion update" || echo "nothing to commit"
           git push
 
