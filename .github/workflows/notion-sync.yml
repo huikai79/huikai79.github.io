@@ -15,11 +15,16 @@ jobs:
           go install github.com/nisanthchunduru/hugo-notion@latest
           
       - name: Export from Notion
+        env:
+          PATH: /home/runner/go/bin:${{ env.PATH }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: | 
           hugo_notion \
-             --token "${{ secrets.NOTION_TOKEN }}" \
-             --database "${{ secrets.NOTION_DATABASE_ID }}" \
+             --token "$NOTION_TOKEN" \
+             --database "$NOTION_DATABASE_ID" \
              --output "./content"
+
       - name: Commit & Push
         run: |
           git config user.name "bot"
