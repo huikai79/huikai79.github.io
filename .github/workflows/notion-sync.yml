@@ -19,12 +19,10 @@ jobs:
         env:
           PATH: /home/runner/go/bin:${{ env.PATH }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           CONTENT_NOTION_URL: ${{ secrets.NOTION_PAGE_URL }}   # 也能用位置参数
         run: |
           hugo-notion "$CONTENT_NOTION_URL" \
              --token "$NOTION_TOKEN" \
-             --database "$NOTION_DATABASE_ID" \
              --output "./content"
 
       - name: Commit & Push
