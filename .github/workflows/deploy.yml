@@ -30,6 +30,11 @@ jobs:
       # 3. 安装并运行 hugo-notion，从 Notion 同步内容
       - name: Sync from Notion
         run: |
+          # 打印调试信息
+          echo "DEBUG: The length of the Notion secret is $(echo -n '${{ secrets.NOTION_PAGE_URL }}' | wc -c) characters."
+          echo "DEBUG: The first 4 characters are: $(echo '${{ secrets.NOTION_PAGE_URL }}' | cut -c 1-4)"
+          
+          # 运行同步命令
           go install github.com/nisanthchunduru/hugo-notion@latest
           hugo-notion "${{ secrets.NOTION_PAGE_URL }}" --output "content/posts"
         env:
