@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final - Submodule Method)
+name: Sync Notion and Deploy to Pages (Simplest Method)
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive # 这一步会确保 themes/blowfish 文件夹里有完整的主题代码
+          submodules: recursive # 确保 themes/blowfish 文件夹里有完整的主题代码
 
       # 第 2 步：使用 Node.js 脚本从 Notion 同步
       - name: Setup Node.js
@@ -35,10 +35,7 @@ jobs:
 
       - name: Create and run sync script
         run: |
-          # 安装依赖
           npm install @notionhq/client notion-to-md
-          
-          # 创建脚本并立即运行
           cat <<'EOF' | node -
           const { Client } = require("@notionhq/client");
           const { NotionToMarkdown } = require("notion-to-md");
