@@ -3,11 +3,18 @@ on:
   schedule:
     - cron: '*/30 * * * *'   # 每 30 分钟
   workflow_dispatch:
+
+# 授予工作流写入仓库内容的权限
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-go@v4
         with: { go-version: '1.22' }
