@@ -6,8 +6,12 @@ on:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # 关键是添加这一行
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
         with:
           submodules: true
       - uses: peaceiris/actions-hugo@v2
