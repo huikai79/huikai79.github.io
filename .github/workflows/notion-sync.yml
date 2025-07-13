@@ -23,6 +23,10 @@ jobs:
         run: |
           hugo-notion "$CONTENT_NOTION_URL" \
              --output "./content"
+      - run: echo "CONTENT_NOTION_URL=$CONTENT_NOTION_URL"
+        env:
+          CONTENT_NOTION_URL: ${{ secrets.NOTION_PAGE_URL }}
+
 
       - name: Commit & Push
         run: |
