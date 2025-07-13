@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final)
+name: Sync Notion and Deploy to Pages (Final Version)
 
 on:
   push:
@@ -105,13 +105,14 @@ jobs:
           extended: true 
 
       # ===============================================================
-      # 第 4 步：初始化 Hugo 模块 (全新步骤)
-      # 关键修改：先检查 go.mod 文件是否存在
-      - name: Init Hugo Modules
+      # 第 4 步：初始化并更新 Hugo 模块
+      # 关键修改：加入了 hugo mod get -u 来强制更新主题
+      - name: Init and Update Hugo Modules
         run: |
           if [ ! -f go.mod ]; then
             hugo mod init github.com/${{ github.repository }}
           fi
+          hugo mod get -u ./...
           hugo mod tidy
       # ===============================================================
 
