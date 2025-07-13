@@ -93,11 +93,14 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
+      # ===============================================================
       # 第 3 步：将主题文件合并到根目录
+      # 这一步是解决问题的关键
       - name: Merge theme files
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
           cp -rT themes/blowfish/assets/ assets/
+      # ===============================================================
       
       # 第 4 步：安装 Hugo
       - name: Setup Hugo
@@ -107,6 +110,7 @@ jobs:
           extended: true 
 
       # 第 5 步：构建 Hugo 网站
+      # 我们不再需要任何关于主题的标志了
       - name: Build
         run: hugo --minify
 
