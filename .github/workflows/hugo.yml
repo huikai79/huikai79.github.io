@@ -3,26 +3,47 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+
+# 授予工作流写入仓库内容的权限
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: peaceiris/actions-hugo@v3  # 安装 Hugo
+      # 第一步：拉取代码，包括主题（submodule）
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # 第二步：安装 Go 环境，用于运行 hugo-notion
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      # 第三步：安装并运行 hugo-notion，从 Notion 同步内容
+      - name: Sync from Notion
+        run: |
+          go install github.com/nisanthchunduru/hugo-notion@latest
+          hugo-notion "${{ secrets.NOTION_PAGE_URL }}" --output "content/posts"
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+
+      # 安装 Hugo 环境
+      - uses: peaceiris/actions-hugo@v3  
         with:
           hugo-version: 'latest'
+
+      # 第五步：构建 Hugo 网站
       - run: hugo --minify
-      - uses: actions/upload-pages-artifact@v3
+      
+      # 第六步：将构建好的网站部署到 gh-pages 分支
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: './public'
-  deploy:
-    needs: build
-    permissions:
-      pages: write
-      id-token: write
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public # Hugo 构建输出的文件夹
+
