@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final - Pin Hugo Version)
+name: Sync Notion and Deploy to Pages (Final - Force Load Theme)
 
 on:
   push:
@@ -93,19 +93,19 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
-      # ===============================================================
       # 第 3 步：安装 Hugo
-      # 关键修改：强制使用与主题兼容的 0.147.0 版本
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: '0.147.0'
           extended: true 
-      # ===============================================================
 
+      # ===============================================================
       # 第 4 步：构建 Hugo 网站
+      # 关键修改：使用所有强制标志，不给 Hugo 任何“思考”的空间
       - name: Build
-        run: hugo --minify
+        run: hugo --minify --source ${{ github.workspace }} --themesDir themes --theme blowfish
+      # ===============================================================
 
       # 第 5 步：上传构建好的网站工件
       - name: Upload artifact
