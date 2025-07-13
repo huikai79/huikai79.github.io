@@ -93,25 +93,31 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
-      # 第 3 步：安装 Hugo
+      # 第 3 步：将主题文件合并到根目录
+      - name: Merge theme files
+        run: |
+          cp -a themes/blowfish/layouts/. layouts/
+          cp -a themes/blowfish/assets/. assets/
+      
+      # ===============================================================
+      # 第 4 步：诊断 - 列出合并后的 layouts 文件夹内容
+      # 让我们看看 layouts 文件夹里到底有什么
+      - name: List layouts directory content
+        run: ls -R layouts
+      # ===============================================================
+
+      # 第 5 步：安装 Hugo
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: '0.147.0'
           extended: true 
 
-      # ===============================================================
-      # 第 4 步：诊断 - 列出主题文件夹内容
-      # 让我们看看 themes 文件夹里到底有什么
-      - name: List theme files
-        run: ls -R themes
-      # ===============================================================
-
-      # 第 5 步：构建 Hugo 网站
+      # 第 6 步：构建 Hugo 网站
       - name: Build
-        run: hugo --minify --themesDir themes --theme blowfish
+        run: hugo --minify --verbose
 
-      # 第 6 步：上传构建好的网站工件
+      # 第 7 步：上传构建好的网站工件
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
