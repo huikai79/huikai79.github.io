@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final - Force Load Theme)
+name: Sync Notion and Deploy to Pages (Final Diagnosis)
 
 on:
   push:
@@ -101,13 +101,17 @@ jobs:
           extended: true 
 
       # ===============================================================
-      # 第 4 步：构建 Hugo 网站
-      # 关键修改：使用所有强制标志，不给 Hugo 任何“思考”的空间
-      - name: Build
-        run: hugo --minify --source ${{ github.workspace }} --themesDir themes --theme blowfish
+      # 第 4 步：诊断 - 列出主题文件夹内容
+      # 让我们看看 themes 文件夹里到底有什么
+      - name: List theme files
+        run: ls -R themes
       # ===============================================================
 
-      # 第 5 步：上传构建好的网站工件
+      # 第 5 步：构建 Hugo 网站
+      - name: Build
+        run: hugo --minify --themesDir themes --theme blowfish
+
+      # 第 6 步：上传构建好的网站工件
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
