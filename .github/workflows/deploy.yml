@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (New Method)
+name: Sync Notion and Deploy to Pages (Final Version)
 
 on:
   push:
@@ -30,14 +30,13 @@ jobs:
 
       # ===============================================================
       # 第 2 步：使用新工具从 Notion 同步
-      # 我们不再需要安装 Go，直接使用这个 Action 即可
+      # 关键修改：将 @v1 修改为具体的版本号 @v1.3.1
       - name: Sync from Notion using notion-to-md
-        uses: Omochice/notion-to-md@v1
+        uses: Omochice/notion-to-md@v1.3.1
         with:
           notion_token: ${{ secrets.NOTION_TOKEN }}
           database_id: ${{ secrets.NOTION_PAGE_URL }}
           output_path: "content/posts"
-          # 这个过滤器会告诉工具，只拉取 status 属性为 "Published" 的文章
           query_filter: '{ "property": "status", "select": { "equals": "Published" } }'
       # ===============================================================
 
