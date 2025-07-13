@@ -22,7 +22,6 @@ jobs:
           CONTENT_NOTION_URL: ${{ secrets.NOTION_PAGE_URL }}   # 也能用位置参数
         run: |
           hugo-notion "$CONTENT_NOTION_URL" \
-             --token "$NOTION_TOKEN" \
              --output "./content"
 
       - name: Commit & Push
