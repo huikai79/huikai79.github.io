@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://huikai79.com.kg/sitemap.xml
