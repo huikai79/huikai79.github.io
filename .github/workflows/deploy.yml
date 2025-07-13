@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final Debug Attempt)
+name: Sync Notion and Deploy (Node.js Method)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 # 设置权限
 permissions:
-  contents: read
+  contents: write # 脚本需要写入权限来创建 markdown 文件
   pages: write
   id-token: write
 
@@ -28,34 +28,112 @@ jobs:
           submodules: recursive
 
       # ===============================================================
-      # 第 2 步：使用明确的 Docker 镜像地址同步
-      # 关键修改：使用 docker:// 协议指定完整的镜像路径
-      - name: Sync from Notion using notion-to-md
-        uses: docker://ghcr.io/omochice/notion-to-md:v1.3.1
+      # 第 2 步：使用 Node.js 脚本从 Notion 同步 (全新方法)
+      # ===============================================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          notion_token: ${{ secrets.NOTION_TOKEN }}
-          database_id: ${{ secrets.NOTION_PAGE_URL }}
-          output_path: "content/posts"
-          query_filter: '{ "property": "status", "select": { "equals": "Published" } }'
+          node-version: '20' # 使用一个稳定的 Node.js 版本
+
+      - name: Create sync script
+        run: |
+          # 在工作流中动态创建一个名为 sync.js 的脚本文件
+          cat <<'EOF' > sync.js
+          const { Client } = require("@notionhq/client");
+          const { NotionToMarkdown } = require("notion-to-md");
+          const fs = require("fs/promises");
+          const path = require("path");
+
+          // 初始化 Notion 客户端
+          const notion = new Client({ auth: process.env.NOTION_TOKEN });
+          const n2m = new NotionToMarkdown({ notionClient: notion });
+          const databaseId = process.env.NOTION_DATABASE_ID;
+          const outputDir = "content/posts";
+
+          async function sync() {
+            console.log("Fetching pages from Notion database...");
+            // 查询数据库中所有状态为 "Published" 的页面
+            const response = await notion.databases.query({
+              database_id: databaseId,
+              filter: {
+                property: "status",
+                select: {
+                  equals: "Published",
+                },
+              },
+            });
+
+            console.log(`Found ${response.results.length} pages to sync.`);
+            await fs.mkdir(outputDir, { recursive: true }); // 确保输出目录存在
+
+            for (const page of response.results) {
+              try {
+                // 从页面属性中提取元数据
+                const title = page.properties.Title.title[0]?.plain_text || 'Untitled';
+                const slug = page.properties.slug.rich_text[0]?.plain_text;
+                const date = page.properties.date.date?.start;
+                const tags = page.properties.tags.multi_select.map(tag => tag.name);
+
+                if (!slug) {
+                  console.warn(`Skipping page "${title}" because it has no slug.`);
+                  continue;
+                }
+
+                console.log(`Processing: ${title}`);
+
+                // 将 Notion 页面内容转换为 Markdown
+                const mdblocks = await n2m.pageToMarkdown(page.id);
+                const mdString = n2m.toMarkdownString(mdblocks);
+
+                // 构建 Hugo 需要的 frontmatter
+                const frontmatter = `---
+          title: "${title.replace(/"/g, '\\"')}"
+          date: ${date}
+          slug: "${slug}"
+          tags: [${tags.map(t => `"${t}"`).join(', ')}]
+          ---
+          `;
+
+                // 将 frontmatter 和正文合并，并写入文件
+                const finalContent = frontmatter + "\n" + mdString.parent;
+                const outputPath = path.join(outputDir, `${slug}.md`);
+                await fs.writeFile(outputPath, finalContent);
+                console.log(`Successfully created ${outputPath}`);
+              } catch (error) {
+                console.error(`Failed to process page ID ${page.id}:`, error.message);
+              }
+            }
+          }
+
+          sync().catch(console.error);
+          EOF
+
+      - name: Install dependencies and run sync script
+        run: |
+          # 安装需要的库，然后运行我们刚刚创建的脚本
+          npm install @notionhq/client notion-to-md
+          node sync.js
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }} # 使用您现有的 secret 名
+
+      # ===============================================================
+      # 第 3 步及之后，保持不变
       # ===============================================================
 
-      # 第 3 步：安装 Hugo
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest'
 
-      # 第 4 步：构建 Hugo 网站
       - name: Build
         run: hugo --minify
 
-      # 第 5 步：上传构建好的网站工件
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
 
-  # 部署任务
   deploy:
     environment:
       name: github-pages
