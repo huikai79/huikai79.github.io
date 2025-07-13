@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final Resort)
+name: Sync Notion and Deploy to Pages (Final - Merge Theme Method)
 
 on:
   push:
@@ -21,18 +21,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 第 1 步：只拉取您自己的仓库代码，不拉取子模块
+      # 第 1 步：拉取代码，并递归拉取主题子模块
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive # 确保 themes/blowfish 文件夹里有完整的主题代码
 
-      # ===============================================================
-      # 第 2 步：手动、明确地克隆主题
-      # 这是最关键的改变，我们不再相信 submodules
-      - name: Clone Blowfish Theme
-        run: git clone https://github.com/nunocoracao/blowfish.git themes/blowfish
-      # ===============================================================
-
-      # 第 3 步：使用 Node.js 脚本从 Notion 同步
+      # 第 2 步：使用 Node.js 脚本从 Notion 同步
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -98,24 +93,24 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
-      # 第 4 步：将主题文件合并到根目录
+      # 第 3 步：将主题文件合并到根目录
       - name: Merge theme files
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
           cp -rT themes/blowfish/assets/ assets/
       
-      # 第 5 步：安装 Hugo
+      # 第 4 步：安装 Hugo
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest'
           extended: true 
 
-      # 第 6 步：构建 Hugo 网站
+      # 第 5 步：构建 Hugo 网站
       - name: Build
         run: hugo --minify
 
-      # 第 7 步：上传构建好的网站工件
+      # 第 6 步：上传构建好的网站工件
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
