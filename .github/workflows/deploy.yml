@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final - Force Theme Path)
+name: Sync Notion and Deploy to Pages (Final - Temp Config Method)
 
 on:
   push:
@@ -102,9 +102,12 @@ jobs:
 
       # ===============================================================
       # 第 4 步：构建 Hugo 网站
-      # 关键修改：使用 --themesDir 标志强制指定主题目录
+      # 关键修改：创建一个临时的 _config.yml 并强制使用它
       - name: Build
-        run: hugo --minify --themesDir themes
+        run: |
+          echo 'theme: "blowfish"' > _config.yml
+          echo 'baseURL: "https://huikai79.github.io/"' >> _config.yml
+          hugo --minify --config _config.yml,config/_default/params.toml,config/_default/menus.en.toml
       # ===============================================================
 
       # 第 5 步：上传构建好的网站工件
@@ -124,3 +127,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
