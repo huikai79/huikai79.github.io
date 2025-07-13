@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Theme Fix)
+name: Sync Notion and Deploy to Pages (Command Fix)
 
 on:
   push:
@@ -102,14 +102,13 @@ jobs:
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest'
-          # 关键修改：添加 extended 版本，很多主题需要它
           extended: true 
 
       # ===============================================================
       # 第 4 步：初始化 Hugo 模块 (全新步骤)
-      # 这一步会确保主题被正确下载和加载
+      # 关键修改：移除了错误的 -m 标志
       - name: Init Hugo Modules
-        run: hugo mod init -m github.com/${{ github.repository }} && hugo mod tidy
+        run: hugo mod init github.com/${{ github.repository }} && hugo mod tidy
       # ===============================================================
 
       # 第 5 步：构建 Hugo 网站
