@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final - Force Path)
+name: Sync Notion and Deploy to Pages (Final - Force Theme Path)
 
 on:
   push:
@@ -102,9 +102,9 @@ jobs:
 
       # ===============================================================
       # 第 4 步：构建 Hugo 网站
-      # 关键修改：使用 --source 标志强制指定构建目录
+      # 关键修改：使用 --themesDir 标志强制指定主题目录
       - name: Build
-        run: hugo --minify --source ${{ github.workspace }}
+        run: hugo --minify --themesDir themes
       # ===============================================================
 
       # 第 5 步：上传构建好的网站工件
