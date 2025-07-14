@@ -1,4 +1,4 @@
-name: Sync Notion and Deploy to Pages (Final Corrected)
+name: Sync Notion and Deploy to Pages (Final - Merge Theme Method)
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: recursive # 确保 themes/blowfish 文件夹里有完整的主题代码
 
       # 第 2 步：使用 Node.js 脚本从 Notion 同步
       - name: Setup Node.js
@@ -93,11 +93,14 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
+      # ===============================================================
       # 第 3 步：将主题文件合并到根目录
+      # 这一步是解决问题的关键
       - name: Merge theme files
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
           cp -rT themes/blowfish/assets/ assets/
+      # ===============================================================
       
       # 第 4 步：安装 Hugo
       - name: Setup Hugo
@@ -107,6 +110,7 @@ jobs:
           extended: true 
 
       # 第 5 步：构建 Hugo 网站
+      # 我们不再需要任何关于主题的标志了
       - name: Build
         run: hugo --minify
 
