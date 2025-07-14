@@ -143,7 +143,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: ./publi
+          
 
   # --- DEPLOY JOB ---
   # Deploys the site to GitHub Pages and purges the Cloudflare cache
@@ -161,14 +162,11 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      # 第 2 步: 清除 Cloudflare 缓存 (已修正)
+      # 第 2 步: 清除 Cloudflare 缓存 (已为 v3.1.0 版本修正)
       - name: Purge Cloudflare Cache
         uses: nathanvaughn/actions-cloudflare-purge@v3.1.0
-        with:
-          # 从 secrets 中传入 Zone ID
-          zone: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          # 从 secrets 中传入 API Token
-          token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # 指定要清除的 URL，'/' 表示清除所有缓存
-          urls: |
-            /
+        env:
+          # 这个版本的 Action 会自动读取以下环境变量
+          # 注意变量名：CLOUDFLARE_ZONE 和 CLOUDFLARE_TOKEN
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
