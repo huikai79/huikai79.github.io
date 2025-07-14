@@ -154,7 +154,7 @@ jobs:
     # Define the deployment environment for GitHub Pages
     environment:
       name: github-pages
-      url: ${{ secrets.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }} # <-- THIS LINE IS NOW CORRECT
     runs-on: ubuntu-latest
     steps:
       # Step 1: Deploy the artifact to GitHub Pages
@@ -162,7 +162,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      # Step 2: Purge Cloudflare Cache (FIXED ACTION NAME)
+      # Step 2: Purge Cloudflare Cache
       - name: Purge Cloudflare Cache
         uses: peaceiris/actions-cloudflare@v1
         with:
