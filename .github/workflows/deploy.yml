@@ -167,9 +167,9 @@ jobs:
       # 第 10 步：清除 Cloudflare 缓存
       - name: Purge Cloudflare Cache
         uses: jakejarvis/cloudflare-purge-action@v0.3.0
-        with:
-          purge_everything: true
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      
 
