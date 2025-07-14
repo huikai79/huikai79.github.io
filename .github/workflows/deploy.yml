@@ -167,9 +167,8 @@ jobs:
       # 第 10 步：清除 Cloudflare 缓存
       - name: Purge Cache
         uses: nathanvaughn/actions-cloudflare-purge@v3.1.0
-        with:
-          cf_zone:  ${{ secrets.CF_ZONE_ID }}
-          cf_auth:  ${{ secrets.CF_API_TOKEN }}
-
+        env:
+          CLOUDFLARE_ZONE:      ${{ secrets.CF_ZONE_ID }}
+          CLOUDFLARE_AUTH_KEY:  ${{ secrets.CF_API_TOKEN }}
       
     
