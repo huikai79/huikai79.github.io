@@ -1,4 +1,4 @@
-name: Sync, Convert Images, Deploy, and Purge Cache (Final)
+name: Sync Notion, Deploy, and Purge Cache (Final - API Method)
 
 on:
   push:
@@ -98,55 +98,24 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
-      # ===============================================================
-      # 第 3 步 (全新方法): 安装转换工具并自动转换 HEIC 图片
-      - name: Install ImageMagick and Convert HEIC Images
-        run: |
-          # 更新包列表并安装 ImageMagick 和 HEIC 支持库
-          sudo apt-get update
-          sudo apt-get install -y imagemagick libheif-examples
-
-          # 查找所有 .heic 或 .HEIC 文件并进行转换
-          echo "Searching for HEIC files in ./static..."
-          find ./static -type f \( -iname "*.heic" -o -iname "*.heif" \) -print0 | while IFS= read -r -d $'\0' file; do
-            # 生成新的 jpeg 文件名
-            new_file="${file%.*}.jpeg"
-            echo "Converting '$file' to '$new_file'..."
-            # 使用 convert 命令进行转换
-            convert "$file" "$new_file"
-            # 删除原始的 .heic 文件以节省空间
-            rm "$file"
-          done
-          echo "HEIC conversion complete."
-
-      # 第 4 步: 自动更新 Markdown 文件中的图片链接
-      - name: Update Image Links in Markdown
-        run: |
-          echo "Updating image links in markdown files..."
-          # 使用 find 和 sed 命令来替换链接 (i 表示不区分大小写, g 表示全局替换)
-          find ./content/posts -type f -name "*.md" -exec sed -i 's/\.heic/.jpeg/gi' {} +
-          find ./content/posts -type f -name "*.md" -exec sed -i 's/\.HEIC/.jpeg/gi' {} +
-          echo "Image link updates complete."
-      # ===============================================================
-
-      # 第 5 步：将主题文件合并到根目录
+      # 第 3 步：将主题文件合并到根目录
       - name: Merge theme files
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
           cp -rT themes/blowfish/assets/ assets/
       
-      # 第 6 步：安装 Hugo
+      # 第 4 步：安装 Hugo
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest'
           extended: true 
 
-      # 第 7 步：构建 Hugo 网站
+      # 第 5 步：构建 Hugo 网站
       - name: Build
         run: hugo --minify
 
-      # 第 8 步：上传构建好的网站工件
+      # 第 6 步：上传构建好的网站工件
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -159,17 +128,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # 第 9 步：部署到 GitHub Pages
+      # 第 7 步：部署到 GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
       
-      # 第 10 步：清除 Cloudflare 缓存
+      # ===============================================================
+      # 第 8 步 (全新方法): 使用 curl 命令直接清除 Cloudflare 缓存
+      # ===============================================================
       - name: Purge Cloudflare Cache
-        uses: jakejarvis/cloudflare-purge-action@v0.3.0
-        with:
-          purge_everything: true
-        env:
-          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
 
