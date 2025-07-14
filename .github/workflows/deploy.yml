@@ -139,18 +139,11 @@ jobs:
       - name: Build Site
         run: hugo --minify
 
-      # Step 8: Check build output to debug artifact error
-      - name: Check build output
-        run: |
-          echo "Listing files in the current directory to find the build output folder:"
-          ls -R
-
-      # Step 9: Upload the built site as an artifact for deployment
+      # Step 8: Upload the built site as an artifact for deployment
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # This path should point to your Hugo build output directory.
-          # The default is 'public'. If the step above shows a different folder, change it here.
+          # This path should point to your Hugo build output directory. Default is 'public'.
           path: ./public
 
   # --- DEPLOY JOB ---
@@ -169,10 +162,9 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      # Step 2: Purge the Cloudflare cache (Corrected for v3.1.0)
+      # Step 2: Purge Cloudflare Cache using a more reliable action
       - name: Purge Cloudflare Cache
-        uses: nathanvaughn/actions-cloudflare-purge@v3.1.0
-        env:
-          # This action version reads configuration from environment variables
-          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        uses: peaceiris/actions-cloudflare-purge@v1
+        with:
+          zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
