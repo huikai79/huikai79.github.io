@@ -1,10 +1,12 @@
-name: Sync Notion and Deploy to Pages (Final Diagnosis)
+name: Sync Notion, Deploy, and Purge Cache (Final Overwrite Fix)
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
 
 # 设置权限
 permissions:
@@ -48,6 +50,13 @@ jobs:
           const outputDir = "content/posts";
 
           async function sync() {
+            // ===============================================================
+            // 关键修改：在同步前，先清空旧的文章目录
+            console.log(`Ensuring a clean sync by removing old content from ${outputDir}...`);
+            await fs.rm(outputDir, { recursive: true, force: true });
+            await fs.mkdir(outputDir, { recursive: true });
+            // ===============================================================
+
             console.log("Fetching pages from Notion database...");
             const response = await notion.databases.query({
               database_id: databaseId,
@@ -55,7 +64,6 @@ jobs:
             });
 
             console.log(`Found ${response.results.length} pages to sync.`);
-            await fs.mkdir(outputDir, { recursive: true });
 
             for (const page of response.results) {
               try {
@@ -99,31 +107,23 @@ jobs:
           cp -rT themes/blowfish/layouts/ layouts/
           cp -rT themes/blowfish/assets/ assets/
       
-      # ===============================================================
-      # 第 4 步：诊断 - 列出合并后的 layouts 文件夹内容
-      # 让我们看看 layouts 文件夹里到底有什么
-      - name: List layouts directory content
-        run: ls -R layouts
-      # ===============================================================
-
-      # 第 5 步：安装 Hugo
+      # 第 4 步：安装 Hugo
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: '0.147.0'
+          hugo-version: 'latest'
           extended: true 
 
-      # 第 6 步：构建 Hugo 网站
+      # 第 5 步：构建 Hugo 网站
       - name: Build
-        run: hugo --minify --verbose
+        run: hugo --minify
 
-      # 第 7 步：上传构建好的网站工件
+      # 第 6 步：上传构建好的网站工件
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
 
-  # 部署任务
   deploy:
     environment:
       name: github-pages
@@ -134,3 +134,12 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      
+      # 第 7 步：清除 Cloudflare 缓存
+      - name: Purge Cloudflare Cache
+        # 只有在成功推送到 main 分支时才运行，避免手动触发时也清除缓存
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: jakejarvis/cloudflare-purge-action@v0.3.0
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
