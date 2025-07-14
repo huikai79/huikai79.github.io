@@ -56,7 +56,6 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   layoutBackgroundBlur = false
   disableHeroImageFilter = false
 
-
 [article]
   showDate = true
   showViews = false
