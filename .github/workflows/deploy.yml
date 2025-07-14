@@ -1,170 +1,144 @@
-name: Sync, Convert Images, Deploy, and Purge Cache
+name: Sync Notion → Build → Deploy → Purge Cache
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: '*/20 * * * *' # Run every 20 minutes
+    - cron: '0 */6 * * *'   # 每 6 小时自动同步
 
-# Set global permissions
 permissions:
   contents: write
-  pages: write
+  pages:    write
   id-token: write
 
-# Set concurrency to prevent multiple runs at once
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
+# ──────────────── ① Build ────────────────
 jobs:
-  # --- BUILD JOB ---
-  # Prepares content, converts images, and builds the static site
   build:
     runs-on: ubuntu-latest
+
     steps:
-      # Step 1: Check out your repository code
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+    - name: Checkout (with submodules)
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-      # Step 2: Setup Node.js and sync content from Notion
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Setup Node.js (with cache)
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
 
-      - name: Create and run sync script
-        run: |
-          npm install @notionhq/client notion-to-md
-          cat <<'EOF' | node -
-          const { Client } = require("@notionhq/client");
-          const { NotionToMarkdown } = require("notion-to-md");
-          const fs = require("fs/promises");
-          const path = require("path");
+    - name: Sync Notion database to content/posts
+      run: |
+        npm install -g '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
 
-          const notion = new Client({ auth: process.env.NOTION_TOKEN });
-          const n2m = new NotionToMarkdown({ notionClient: notion });
-          const databaseId = process.env.NOTION_DATABASE_ID;
-          const outputDir = "content/posts";
+        cat <<'EOF' > sync-notion.mjs
+        import { Client } from "@notionhq/client";
+        import { NotionToMarkdown } from "notion-to-md";
+        import fs from "node:fs/promises";
+        import path from "node:path";
 
-          async function sync() {
-            console.log(`Ensuring a clean sync by removing old content from ${outputDir}...`);
-            await fs.rm(outputDir, { recursive: true, force: true });
-            await fs.mkdir(outputDir, { recursive: true });
+        const notion = new Client({ auth: process.env.NOTION_TOKEN });
+        const n2m   = new NotionToMarkdown({ notionClient: notion });
+        const db    = process.env.NOTION_DATABASE_ID;
+        const out   = "content/posts";
 
-            console.log("Fetching pages from Notion database...");
-            const response = await notion.databases.query({
-              database_id: databaseId,
-              filter: { property: "status", select: { "equals": "Published" } },
-            });
+        const { results } = await notion.databases.query({
+          database_id: db,
+          filter: { property: "status", select: { equals: "Published" } },
+        });
 
-            console.log(`Found ${response.results.length} pages to sync.`);
+        console.log(`同步 ${results.length} 篇文章…`);
+        await fs.rm(out, { recursive: true, force: true });
+        await fs.mkdir(out, { recursive: true });
 
-            for (const page of response.results) {
-              try {
-                const title = page.properties.Title.title[0]?.plain_text || 'Untitled';
-                const slug = page.properties.slug.rich_text[0]?.plain_text;
-                const date = page.properties.date.date?.start;
-                const tags = page.properties.tags.multi_select.map(tag => tag.name);
+        for (const page of results) {
+          const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
+          const slug  = page.properties.slug.rich_text[0]?.plain_text;
+          const date  = page.properties.date.date?.start;
+          const tags  = page.properties.tags.multi_select.map(t => t.name);
 
-                if (!slug) {
-                  console.warn(`Skipping page "${title}" because it has no slug.`);
-                  continue;
-                }
-                console.log(`Processing: ${title}`);
-                const mdblocks = await n2m.pageToMarkdown(page.id);
-                const mdString = n2m.toMarkdownString(mdblocks);
-                const frontmatter = `---
-          title: "${title.replace(/"/g, '\\"')}"
-          date: ${date}
-          slug: "${slug}"
-          tags: [${tags.map(t => `"${t}"`).join(', ')}]
-          ---
-          `;
-                const finalContent = frontmatter + "\n" + mdString.parent;
-                const outputPath = path.join(outputDir, `${slug}.md`);
-                await fs.writeFile(outputPath, finalContent);
-                console.log(`Successfully created ${outputPath}`);
-              } catch (error) {
-                console.error(`Failed to process page ID ${page.id}:`, error.message);
-              }
-            }
-          }
-          sync().catch(console.error);
-          EOF
-        env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
+          if (!slug) continue;
 
-      # Step 3: Install conversion tools and convert HEIC images
-      - name: Install ImageMagick and Convert HEIC Images
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y imagemagick libheif-examples
-          echo "Searching for HEIC files in ./static..."
-          find ./static -type f \( -iname "*.heic" -o -iname "*.heif" \) -print0 | while IFS= read -r -d $'\0' file; do
-            new_file="${file%.*}.jpeg"
-            echo "Converting '$file' to '$new_file'..."
-            convert "$file" "$new_file"
-            rm "$file"
-          done
-          echo "HEIC conversion complete."
+          const mdBlocks = await n2m.pageToMarkdown(page.id);
+          const md       = n2m.toMarkdownString(mdBlocks);
 
-      # Step 4: Update image links in Markdown files
-      - name: Update Image Links in Markdown
-        run: |
-          echo "Updating image links in markdown files..."
-          find ./content/posts -type f -name "*.md" -exec sed -i 's/\.heic/.jpeg/gi' {} +
-          find ./content/posts -type f -name "*.md" -exec sed -i 's/\.HEIC/.jpeg/gi' {} +
-          echo "Image link updates complete."
+          const front = `---\n`
+                      + `title: "${title.replace(/"/g, '\\"')}"\n`
+                      + `date: ${date}\n`
+                      + `slug: "${slug}"\n`
+                      + `tags: [${tags.map(t => `"${t}"`).join(", ")}]\n`
+                      + `---\n\n`;
 
-      # Step 5: Merge theme files into the root
-      - name: Merge theme files
-        run: |
-          cp -rT themes/blowfish/layouts/ layouts/
-          cp -rT themes/blowfish/assets/ assets/
+          await fs.writeFile(path.join(out, `${slug}.md`), front + md.parent);
+        }
+        EOF
 
-      # Step 6: Install Hugo
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
-        with:
-          hugo-version: 'latest'
-          extended: true
+        node sync-notion.mjs
+      env:
+        NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+        NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}   # ← 使用现成 Secret 名称
 
-      # Step 7: Build the site with Hugo
-      - name: Build Site
-        run: hugo --minify
+    - name: Convert HEIC/HEIF images to JPEG
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install imagemagick libheif-examples
 
-      # Step 8: Upload the built site as an artifact for deployment
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # This path should point to your Hugo build output directory. Default is 'public'.
-          path: ./public
+        find ./static -type f \( -iname '*.heic' -o -iname '*.heif' \) -print0 |
+        while IFS= read -r -d '' f; do
+          echo "Converting $f"
+          convert "$f" "${f%.*}.jpeg"
+          rm "$f"
+        done
 
-  # --- DEPLOY JOB ---
-  # Deploys the site to GitHub Pages and purges the Cloudflare cache
+        # 替换 Markdown 内的扩展名
+        find ./content/posts -name '*.md' -exec sed -i 's/\.\(heic\|heif\)/.jpeg/gi' {} +
+
+    - name: Merge Blowfish theme overrides
+      run: |
+        cp -rT themes/blowfish/layouts/ layouts/
+        cp -rT themes/blowfish/assets/  assets/
+
+    - name: Setup Hugo
+      uses: peaceiris/actions-hugo@v3.3.0
+      with:
+        hugo-version: 0.124.1   # 固定版本
+        extended: true
+
+    - name: Build site
+      run: hugo --minify
+
+    - name: Upload build artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./public
+
+# ──────────────── ② Deploy ────────────────
   deploy:
-    # This job depends on the 'build' job finishing successfully
+    runs-on: ubuntu-latest
     needs: build
-    # Define the deployment environment for GitHub Pages
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # <-- THIS LINE IS NOW CORRECT
-    runs-on: ubuntu-latest
-    steps:
-      # Step 1: Deploy the artifact to GitHub Pages
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      url:  ${{ steps.deployment.outputs.page_url }}
 
-      # Step 2: Purge Cloudflare Cache
-      - name: Purge Cloudflare Cache
-        uses: peaceiris/actions-cloudflare@v1
-        with:
-          api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: cache purge --zone ${{ secrets.CLOUDFLARE_ZONE_ID }} --all
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+    - name: Purge Cloudflare cache
+      if: success()
+      env:
+        CLOUDFLARE_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}     # ← 直接引用你的 Secret 名称
+        CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      run: |
+        curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+             -H "Content-Type: application/json" \
+             --data '{"purge_everything":true}' \
+        | jq -e '.success' >/dev/null
