@@ -1,4 +1,4 @@
-name: Sync Notion, Deploy, and Purge Cache (Final Overwrite Fix)
+name: Sync Notion, Deploy, and Purge Cache (Final Corrected)
 
 on:
   push:
@@ -50,12 +50,9 @@ jobs:
           const outputDir = "content/posts";
 
           async function sync() {
-            // ===============================================================
-            // 关键修改：在同步前，先清空旧的文章目录
-            console.log(`Ensuring a clean sync by removing old content from ${outputDir}...`);
+            console.log("Ensuring a clean sync by removing old content from ${outputDir}...");
             await fs.rm(outputDir, { recursive: true, force: true });
             await fs.mkdir(outputDir, { recursive: true });
-            // ===============================================================
 
             console.log("Fetching pages from Notion database...");
             const response = await notion.databases.query({
@@ -135,11 +132,13 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
-      # 第 7 步：清除 Cloudflare 缓存
+      # ===============================================================
+      # 最终修正：清除 Cloudflare 缓存
+      # ===============================================================
       - name: Purge Cloudflare Cache
-        # 只有在成功推送到 main 分支时才运行，避免手动触发时也清除缓存
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: jakejarvis/cloudflare-purge-action@v0.3.0
+        with:
+          purge_everything: true # 关键修改：明确告诉它清除所有东西
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
