@@ -139,34 +139,40 @@ jobs:
       - name: Build Site
         run: hugo --minify
 
-      # Step 8: Upload the built site as an artifact
+      # Step 8: Check build output to debug artifact error
+      - name: Check build output
+        run: |
+          echo "Listing files in the current directory to find the build output folder:"
+          ls -R
+
+      # Step 9: Upload the built site as an artifact for deployment
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./publi
-          
+          # This path should point to your Hugo build output directory.
+          # The default is 'public'. If the step above shows a different folder, change it here.
+          path: ./public
 
   # --- DEPLOY JOB ---
   # Deploys the site to GitHub Pages and purges the Cloudflare cache
   deploy:
-    # 这个 job 依赖 'build' job 成功完成
+    # This job depends on the 'build' job finishing successfully
     needs: build
-    # 为 GitHub Pages 定义部署环境
+    # Define the deployment environment for GitHub Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      # 第 1 步: 部署构建产物到 GitHub Pages
+      # Step 1: Deploy the artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-      # 第 2 步: 清除 Cloudflare 缓存 (已为 v3.1.0 版本修正)
+      # Step 2: Purge the Cloudflare cache (Corrected for v3.1.0)
       - name: Purge Cloudflare Cache
         uses: nathanvaughn/actions-cloudflare-purge@v3.1.0
         env:
-          # 这个版本的 Action 会自动读取以下环境变量
-          # 注意变量名：CLOUDFLARE_ZONE 和 CLOUDFLARE_TOKEN
+          # This action version reads configuration from environment variables
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
