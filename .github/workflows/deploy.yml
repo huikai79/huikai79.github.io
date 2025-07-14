@@ -1,4 +1,4 @@
-name: Sync, Convert Images, Deploy, and Purge Cache
+name: Sync, Convert Images, Deploy, and Purge Cache (Final)
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         with:
           submodules: recursive
 
-      # 第 2 步：使用 Node.js 脚本从 Notion 同步 (包括图片)
+      # 第 2 步：使用 Node.js 脚本从 Notion 同步
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -99,20 +99,34 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
       # ===============================================================
-      # 第 3 步 (全新): 自动转换 HEIC 图片为 JPEG
-      # 这个 Action 会扫描 static 文件夹，并转换所有 .heic 文件
-      - name: Convert HEIC Images to JPEG
-        uses: cat-click/heic-convert-action@v2.2.0
-        with:
-          source_dir: './static'
-          destination_dir: './static'
+      # 第 3 步 (全新方法): 安装转换工具并自动转换 HEIC 图片
+      - name: Install ImageMagick and Convert HEIC Images
+        run: |
+          # 更新包列表并安装 ImageMagick 和 HEIC 支持库
+          sudo apt-get update
+          sudo apt-get install -y imagemagick libheif-examples
 
-      # 第 4 步 (全新): 自动更新 Markdown 文件中的图片链接
-      # 将 .heic/.HEIC 的链接替换为 .jpeg
+          # 查找所有 .heic 或 .HEIC 文件并进行转换
+          echo "Searching for HEIC files in ./static..."
+          find ./static -type f \( -iname "*.heic" -o -iname "*.heif" \) -print0 | while IFS= read -r -d $'\0' file; do
+            # 生成新的 jpeg 文件名
+            new_file="${file%.*}.jpeg"
+            echo "Converting '$file' to '$new_file'..."
+            # 使用 convert 命令进行转换
+            convert "$file" "$new_file"
+            # 删除原始的 .heic 文件以节省空间
+            rm "$file"
+          done
+          echo "HEIC conversion complete."
+
+      # 第 4 步: 自动更新 Markdown 文件中的图片链接
       - name: Update Image Links in Markdown
         run: |
+          echo "Updating image links in markdown files..."
+          # 使用 find 和 sed 命令来替换链接 (i 表示不区分大小写, g 表示全局替换)
           find ./content/posts -type f -name "*.md" -exec sed -i 's/\.heic/.jpeg/gi' {} +
           find ./content/posts -type f -name "*.md" -exec sed -i 's/\.HEIC/.jpeg/gi' {} +
+          echo "Image link updates complete."
       # ===============================================================
 
       # 第 5 步：将主题文件合并到根目录
