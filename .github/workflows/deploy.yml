@@ -5,6 +5,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    # 关键修改在这里
+    - cron: '*/20 * * * *'
 
 # 设置权限
 permissions:
