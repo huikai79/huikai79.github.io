@@ -5,7 +5,7 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: '*/20 * * * *' # Run every 20 minutes
+    - cron: '0 */6 * * *'
 
 permissions:
   contents: write
@@ -25,7 +25,6 @@ jobs:
         with:
           submodules: recursive
 
-      # ✨ 這裡已移除 cache: npm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -33,16 +32,92 @@ jobs:
 
       - name: Sync Notion database to content/posts
         run: |
-          npm install -g '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
-          # --- 以下 Node 腳本略，與前版相同 ---
+          npm install @notionhq/client notion-to-md
+          # === 以下是增加了调试信息的新版脚本 ===
+          cat <<'EOF' | node -
+          const { Client } = require("@notionhq/client");
+          const { NotionToMarkdown } = require("notion-to-md");
+          const fs = require("fs/promises");
+          const path = require("path");
+
+          const notion = new Client({ auth: process.env.NOTION_TOKEN });
+          const n2m = new NotionToMarkdown({ notionClient: notion });
+
+          // --- 调试信息 ---
+          console.log("--- STARTING NOTION SYNC SCRIPT ---");
+          const databaseId = process.env.NOTION_DATABASE_ID;
+          if (!databaseId) {
+            console.error("❌ ERROR: NOTION_DATABASE_ID secret is not set!");
+            process.exit(1);
+          }
+          console.log(`✅ Using Database ID: ${databaseId}`);
+          // ----------------
+
+          const outputDir = "content/posts";
+
+          async function sync() {
+            await fs.rm(outputDir, { recursive: true, force: true });
+            await fs.mkdir(outputDir, { recursive: true });
+
+            console.log("STEP 1: Querying Notion database...");
+            const filter = { property: "status", select: { "equals": "Published" } };
+            console.log("🔍 Using filter:", JSON.stringify(filter, null, 2));
+
+            const response = await notion.databases.query({
+              database_id: databaseId,
+              filter: filter,
+            });
+
+            console.log(`STEP 2: Notion API call complete.`);
+            console.log(`✅ Found ${response.results.length} pages that match the filter.`);
+
+            if (response.results.length === 0) {
+                console.warn("⚠️ WARNING: No pages with status 'Published' were found. The website will have no posts.");
+            }
+
+            console.log("STEP 3: Processing pages...");
+            for (const page of response.results) {
+              const title = page.properties.Title.title[0]?.plain_text || 'Untitled';
+              console.log(`  -> Processing page: "${title}" (ID: ${page.id})`);
+
+              // ... (其余代码与之前相同) ...
+              const slug = page.properties.slug.rich_text[0]?.plain_text;
+              const date = page.properties.date.date?.start;
+              const tags = page.properties.tags.multi_select.map(tag => tag.name);
+
+              if (!slug) {
+                console.warn(`    SKIPPING page "${title}" because it has no slug.`);
+                continue;
+              }
+              const mdblocks = await n2m.pageToMarkdown(page.id);
+              const mdString = n2m.toMarkdownString(mdblocks);
+              const frontmatter = `---
+        title: "${title.replace(/"/g, '\\"')}"
+        date: ${date}
+        slug: "${slug}"
+        tags: [${tags.map(t => `"${t}"`).join(', ')}]
+        ---
+        `;
+              const finalContent = frontmatter + "\n" + mdString.parent;
+              const outputPath = path.join(outputDir, `${slug}.md`);
+              await fs.writeFile(outputPath, finalContent);
+              console.log(`    ✅ Successfully created ${outputPath}`);
+            }
+            console.log("--- NOTION SYNC SCRIPT FINISHED ---");
+          }
+          sync().catch(error => {
+              console.error("❌ FATAL ERROR during sync:", error);
+              process.exit(1);
+          });
+          EOF
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
+      # --- 后续步骤与之前相同 ---
       - name: Convert HEIC/HEIF images to JPEG
         run: |
-          sudo apt-get update
-          sudo apt-get -y install imagemagick libheif-examples
+          sudo apt-get update && sudo apt-get -y install imagemagick libheif-examples
           find ./static -type f \( -iname '*.heic' -o -iname '*.heif' \) -print0 |
           while IFS= read -r -d '' f; do
             echo "Converting $f"
@@ -52,9 +127,7 @@ jobs:
           find ./content/posts -name '*.md' -exec sed -i 's/\.\(heic\|heif\)/.jpeg/gi' {} +
 
       - name: Merge Blowfish theme overrides
-        run: |
-          cp -rT themes/blowfish/layouts/ layouts/
-          cp -rT themes/blowfish/assets/  assets/
+        run: cp -rT themes/blowfish/layouts/ layouts/ && cp -rT themes/blowfish/assets/  assets/
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3.0.0
@@ -76,7 +149,6 @@ jobs:
     environment:
       name: github-pages
       url:  ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id:   deployment
@@ -93,4 +165,3 @@ jobs:
                -H "Content-Type: application/json" \
                --data '{"purge_everything":true}' \
           | jq -e '.success' >/dev/null
-
