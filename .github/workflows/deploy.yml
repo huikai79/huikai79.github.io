@@ -31,6 +31,9 @@ jobs:
           node-version: 20
 
       - name: Sync Notion database to content/posts
+        env:
+          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
         run: |
           npm install @notionhq/client notion-to-md
           # === 以下是增加了调试信息的新版脚本 ===
@@ -80,7 +83,6 @@ jobs:
               const title = page.properties.Title.title[0]?.plain_text || 'Untitled';
               console.log(`  -> Processing page: "${title}" (ID: ${page.id})`);
 
-              // ... (其余代码与之前相同) ...
               const slug = page.properties.slug.rich_text[0]?.plain_text;
               const date = page.properties.date.date?.start;
               const tags = page.properties.tags.multi_select.map(tag => tag.name);
@@ -110,11 +112,7 @@ jobs:
               process.exit(1);
           });
           EOF
-        env:
-          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
 
-      # --- 后续步骤与之前相同 ---
       - name: Convert HEIC/HEIF images to JPEG
         run: |
           sudo apt-get update && sudo apt-get -y install imagemagick libheif-examples
@@ -165,3 +163,4 @@ jobs:
                -H "Content-Type: application/json" \
                --data '{"purge_everything":true}' \
           | jq -e '.success' >/dev/null
+
