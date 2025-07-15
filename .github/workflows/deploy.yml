@@ -88,11 +88,10 @@ jobs:
           CLOUDFLARE_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          # 下方是调试用的命令，它会打印出 Cloudflare 返回的完整信息
-          echo "Sending Purge Everything request to Cloudflare..."
+          # 这是最终的生产命令，它会在失败时自动报错
           curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
                -H "Content-Type: application/json" \
-               --data '{"purge_everything":true}'
-
+               --data '{"purge_everything":true}' \
+          | jq -e '.success' >/dev/null
 
