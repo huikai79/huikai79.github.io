@@ -163,4 +163,3 @@ jobs:
                -H "Content-Type: application/json" \
                --data '{"purge_everything":true}' \
           | jq -e '.success' >/dev/null
-
