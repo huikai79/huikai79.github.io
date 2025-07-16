@@ -15,11 +15,11 @@ title = "Blowfish"
   # copyright = "Copy, 2025 Ching Hui Kai. All Rights Resered."
 
  [params.author]
-   name = "HUI KAI 辉恺"
+   name = "庄辉恺"
    email = "huikai79@gmail.com"
    image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=64"
    imageQuality = 96
-   headline = "I'm only human"
+   headline = "提示词研究 | AI 学习 | 读书心得 | 影视感想"
    bio = "A little bit about you"
    links = [
 #     { email = "mailto:hello@your_domain.com" },
