@@ -119,21 +119,30 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install imagemagick libheif-examples
 
-      # 4-b. 下载远端 HEIC 并转换为 JPEG
+      # 4‑b. 下载远端 HEIC 并转换 JPEG
       - name: Download and convert remote HEIC images
         run: |
           mkdir -p static/uploads
           grep -rhoE 'https[^ )]+\.heic|https[^ )]+\.heif' content/posts | sort -u > /tmp/heic_urls.txt || true
 
           while read -r URL; do
-            FILE="static/uploads/$(basename "${URL%.*}").jpeg"
-            echo "Downloading $URL → $FILE"
-            curl -L --silent "$URL" | convert heic:- "$FILE"
+            FILENAME="$(basename "${URL%.*}")"
+            TMP="/tmp/${FILENAME}.heic"
+            OUT="static/uploads/${FILENAME}.jpeg"
+
+            echo "Downloading $URL"
+            curl -L --silent "$URL" -o "$TMP"
+
+            echo "Converting → $OUT"
+            heif-convert "$TMP" "$OUT" >/dev/null
+
+            rm -f "$TMP"
           done < /tmp/heic_urls.txt
 
-          # 修改 Markdown 中的外链路径
+          # 更新 Markdown 链接
           find content/posts -name '*.md' -exec \
             sed -i -E 's#https[^ )]+/(.+)\.hei[cf]#/uploads/\1.jpeg#g' {} +
+
 
       # 5. 合并主题文件
       - name: Merge Blowfish theme overrides
