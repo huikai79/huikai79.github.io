@@ -17,6 +17,7 @@
 
 [[main]]
   name = "Blog"
+  pre = "blogger"
   pageRef = "posts"
   weight = 20
 
@@ -50,6 +51,7 @@
 
 [[main]]
   name = "Tags"
+  pre = "tag"
   pageRef = "tags"
   weight = 30
 
