@@ -9,15 +9,15 @@ title = "Blowfish"
   isoCode = "en"
   rtl = false
   dateFormat = "2 January 2006"
-  # logo = "img/logo.png"
+   logo = "https://avatars.githubusercontent.com/u/185808855?v=4&size=16"
   # secondaryLogo = "img/secondary-logo.png"
-  # description = "My awesome website"
-  # copyright = "Copy, 2025 Ching Hui Kai. All Rights Resered."
+   description = "My awesome blog"
+   copyright = "Copy, 2025 Ching Hui Kai. All Rights Resered."
 
  [params.author]
    name = "庄辉恺"
    email = "huikai79@gmail.com"
-   image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=64"
+   image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=32"
    imageQuality = 96
    headline = "提示词研究 | AI 学习 | 读书心得 | 影视感想"
    bio = "A little bit about you"
