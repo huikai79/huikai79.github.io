@@ -125,7 +125,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get -y install file   # 用于 MIME 检测
 
-          mkdir -p static/uploads
+          mkdir -p static/Uploads
           grep -rhoE 'https[^ )]+\.heic|https[^ )]+\.heif' content/posts | sort -u > /tmp/heic_urls.txt || true
 
           while read -r URL; do
@@ -133,7 +133,7 @@ jobs:
 
             BASE="$(basename "${URL%.*}")"
             TMP="/tmp/${BASE}.bin"
-            OUT="static/uploads/${BASE}.jpeg"
+            OUT="static/Uploads/${BASE}.jpeg"
 
             echo "⬇️  Downloading $URL"
             if ! curl -L --fail --silent --output "$TMP" "$URL"; then
@@ -159,7 +159,7 @@ jobs:
 
           # 把 Markdown 中的外链改成本地 /uploads/*.jpeg（去掉 query，强制小写）
           find content/posts -name '*.md' -exec \
-            sed -i -E 's#https[^ )]*/([^/?]+)\.hei[cf][^ )]*#/uploads/\L\1.jpeg#g' {} +
+            sed -i -E 's#https[^ )]*/([^/?]+)\.hei[cf][^ )]*#/Uploads/\L\1.jpeg#g' {} +
 
       # 5. 合并主题文件
       - name: Merge Blowfish theme overrides
