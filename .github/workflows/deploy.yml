@@ -119,47 +119,58 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install imagemagick libheif-examples
 
-      # 4‑b. 下载远端 HEIC 并转换为 JPEG（带 MIME 检测与容错）
+      # 4‑b. 下载远端 HEIC 并转换为 JPEG
       - name: Download and convert remote HEIC images
         run: |
           sudo apt-get update -y
-          sudo apt-get -y install file   # 用于 MIME 检测
+          sudo apt-get -y install file imagemagick libheif-examples
 
-          mkdir -p static/Uploads
+          mkdir -p static/uploads
           grep -rhoE 'https[^ )]+\.heic|https[^ )]+\.heif' content/posts | sort -u > /tmp/heic_urls.txt || true
 
           while read -r URL; do
-            [[ -z "$URL" ]] && continue     # 避免空行
+            [[ -z "$URL" ]] && continue        # 跳过空行
 
-            BASE="$(basename "${URL%.*}")"
-            TMP="/tmp/${BASE}.bin"
-            OUT="static/Uploads/${BASE}.jpeg"
+            FILENAME="$(basename "${URL%.*}")"
+            TMP="/tmp/${FILENAME}.bin"
+            OUT="static/uploads/${FILENAME}.jpeg"
 
-            echo "⬇️  Downloading $URL"
+            echo "⬇️  $FILENAME ..."
             if ! curl -L --fail --silent --output "$TMP" "$URL"; then
-              echo "⚠️  Download failed, skip"; rm -f "$TMP"; continue;
+              echo "  ⚠️  下载失败，跳过"
+              rm -f "$TMP"; continue;
             fi
 
             MIME=$(file --mime-type -b "$TMP")
-            echo "   MIME detected: $MIME"
+            echo "  → MIME: $MIME"
 
-            if [[ "$MIME" =~ image/heic|image/heif ]]; then
-              heif-convert "$TMP" "$OUT" >/dev/null 2>&1 \
-                && echo "✅ heif-convert → $OUT" \
-                || { echo "⚠️  heif-convert failed, skip"; rm -f "$TMP"; continue; }
-            else
-              # 不是 HEIC，就直接 ImageMagick 转（或仅复制原图）
-              convert "$TMP" "$OUT" 2>/dev/null \
-                && echo "✅ convert → $OUT" \
-                || { echo "⚠️  convert failed, skip"; rm -f "$TMP"; continue; }
-            fi
+            case "$MIME" in
+              image/heic|image/heif)
+                if heif-convert "$TMP" "$OUT" >/dev/null 2>&1; then
+                  echo "  ✅ heif-convert → $OUT"
+                else
+                  echo "  ⚠️  heif-convert 失败，跳过"
+                  rm -f "$TMP"; continue
+                fi
+                ;;
+              image/jpeg|image/png)
+                # 已是浏览器可识别格式，直接重命名为 .jpeg
+                cp "$TMP" "$OUT"
+                echo "  ✅ 已是 $MIME，复制为 $OUT"
+                ;;
+              *)
+                echo "  ⚠️  非图像或未知格式，跳过"
+                rm -f "$TMP"; continue
+                ;;
+            esac
 
             rm -f "$TMP"
           done < /tmp/heic_urls.txt
 
-          # 把 Markdown 中的外链改成本地 /uploads/*.jpeg（去掉 query，强制小写）
+          # 统一把 Markdown 中的外链换成本地 /uploads/*.jpeg
           find content/posts -name '*.md' -exec \
-            sed -i -E 's#https[^ )]*/([^/?]+)\.hei[cf][^ )]*#/Uploads/\L\1.jpeg#g' {} +
+            sed -i -E 's#https[^ )]*/([^/?]+)\.hei[cf][^ )]*#/uploads/\L\1.jpeg#g' {} +
+
 
       # 5. 合并主题文件
       - name: Merge Blowfish theme overrides
