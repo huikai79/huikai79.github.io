@@ -5,7 +5,7 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '*/20 * * * *' # 每 20 分钟运行一次
 
 permissions:
   contents: write
