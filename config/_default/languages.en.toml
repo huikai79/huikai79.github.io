@@ -2,7 +2,7 @@ disabled = false
 languageCode = "en"
 languageName = "English"
 weight = 1
-title = "Blowfish"
+title = "MyBlog"
 
 [params]
   displayName = "EN"
@@ -18,7 +18,7 @@ title = "Blowfish"
    name = "庄辉恺"
    email = "huikai79@gmail.com"
    image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=128"
-   imageQuality = 120
+   imageQuality = 94
    headline = "生活分享 | AI 学习 | 读书笔记 | 影视心得"
    bio = "A little bit about you"
    links = [
