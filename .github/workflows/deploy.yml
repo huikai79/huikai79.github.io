@@ -119,30 +119,47 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install imagemagick libheif-examples
 
-      # 4‑b. 下载远端 HEIC 并转换 JPEG
+      # 4‑b. 下载远端 HEIC 并转换为 JPEG（带 MIME 检测与容错）
       - name: Download and convert remote HEIC images
         run: |
+          sudo apt-get update -y
+          sudo apt-get -y install file   # 用于 MIME 检测
+
           mkdir -p static/uploads
           grep -rhoE 'https[^ )]+\.heic|https[^ )]+\.heif' content/posts | sort -u > /tmp/heic_urls.txt || true
 
           while read -r URL; do
-            FILENAME="$(basename "${URL%.*}")"
-            TMP="/tmp/${FILENAME}.heic"
-            OUT="static/uploads/${FILENAME}.jpeg"
+            [[ -z "$URL" ]] && continue     # 避免空行
 
-            echo "Downloading $URL"
-            curl -L --silent "$URL" -o "$TMP"
+            BASE="$(basename "${URL%.*}")"
+            TMP="/tmp/${BASE}.bin"
+            OUT="static/uploads/${BASE}.jpeg"
 
-            echo "Converting → $OUT"
-            heif-convert "$TMP" "$OUT" >/dev/null
+            echo "⬇️  Downloading $URL"
+            if ! curl -L --fail --silent --output "$TMP" "$URL"; then
+              echo "⚠️  Download failed, skip"; rm -f "$TMP"; continue;
+            fi
+
+            MIME=$(file --mime-type -b "$TMP")
+            echo "   MIME detected: $MIME"
+
+            if [[ "$MIME" =~ image/heic|image/heif ]]; then
+              heif-convert "$TMP" "$OUT" >/dev/null 2>&1 \
+                && echo "✅ heif-convert → $OUT" \
+                || { echo "⚠️  heif-convert failed, skip"; rm -f "$TMP"; continue; }
+            else
+              # 不是 HEIC，就直接 ImageMagick 转（或仅复制原图）
+              convert "$TMP" "$OUT" 2>/dev/null \
+                && echo "✅ convert → $OUT" \
+                || { echo "⚠️  convert failed, skip"; rm -f "$TMP"; continue; }
+            fi
 
             rm -f "$TMP"
           done < /tmp/heic_urls.txt
 
-          # 更新 Markdown 链接
+          # 更新 Markdown 中的图片链接到本地路径
           find content/posts -name '*.md' -exec \
             sed -i -E 's#https[^ )]+/(.+)\.hei[cf]#/uploads/\1.jpeg#g' {} +
-
 
       # 5. 合并主题文件
       - name: Merge Blowfish theme overrides
