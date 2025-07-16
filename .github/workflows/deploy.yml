@@ -157,9 +157,9 @@ jobs:
             rm -f "$TMP"
           done < /tmp/heic_urls.txt
 
-          # 更新 Markdown 中的图片链接到本地路径
+          # 把 Markdown 中的外链改成本地 /uploads/*.jpeg（去掉 query，强制小写）
           find content/posts -name '*.md' -exec \
-            sed -i -E 's#https[^ )]+/(.+)\.hei[cf]#/uploads/\1.jpeg#g' {} +
+            sed -i -E 's#https[^ )]*/([^/?]+)\.hei[cf][^ )]*#/uploads/\L\1.jpeg#g' {} +
 
       # 5. 合并主题文件
       - name: Merge Blowfish theme overrides
