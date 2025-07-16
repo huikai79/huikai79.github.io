@@ -48,7 +48,7 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
 [homepage]
   layout = "list"
   showRecent = true
-  recentLimit = 5
+  recentLimit = 6
   showHomeTitle = true
   showHero = false
   showAllPosts = false
