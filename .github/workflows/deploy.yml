@@ -36,13 +36,16 @@ jobs:
         node-version: 20
 
     # 3 Notion → Markdown
+    # 3️⃣ Notion → Markdown
     - name: Sync Notion database to content/posts
       env:
         NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
         NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
       run: |
-        npm install -g '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
+        # 安装依赖（本地，不要 -g）
+        npm install --no-save '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
 
+        # 生成同步脚本
         cat <<'EOF' > sync.mjs
         import { Client } from "@notionhq/client";
         import { NotionToMarkdown } from "notion-to-md";
@@ -61,8 +64,6 @@ jobs:
           const filter = { property: "status", status: { equals: "Published" } };
 
           let cursor = undefined;
-          let total  = 0;
-
           do {
             const resp = await notion.databases.query({
               database_id: db,
@@ -71,44 +72,27 @@ jobs:
               page_size: 100,
             });
 
-            console.log(`Fetched ${resp.results.length} pages (cursor: ${cursor || "first"})`);
-            total += resp.results.length;
-
             for (const page of resp.results) {
               const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
               const slug  = page.properties.slug.rich_text[0]?.plain_text;
               const date  = page.properties.date.date?.start;
               const tags  = page.properties.tags.multi_select.map(t => t.name);
+              if (!slug) continue;
 
-              if (!slug) {
-                console.warn(`Skipping "${title}" (no slug)`);
-                continue;
-              }
-
-              const mdBlocks = await n2m.pageToMarkdown(page.id);
-              const md       = n2m.toMarkdownString(mdBlocks);
-
-              const front = `---\n`
-                          + `title: "${title.replace(/"/g, '\\"')}"\n`
-                          + `date: ${date}\n`
-                          + `slug: "${slug}"\n`
-                          + `tags: [${tags.map(t => `"${t}"`).join(", ")}]\n`
-                          + `---\n\n`;
-
+              const md = n2m.toMarkdownString(await n2m.pageToMarkdown(page.id));
+              const front = `---\ntitle: "${title.replace(/"/g,'\\"')}"\ndate: ${date}\nslug: "${slug}"\ntags: [${tags.map(t=>`"${t}"`).join(", ")}]\n---\n\n`;
               await fs.writeFile(path.join(outDir, `${slug}.md`), front + md.parent);
-              console.log(`→ ${slug}.md`);
             }
-
             cursor = resp.has_more ? resp.next_cursor : undefined;
           } while (cursor);
-
-          console.log(`Total synced: ${total} pages`);
         }
 
-        sync().catch(e => { console.error(e); process.exit(1); });
+        sync().catch(err => { console.error(err); process.exit(1); });
         EOF
 
+        # 执行脚本
         node sync.mjs
+
 
     # 4 轉檔 HEIC → JPEG
     - name: Convert HEIC/HEIF images
