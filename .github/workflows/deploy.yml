@@ -1,142 +1,169 @@
 name: Sync Notion → Build → Deploy → Purge Cache
 
+# ───────────── 觸發條件 ─────────────
 on:
-push:
-branches: [main]
-workflow_dispatch:
-schedule:
-- cron: '0 */6 * * *'
+  push:                 # 手動 git push 可立即觸發
+    branches: [main]
+  workflow_dispatch:    # GitHub UI → Run workflow
+  schedule:             # 每 6 小時自動同步（UTC）
+    - cron: '0 */6 * * *'
 
+# 必要權限
 permissions:
-contents: write
-pages:    write
-id-token: write
+  contents: write
+  pages:    write
+  id-token: write
 
+# 同時間只跑一個
 concurrency:
-group: "pages"
-cancel-in-progress: true
+  group: pages
+  cancel-in-progress: true
 
+# ───────────── Job ①：Build ─────────────
 jobs:
-build:
-runs-on: ubuntu-latest
-steps:
-- name: Checkout (with submodules)
-uses: actions/checkout@v4
-with:
-submodules: recursive
+  build:
+    runs-on: ubuntu-latest
+    steps:
 
-- name: Setup Node.js  
-    uses: actions/setup-node@v4  
-    with:  
-      node-version: 20  
-  - name: Sync Notion database to content/posts  
-    env:  
-      NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}  
-      NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}  
-    run: |  
-      npm install @notionhq/client notion-to-md  
-      # === 以下是增加了调试信息的新版脚本 ===  
-      cat <<'EOF' | node -  
-      const { Client } = require("@notionhq/client");  
-      const { NotionToMarkdown } = require("notion-to-md");  
-      const fs = require("fs/promises");  
-      const path = require("path");  
+    # 1 取代碼（含主題子模組）
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-      const notion = new Client({ auth: process.env.NOTION_TOKEN });  
-      const n2m = new NotionToMarkdown({ notionClient: notion });  
+    # 2 建立 Node 環境（不啟用 npm cache，避免 lockfile 警告）
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
 
-      // --- 调试信息 ---  
-      console.log("--- STARTING NOTION SYNC SCRIPT ---");  
-      const databaseId = process.env.NOTION_DATABASE_ID;  
-      if (!databaseId) {  
-        console.error("❌ ERROR: NOTION_DATABASE_ID secret is not set!");  
-        process.exit(1);  
-      }  
-      console.log(`✅ Using Database ID: ${databaseId}`);  
-      // ----------------  
+    # 3 Notion → Markdown
+    - name: Sync Notion database to content/posts
+      env:
+        NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+        NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
+      run: |
+        npm install -g '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
 
-      const outputDir = "content/posts";  
+        cat <<'EOF' > sync.mjs
+        import { Client } from "@notionhq/client";
+        import { NotionToMarkdown } from "notion-to-md";
+        import fs from "node:fs/promises";
+        import path from "node:path";
 
-      async function sync() {  
-        await fs.rm(outputDir, { recursive: true, force: true });  
-        await fs.mkdir(outputDir, { recursive: true });  
+        const notion = new Client({ auth: process.env.NOTION_TOKEN });
+        const n2m    = new NotionToMarkdown({ notionClient: notion });
+        const db     = process.env.NOTION_DATABASE_ID;
+        const outDir = "content/posts";
 
-        console.log("STEP 1: Querying Notion database...");  
-        const filter = { property: "status", select: { "equals": "Published" } };  
-        console.log("🔍 Using filter:", JSON.stringify(filter, null, 2));  
+        async function sync() {
+          await fs.rm(outDir, { recursive: true, force: true });
+          await fs.mkdir(outDir, { recursive: true });
 
-        const response = await notion.databases.query({  
-          database_id: databaseId,  
-          filter: filter,  
-        });  
+          const filter = { property: "status", status: { equals: "Published" } };
 
-        console.log(`STEP 2: Notion API call complete.`);  
-        console.log(`✅ Found ${response.results.length} pages that match the filter.`);  
+          let cursor = undefined;
+          let total  = 0;
 
-        if (response.results.length === 0) {  
-            console.warn("⚠️ WARNING: No pages with status 'Published' were found. The website will have no posts.");  
-        }  
+          do {
+            const resp = await notion.databases.query({
+              database_id: db,
+              filter,
+              start_cursor: cursor,
+              page_size: 100,
+            });
 
-        console.log("STEP 3: Processing pages...");  
-        for (const page of response.results) {  
-          const title = page.properties.Title.title[0]?.plain_text || 'Untitled';  
-          console.log(`  -> Processing page: "${title}" (ID: ${page.id})`);  
+            console.log(`Fetched ${resp.results.length} pages (cursor: ${cursor || "first"})`);
+            total += resp.results.length;
 
-          const slug = page.properties.slug.rich_text[0]?.plain_text;  
-          const date = page.properties.date.date?.start;  
-          const tags = page.properties.tags.multi_select.map(tag => tag.name);  
+            for (const page of resp.results) {
+              const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
+              const slug  = page.properties.slug.rich_text[0]?.plain_text;
+              const date  = page.properties.date.date?.start;
+              const tags  = page.properties.tags.multi_select.map(t => t.name);
 
-          if (!slug) {  
-            console.warn(`    SKIPPING page "${title}" because it has no slug.`);  
-            continue;  
-          }  
-          const mdblocks = await n2m.pageToMarkdown(page.id);  
-          const mdString = n2m.toMarkdownString(mdblocks);  
-          const frontmatter = `---  
-    title: "${title.replace(/"/g, '\\"')}"  
-    date: ${date}  
-    slug: "${slug}"  
-    tags: [${tags.map(t => `"${t}"`).join(', ')}]  
-    ---  
-    `;  
-          const finalContent = frontmatter + "\n" + mdString.parent;  
-          const outputPath = path.join(outputDir, `${slug}.md`);  
-          await fs.writeFile(outputPath, finalContent);  
-          console.log(`    ✅ Successfully created ${outputPath}`);  
-        }  
-        console.log("--- NOTION SYNC SCRIPT FINISHED ---");  
-      }  
-      sync().catch(error => {  
-          console.error("❌ FATAL ERROR during sync:", error);  
-          process.exit(1);  
-      });  
-      EOF  
+              if (!slug) {
+                console.warn(`Skipping "${title}" (no slug)`);
+                continue;
+              }
 
-  - name: Convert HEIC/HEIF images to JPEG  
-    run: |  
-      sudo apt-get update && sudo apt-get -y install imagemagick libheif-examples  
-      find ./static -type f -iname '*.heic' -o -iname '*.heif' -print0 |  
-      while IFS= read -r -d '' f; do  
-        echo "Converting $f"  
-        convert "$f" "${f%.*}.jpeg"  
-        rm "$f"  
-      done  
-      find ./content/posts -name '*.md' -exec sed -i 's/\.heic\|heif/.jpeg/gi' {} +  
+              const mdBlocks = await n2m.pageToMarkdown(page.id);
+              const md       = n2m.toMarkdownString(mdBlocks);
 
-  - name: Merge Blowfish theme overrides  
-    run: cp -rT themes/blowfish/layouts/ layouts/ && cp -rT themes/blowfish/assets/  assets/  
+              const front = `---\n`
+                          + `title: "${title.replace(/"/g, '\\"')}"\n`
+                          + `date: ${date}\n`
+                          + `slug: "${slug}"\n`
+                          + `tags: [${tags.map(t => `"${t}"`).join(", ")}]\n`
+                          + `---\n\n`;
 
-  - name: Setup Hugo  
-    uses: peaceiris/actions-hugo@v3.0.0  
-    with:  
-      hugo-version: 0.124.1  
-      extended: true  
+              await fs.writeFile(path.join(outDir, `${slug}.md`), front + md.parent);
+              console.log(`→ ${slug}.md`);
+            }
 
-  - name: Build site  
-    run: hugo --minify  
+            cursor = resp.has_more ? resp.next_cursor : undefined;
+          } while (cursor);
 
-  - name: Upload build artifact  
-    uses: actions/upload-pages-artifact@v3  
-    with:
+          console.log(`Total synced: ${total} pages`);
+        }
 
+        sync().catch(e => { console.error(e); process.exit(1); });
+        EOF
 
+        node sync.mjs
+
+    # 4 轉檔 HEIC → JPEG
+    - name: Convert HEIC/HEIF images
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y imagemagick libheif-examples
+        find ./static -type f \( -iname '*.heic' -o -iname '*.heif' \) -print0 |
+        while IFS= read -r -d '' f; do
+          convert "$f" "${f%.*}.jpeg" && rm "$f"
+        done
+        find ./content/posts -name '*.md' -exec sed -i 's/\.\(heic\|heif\)/.jpeg/gi' {} +
+
+    # 5 合併 Blowfish 額外覆寫
+    - name: Merge Blowfish overrides
+      run: |
+        cp -rT themes/blowfish/layouts/ layouts/
+        cp -rT themes/blowfish/assets/  assets/
+
+    # 6 安裝 Hugo
+    - uses: peaceiris/actions-hugo@v3.0.0
+      with:
+        hugo-version: 0.124.1
+        extended: true
+
+    # 7 构建
+    - run: hugo --minify
+
+    # 8 上傳靜態檔
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./public
+
+# ───────────── Job ②：Deploy ─────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url:  ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 9 發布
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # 10 刷新 Cloudflare 快取（列常用頁面，避免權限需求）
+      - name: Purge Cloudflare cache (files)
+        if: success()
+        env:
+          CF_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          FILES='["https://huikai.com.kg/","https://huikai.com.kg/index.html","https://huikai.com.kg/sitemap.xml","https://huikai.com.kg/index.xml"]'
+          curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+               -H "Authorization: Bearer ${CF_API_TOKEN}" \
+               -H "Content-Type: application/json" \
+               --data "{\"files\":${FILES}}" \
+          | jq -e '.success' >/dev/null
