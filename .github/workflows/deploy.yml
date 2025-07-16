@@ -1,42 +1,39 @@
 name: Sync Notion → Build → Deploy → Purge Cache
 
-# ───────────── 觸發條件 ─────────────
+# ───────────── 触发条件 ─────────────
 on:
-  push:                 # 手動 git push 可立即觸發
-    branches: [main]
-  workflow_dispatch:    # GitHub UI → Run workflow
-  schedule:             # 每 6 小時自動同步（UTC）
+  push:
+    branches: [main]            # 手动 git push 可立即触发
+  workflow_dispatch:            # GitHub UI 手动执行
+  schedule:                     # 每 6 小时自动同步（UTC）
     - cron: '0 */6 * * *'
 
-# 必要權限
 permissions:
   contents: write
   pages:    write
   id-token: write
 
-# 同時間只跑一個
 concurrency:
   group: pages
   cancel-in-progress: true
 
-# ───────────── Job ①：Build ─────────────
+# ───────────── Job ①：Build ─────────────
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
 
-    # 1 取代碼（含主題子模組）
+    steps:
+    # 1 取得代码（含 Blowfish 子模块）
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    # 2 建立 Node 環境（不啟用 npm cache，避免 lockfile 警告）
+    # 2 建立 Node 环境
     - uses: actions/setup-node@v4
       with:
         node-version: 20
 
     # 3 Notion → Markdown
-    # 3️⃣ Notion → Markdown
     - name: Sync Notion database to content/posts
       env:
         NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
@@ -45,7 +42,7 @@ jobs:
         # 安装依赖（本地，不要 -g）
         npm install --no-save '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
 
-        # 生成同步脚本
+        # 写入同步脚本
         cat <<'EOF' > sync.mjs
         import { Client } from "@notionhq/client";
         import { NotionToMarkdown } from "notion-to-md";
@@ -61,9 +58,12 @@ jobs:
           await fs.rm(outDir, { recursive: true, force: true });
           await fs.mkdir(outDir, { recursive: true });
 
-          const filter = { property: "status", status: { equals: "Published" } };
+          // 你的 status 栏位是 “Select” 类型
+          const filter = { property: "status", select: { equals: "Published" } };
 
           let cursor = undefined;
+          let total  = 0;
+
           do {
             const resp = await notion.databases.query({
               database_id: db,
@@ -72,29 +72,49 @@ jobs:
               page_size: 100,
             });
 
+            console.log(`Fetched ${resp.results.length} pages (cursor: ${cursor || "first"})`);
+            total += resp.results.length;
+
             for (const page of resp.results) {
               const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
               const slug  = page.properties.slug.rich_text[0]?.plain_text;
               const date  = page.properties.date.date?.start;
               const tags  = page.properties.tags.multi_select.map(t => t.name);
-              if (!slug) continue;
 
-              const md = n2m.toMarkdownString(await n2m.pageToMarkdown(page.id));
-              const front = `---\ntitle: "${title.replace(/"/g,'\\"')}"\ndate: ${date}\nslug: "${slug}"\ntags: [${tags.map(t=>`"${t}"`).join(", ")}]\n---\n\n`;
-              await fs.writeFile(path.join(outDir, `${slug}.md`), front + md.parent);
+              if (!slug) {
+                console.warn(`Skipping "${title}" (no slug)`);
+                continue;
+              }
+
+              const mdBlocks = await n2m.pageToMarkdown(page.id);
+              const md       = n2m.toMarkdownString(mdBlocks);
+
+              const front = `---\n`
+                          + `title: "${title.replace(/"/g,'\\"')}"\n`
+                          + `date: ${date}\n`
+                          + `slug: "${slug}"\n`
+                          + `tags: [${tags.map(t=>`"${t}"`).join(", ")}]\n`
+                          + `---\n\n`;
+
+              await fs.writeFile(
+                path.join(outDir, `${slug}.md`),
+                front + md.parent
+              );
             }
+
             cursor = resp.has_more ? resp.next_cursor : undefined;
           } while (cursor);
+
+          console.log(`Total synced: ${total} pages`);
         }
 
         sync().catch(err => { console.error(err); process.exit(1); });
         EOF
 
-        # 执行脚本
+        # 执行同步脚本
         node sync.mjs
 
-
-    # 4 轉檔 HEIC → JPEG
+    # 4 转 HEIC → JPEG
     - name: Convert HEIC/HEIF images
       run: |
         sudo apt-get update -y
@@ -105,27 +125,27 @@ jobs:
         done
         find ./content/posts -name '*.md' -exec sed -i 's/\.\(heic\|heif\)/.jpeg/gi' {} +
 
-    # 5 合併 Blowfish 額外覆寫
+    # 5 合并 Blowfish 覆盖
     - name: Merge Blowfish overrides
       run: |
         cp -rT themes/blowfish/layouts/ layouts/
         cp -rT themes/blowfish/assets/  assets/
 
-    # 6 安裝 Hugo
+    # 6 安装 Hugo
     - uses: peaceiris/actions-hugo@v3.0.0
       with:
         hugo-version: 0.124.1
         extended: true
 
-    # 7 构建
+    # 7 构建网站
     - run: hugo --minify
 
-    # 8 上傳靜態檔
+    # 8 上传静态文件
     - uses: actions/upload-pages-artifact@v3
       with:
         path: ./public
 
-# ───────────── Job ②：Deploy ─────────────
+# ───────────── Job ②：Deploy ─────────────
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -134,18 +154,23 @@ jobs:
       url:  ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      # 9 發布
+      # 9 发布到 GitHub Pages
       - id: deployment
         uses: actions/deploy-pages@v4
 
-      # 10 刷新 Cloudflare 快取（列常用頁面，避免權限需求）
+      # 10 精准清 Cloudflare 快取
       - name: Purge Cloudflare cache (files)
         if: success()
         env:
-          CF_ZONE_ID:    ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CF_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID:   ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          FILES='["https://huikai.com.kg/","https://huikai.com.kg/index.html","https://huikai.com.kg/sitemap.xml","https://huikai.com.kg/index.xml"]'
+          FILES='[
+            "https://huikai.com.kg/",
+            "https://huikai.com.kg/index.html",
+            "https://huikai.com.kg/sitemap.xml",
+            "https://huikai.com.kg/index.xml"
+          ]'
           curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
                -H "Authorization: Bearer ${CF_API_TOKEN}" \
                -H "Content-Type: application/json" \
