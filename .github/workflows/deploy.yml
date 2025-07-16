@@ -1,178 +1,155 @@
-name: Sync Notion → Build → Deploy → Purge Cache
+name: Notion Sync → Hugo Build → GitHub Pages + Cloudflare Purge
 
-# ───────────── 触发条件 ─────────────
 on:
   push:
-    branches: [main]            # 手动 git push 可立即触发
-  workflow_dispatch:            # GitHub UI 手动执行
-  schedule:                     # 每 6 小时自动同步（UTC）
+    branches: [main]
+  workflow_dispatch:
+  schedule:
     - cron: '0 */6 * * *'
 
 permissions:
   contents: write
-  pages:    write
+  pages: write
   id-token: write
 
 concurrency:
-  group: pages
+  group: "pages"
   cancel-in-progress: true
 
-# ───────────── Job ①：Build ─────────────
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    # 1 取得代码（含 Blowfish 子模块）
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      # 1. 拉取源码 + 主题子模块
+      - name: Checkout repo and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    # 2 建立 Node 环境
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
+      # 2. Node.js for Notion Sync
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    # 3 Notion → Markdown
-    - name: Sync Notion database to content/posts
-      env:
-        NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
-        NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
-      run: |
-        # 安装依赖（本地，不要 -g）
-        npm install --no-save '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
+      # 3. Notion → Markdown
+      - name: Sync Notion database to content/posts
+        env:
+          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
+        run: |
+          npm install --no-save '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
+          cat <<'EOF' > sync.mjs
+          import { Client } from "@notionhq/client";
+          import { NotionToMarkdown } from "notion-to-md";
+          import fs from "node:fs/promises";
+          import path from "node:path";
 
-        # 写入同步脚本
-        cat <<'EOF' > sync.mjs
-        import { Client } from "@notionhq/client";
-        import { NotionToMarkdown } from "notion-to-md";
-        import fs from "node:fs/promises";
-        import path from "node:path";
+          const notion = new Client({ auth: process.env.NOTION_TOKEN });
+          const n2m = new NotionToMarkdown({ notionClient: notion });
+          const databaseId = process.env.NOTION_DATABASE_ID;
+          const outputDir = "content/posts";
 
-        const notion = new Client({ auth: process.env.NOTION_TOKEN });
-        const n2m    = new NotionToMarkdown({ notionClient: notion });
-        const db     = process.env.NOTION_DATABASE_ID;
-        const outDir = "content/posts";
+          async function sync() {
+            await fs.rm(outputDir, { recursive: true, force: true });
+            await fs.mkdir(outputDir, { recursive: true });
 
-        async function sync() {
-          await fs.rm(outDir, { recursive: true, force: true });
-          await fs.mkdir(outDir, { recursive: true });
-
-          // 你的 status 栏位是 “Select” 类型
-          const filter = { property: "status", select: { equals: "Published" } };
-
-          let cursor = undefined;
-          let total  = 0;
-
-          do {
-            const resp = await notion.databases.query({
-              database_id: db,
-              filter,
-              start_cursor: cursor,
-              page_size: 100,
+            const response = await notion.databases.query({
+              database_id: databaseId,
+              filter: { property: "status", select: { equals: "Published" } }
             });
 
-            console.log(`Fetched ${resp.results.length} pages (cursor: ${cursor || "first"})`);
-            total += resp.results.length;
+            for (const page of response.results) {
+              const title = page.properties.Title.title[0]?.plain_text || 'Untitled';
+              const slug = page.properties.slug.rich_text[0]?.plain_text;
+              const date = page.properties.date.date?.start;
+              const tags = page.properties.tags.multi_select.map(tag => tag.name);
 
-            for (const page of resp.results) {
-              const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
-              const slug  = page.properties.slug.rich_text[0]?.plain_text;
-              const date  = page.properties.date.date?.start;
-              const tags  = page.properties.tags.multi_select.map(t => t.name);
+              if (!slug) continue;
 
-              if (!slug) {
-                console.warn(`Skipping "${title}" (no slug)`);
-                continue;
-              }
+              const mdblocks = await n2m.pageToMarkdown(page.id);
+              const mdString = n2m.toMarkdownString(mdblocks);
+              const frontmatter = `---
+title: "${title.replace(/"/g, '\\"')}"
+date: ${date}
+slug: "${slug}"
+tags: [${tags.map(t => `"${t}"`).join(', ')}]
+---`;
 
-              const mdBlocks = await n2m.pageToMarkdown(page.id);
-              const md       = n2m.toMarkdownString(mdBlocks);
-
-              const front = `---\n`
-                          + `title: "${title.replace(/"/g,'\\"')}"\n`
-                          + `date: ${date}\n`
-                          + `slug: "${slug}"\n`
-                          + `tags: [${tags.map(t=>`"${t}"`).join(", ")}]\n`
-                          + `---\n\n`;
-
-              await fs.writeFile(
-                path.join(outDir, `${slug}.md`),
-                front + md.parent
-              );
+              const finalContent = frontmatter + "\n" + mdString.parent;
+              await fs.writeFile(path.join(outputDir, `${slug}.md`), finalContent);
             }
+          }
 
-            cursor = resp.has_more ? resp.next_cursor : undefined;
-          } while (cursor);
+          sync().catch(err => {
+            console.error("❌ Notion Sync Error:", err);
+            process.exit(1);
+          });
+          EOF
 
-          console.log(`Total synced: ${total} pages`);
-        }
+          node sync.mjs
 
-        sync().catch(err => { console.error(err); process.exit(1); });
-        EOF
+      # 4-a. 安装转换工具
+      - name: Install HEIC → JPEG tools
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install imagemagick libheif-examples
 
-        # 执行同步脚本
-        node sync.mjs
+      # 4-b. 下载远端 HEIC 并转换为 JPEG
+      - name: Download and convert remote HEIC images
+        run: |
+          mkdir -p static/uploads
+          grep -rhoE 'https[^ )]+\.heic|https[^ )]+\.heif' content/posts | sort -u > /tmp/heic_urls.txt || true
 
-    # 4 转 HEIC → JPEG
-    - name: Convert HEIC/HEIF images
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y imagemagick libheif-examples
-        find ./static -type f \( -iname '*.heic' -o -iname '*.heif' \) -print0 |
-        while IFS= read -r -d '' f; do
-          convert "$f" "${f%.*}.jpeg" && rm "$f"
-        done
-        find ./content/posts -name '*.md' -exec sed -i 's/\.\(heic\|heif\)/.jpeg/gi' {} +
+          while read -r URL; do
+            FILE="static/uploads/$(basename "${URL%.*}").jpeg"
+            echo "Downloading $URL → $FILE"
+            curl -L --silent "$URL" | convert heic:- "$FILE"
+          done < /tmp/heic_urls.txt
 
-    # 5 合并 Blowfish 覆盖
-    - name: Merge Blowfish overrides
-      run: |
-        cp -rT themes/blowfish/layouts/ layouts/
-        cp -rT themes/blowfish/assets/  assets/
+          # 修改 Markdown 中的外链路径
+          find content/posts -name '*.md' -exec \
+            sed -i -E 's#https[^ )]+/(.+)\.hei[cf]#/uploads/\1.jpeg#g' {} +
 
-    # 6 安装 Hugo
-    - uses: peaceiris/actions-hugo@v3.0.0
-      with:
-        hugo-version: 0.124.1
-        extended: true
+      # 5. 合并主题文件
+      - name: Merge Blowfish theme overrides
+        run: |
+          cp -rT themes/blowfish/layouts/ layouts/
+          cp -rT themes/blowfish/assets/ assets/
 
-    # 7 构建网站
-    - run: hugo --minify
+      # 6. 安装 Hugo
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 0.124.1
+          extended: true
 
-    # 8 上传静态文件
-    - uses: actions/upload-pages-artifact@v3
-      with:
-        path: ./public
+      # 7. 构建网站
+      - name: Build site
+        run: hugo --minify
 
-# ───────────── Job ②：Deploy ─────────────
+      # 8. 上传构建产物
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
       name: github-pages
-      url:  ${{ steps.deployment.outputs.page_url }}
-
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # 9 发布到 GitHub Pages
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
 
-      # 10 精准清 Cloudflare 快取
-      - name: Purge Cloudflare cache (files)
-        if: success()
-        env:
-          CF_ZONE_ID:   ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # 清理 Cloudflare Cache
+      - name: Purge Cloudflare Cache
+        if: ${{ success() }}
         run: |
-          FILES='[
-            "https://huikai.com.kg/",
-            "https://huikai.com.kg/index.html",
-            "https://huikai.com.kg/sitemap.xml",
-            "https://huikai.com.kg/index.xml"
-          ]'
-          curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
-               -H "Authorization: Bearer ${CF_API_TOKEN}" \
-               -H "Content-Type: application/json" \
-               --data "{\"files\":${FILES}}" \
-          | jq -e '.success' >/dev/null
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
