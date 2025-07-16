@@ -32,13 +32,16 @@ jobs:
         with:
           node-version: 20
 
-      # 3. Notion → Markdown
+      # 3 Notion → Markdown
       - name: Sync Notion database to content/posts
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
         run: |
+          # 安装依赖（本地，不要 -g）
           npm install --no-save '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
+
+          # 写入同步脚本
           cat <<'EOF' > sync.mjs
           import { Client } from "@notionhq/client";
           import { NotionToMarkdown } from "notion-to-md";
@@ -46,47 +49,68 @@ jobs:
           import path from "node:path";
 
           const notion = new Client({ auth: process.env.NOTION_TOKEN });
-          const n2m = new NotionToMarkdown({ notionClient: notion });
-          const databaseId = process.env.NOTION_DATABASE_ID;
-          const outputDir = "content/posts";
+          const n2m    = new NotionToMarkdown({ notionClient: notion });
+          const db     = process.env.NOTION_DATABASE_ID;
+          const outDir = "content/posts";
 
           async function sync() {
-            await fs.rm(outputDir, { recursive: true, force: true });
-            await fs.mkdir(outputDir, { recursive: true });
+            await fs.rm(outDir, { recursive: true, force: true });
+            await fs.mkdir(outDir, { recursive: true });
 
-            const response = await notion.databases.query({
-              database_id: databaseId,
-              filter: { property: "status", select: { equals: "Published" } }
-            });
+            // 你的 status 栏位是 “Select” 类型
+            const filter = { property: "status", select: { equals: "Published" } };
 
-            for (const page of response.results) {
-              const title = page.properties.Title.title[0]?.plain_text || 'Untitled';
-              const slug = page.properties.slug.rich_text[0]?.plain_text;
-              const date = page.properties.date.date?.start;
-              const tags = page.properties.tags.multi_select.map(tag => tag.name);
+            let cursor = undefined;
+            let total  = 0;
 
-              if (!slug) continue;
+            do {
+              const resp = await notion.databases.query({
+                database_id: db,
+                filter,
+                start_cursor: cursor,
+                page_size: 100,
+              });
 
-              const mdblocks = await n2m.pageToMarkdown(page.id);
-              const mdString = n2m.toMarkdownString(mdblocks);
-              const frontmatter = `---
-title: "${title.replace(/"/g, '\\"')}"
-date: ${date}
-slug: "${slug}"
-tags: [${tags.map(t => `"${t}"`).join(', ')}]
----`;
+              console.log(`Fetched ${resp.results.length} pages (cursor: ${cursor || "first"})`);
+              total += resp.results.length;
 
-              const finalContent = frontmatter + "\n" + mdString.parent;
-              await fs.writeFile(path.join(outputDir, `${slug}.md`), finalContent);
-            }
+              for (const page of resp.results) {
+                const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
+                const slug  = page.properties.slug.rich_text[0]?.plain_text;
+                const date  = page.properties.date.date?.start;
+                const tags  = page.properties.tags.multi_select.map(t => t.name);
+
+                if (!slug) {
+                  console.warn(`Skipping "${title}" (no slug)`);
+                  continue;
+                }
+
+                const mdBlocks = await n2m.pageToMarkdown(page.id);
+                const md       = n2m.toMarkdownString(mdBlocks);
+
+                const front = `---\n`
+                            + `title: "${title.replace(/"/g,'\\"')}"\n`
+                            + `date: ${date}\n`
+                            + `slug: "${slug}"\n`
+                            + `tags: [${tags.map(t=>`"${t}"`).join(", ")}]\n`
+                            + `---\n\n`;
+
+                await fs.writeFile(
+                  path.join(outDir, `${slug}.md`),
+                  front + md.parent
+                );
+              }
+
+              cursor = resp.has_more ? resp.next_cursor : undefined;
+            } while (cursor);
+
+            console.log(`Total synced: ${total} pages`);
           }
 
-          sync().catch(err => {
-            console.error("❌ Notion Sync Error:", err);
-            process.exit(1);
-          });
+          sync().catch(err => { console.error(err); process.exit(1); });
           EOF
 
+          # 执行同步脚本
           node sync.mjs
 
       # 4-a. 安装转换工具
