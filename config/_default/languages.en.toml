@@ -17,9 +17,9 @@ title = "Blowfish"
  [params.author]
    name = "庄辉恺"
    email = "huikai79@gmail.com"
-   image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=32"
-   imageQuality = 96
-   headline = "提示词研究 | AI 学习 | 读书心得 | 影视感想"
+   image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=128"
+   imageQuality = 120
+   headline = "生活分享 | AI 学习 | 读书笔记 | 影视心得"
    bio = "A little bit about you"
    links = [
 #     { email = "mailto:hello@your_domain.com" },
