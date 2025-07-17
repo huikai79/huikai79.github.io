@@ -20,7 +20,7 @@ title = "MyBlog"
    image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=128"
    imageQuality = 94
    headline = "生活分享 | AI 学习 | 读书笔记 | 影视心得"
-   bio = "A little bit about you"
+   bio = "A little bit about me"
    links = [
 #     { email = "mailto:hello@your_domain.com" },
 #     { link = "https://link-to-some-website.com/" },
