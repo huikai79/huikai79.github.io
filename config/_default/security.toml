@@ -1,13 +1,4 @@
 [contentSecurityPolicy]
-  script-src = [
-    "'self'",
-    "https://cusdis.com",
-  ]
-  frame-src = [
-    "'self'",
-    "https://cusdis.com",
-  ]
-  connect-src = [
-    "'self'",
-    "https://cusdis.com",
-  ]
+  script-src  = ["'self'", "https://cusdis.com"]
+  frame-src   = ["'self'", "https://cusdis.com"]
+  connect-src = ["'self'", "https://cusdis.com"]
