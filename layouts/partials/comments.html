@@ -1,12 +1,25 @@
 <div class="mt-16 max-w-prose">
-  <div id="cusdis_thread"
-     data-host="https://cusdis.com"
-     data-app-id="946b6e90-c221-4ddb-8234-b8392eac66e3"
-     data-page-id="{{ .File.UniqueID }}"
-     data-page-url="{{ .Permalink }}"
-     data-page-title="{{ .Title }}"
-     data-theme="auto"
-     data-auto-height="true">
-  </div>
+  <div id="cusdis_thread"></div>
 </div>
-<script defer src="https://cusdis.com/js/cusdis.es.js"></script>
+
+<!-- 引入 Cusdis 主脚本 -->
+<script async defer
+        id="cusdis-js"
+        src="https://cusdis.com/js/cusdis.es.js"></script>
+
+<!-- Boot 初始化：iframe 会自动侦测高度 -->
+<script>
+  window.addEventListener('load', function () {
+    if (window.Cusdis) {
+      window.Cusdis.init({
+        el: '#cusdis_thread',
+        host: 'https://cusdis.com',
+        appId: '946b6e90-c221-4ddb-8234-b8392eac66e3',
+        pageId: '{{ .File.UniqueID }}',
+        pageTitle: '{{ .Title }}',
+        pageUrl: '{{ .Permalink }}',
+        theme: 'auto'
+      })
+    }
+  });
+</script>
