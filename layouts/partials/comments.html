@@ -2,21 +2,24 @@
   <div id="cusdis_thread"></div>
 </div>
 
-<script id="cusdis_js" src="https://cusdis.com/js/cusdis.es.js" async defer></script>
+<script src="https://cusdis.com/js/cusdis.es.js"></script>
 
 <script>
-  function bootCusdis () {
-    if (!window.Cusdis) return;
-    window.Cusdis.init({
-      el: '#cusdis_thread',
-      host: 'https://cusdis.com',
-      appId: '946b6e90-c221-4ddb-8234-b8392eac66e3',
-      pageId: '{{ with .File.UniqueID }}{{ . }}{{ else }}{{ .RelPermalink }}{{ end }}',
-      pageTitle: '{{ .Title }}',
-      pageUrl: '{{ .Permalink }}',
-      theme: 'auto'
-    });
-  }
-  document.getElementById('cusdis_js').addEventListener('load', bootCusdis);
-  setTimeout(bootCusdis, 3000);
+  (function boot(){
+    if (window.Cusdis && window.Cusdis.init) {
+      window.Cusdis.init({
+        el: '#cusdis_thread',
+        host: 'https://cusdis.com',
+        appId: '946b6e90-c221-4ddb-8234-b8392eac66e3',
+        pageId: "{{ with .File.UniqueID }}{{ . }}{{ else }}{{ .RelPermalink }}{{ end }}",
+        pageTitle: "{{ .Title }}",
+        pageUrl: "{{ .Permalink }}",
+        theme: 'auto'
+      });
+    } else {
+      // 每 500 ms 重试一次，最多 10 次
+      if (!window.__cusdisRetry) window.__cusdisRetry = 0;
+      if (window.__cusdisRetry++ < 10) setTimeout(boot, 500);
+    }
+  })();
 </script>
