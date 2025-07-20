@@ -5,7 +5,7 @@
 <script id="cusdis_js" src="https://cusdis.com/js/cusdis.es.js" async defer></script>
 
 <script>
-  function bootCusdis() {
+  function bootCusdis () {
     if (!window.Cusdis) return;
     window.Cusdis.init({
       el: '#cusdis_thread',
@@ -18,5 +18,5 @@
     });
   }
   document.getElementById('cusdis_js').addEventListener('load', bootCusdis);
-  setTimeout(bootCusdis, 3000);  // 缓存兜底
+  setTimeout(bootCusdis, 3000);
 </script>
