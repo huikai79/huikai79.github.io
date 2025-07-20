@@ -2,23 +2,21 @@
   <div id="cusdis_thread"></div>
 </div>
 
-<script async defer src="https://cusdis.com/js/cusdis.es.js"></script>
+<script id="cusdis_js" src="https://cusdis.com/js/cusdis.es.js" async defer></script>
 
 <script>
-  function bootCusdis(){
-    if(!window.Cusdis) return;
+  function bootCusdis() {
+    if (!window.Cusdis) return;
     window.Cusdis.init({
-      el:'#cusdis_thread',
-      host:'https://cusdis.com',
-      appId:'946b6e90-c221-4ddb-8234-b8392eac66e3',
-      /* 直接用文章相对链接作 pageId，保证唯一 */
-      pageId:'{{ .RelPermalink }}',
-      pageTitle:`{{ .Title }}`,
-      pageUrl:'{{ .Permalink }}',
-      theme:'auto'
+      el: '#cusdis_thread',
+      host: 'https://cusdis.com',
+      appId: '946b6e90-c221-4ddb-8234-b8392eac66e3',
+      pageId: '{{ with .File.UniqueID }}{{ . }}{{ else }}{{ .RelPermalink }}{{ end }}',
+      pageTitle: '{{ .Title }}',
+      pageUrl: '{{ .Permalink }}',
+      theme: 'auto'
     });
   }
-  /* onload + 兜底双重保障 */
-  document.getElementById('cusdis_thread').previousElementSibling.addEventListener('load',bootCusdis);
-  setTimeout(bootCusdis,3000);
+  document.getElementById('cusdis_js').addEventListener('load', bootCusdis);
+  setTimeout(bootCusdis, 3000);  // 缓存兜底
 </script>
