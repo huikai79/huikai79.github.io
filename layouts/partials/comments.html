@@ -8,4 +8,21 @@
        data-theme="auto"></div>
 </div>
 
-<script defer src="https://cusdis.com/js/cusdis.es.js"></script>
+<script>
+(function boot(){
+  if (!window.Cusdis || !window.Cusdis.init) {
+    setTimeout(boot, 500);          /* 脚本还没加载就稍后再试 */
+    return;
+  }
+  window.Cusdis.init({
+    el: '#cusdis_thread',
+    host: 'https://cusdis.com',
+    appId: '946b6e90-c221-4ddb-8234-b8392eac66e3',
+    pageId: '{{ with .File.UniqueID }}{{ . }}{{ else }}{{ .RelPermalink }}{{ end }}',
+    pageTitle: '{{ .Title }}',
+    pageUrl: '{{ .Permalink }}',
+    theme: 'auto',
+    autoHeight: true               /* ← 加这一行！ */
+  });
+})();
+</script>
