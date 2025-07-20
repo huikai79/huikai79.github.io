@@ -1,10 +1,3 @@
-/* ===== Cusdis 自动撑高 ===== */
-#cusdis_thread iframe{
-  max-height:none!important;
-  height:auto!important;
-  width:100%!important;
-  overflow:visible!important;
-}
 
 /* ——深色主题统一风格—— */
 .cusdis-bg,
