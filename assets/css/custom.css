@@ -11,3 +11,8 @@
   background-color:#0ea5e9!important; /* sky-500 */
   border:none!important;
 }
+/* Cusdis iframe: 自动随内容高度撑开 */
+#cusdis_thread iframe {
+  height: auto !important;
+  max-height: none !important;
+}
