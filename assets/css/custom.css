@@ -15,4 +15,6 @@
 #cusdis_thread iframe {
   height: auto !important;
   max-height: none !important;
+  overflow: visible !important;
 }
+
