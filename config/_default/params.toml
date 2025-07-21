@@ -133,7 +133,7 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   cardViewScreenWidth = false
 
 [assetPipeline]
-  customCSS = ["css/cusdis.css"]
+  # customCSS = ["XXX"]
 
 [firebase]
   # apiKey = "XXXXXX"
