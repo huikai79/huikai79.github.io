@@ -1,4 +1,20 @@
-[contentSecurityPolicy]
-  script-src  = ["'self'", "https://cusdis.com"]
-  frame-src   = ["'self'", "https://cusdis.com"]
-  connect-src = ["'self'", "https://cusdis.com"]
+[security]
+  [security.contentSecurityPolicy]
+    default-src = "'self'"
+    script-src = [
+      "'self'",
+      "https://cusdis.com",          # ← 加上
+      "'unsafe-inline'",            # 可选，看主题是否需 inline
+      "'unsafe-eval'"               # 关键：Cusdis 需要用 eval
+    ]
+    style-src = [
+      "'self'",
+      "https://cusdis.com",         # Cusdis 样式
+      "'unsafe-inline'"             # Blowfish 主题可能需要
+    ]
+    frame-src = [
+      "https://cusdis.com"          # iframe 来源
+    ]
+    connect-src = [
+      "https://cusdis.com"          # API 请求来源
+    ]
