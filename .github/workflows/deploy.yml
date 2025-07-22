@@ -1,11 +1,8 @@
-name: Notion Sync → Hugo Build → GitHub Pages + Cloudflare Purge
+name: Notion → Hugo → GitHub Pages + Cloudflare
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-  schedule:
-    - cron: '*/20 * * * *' # 每 20 分钟运行一次
+  push: branches: [main]
+  schedule: - cron: '*/20 * * * *'
 
 permissions:
   contents: write
@@ -13,184 +10,43 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. 拉取源码 + 主题子模块
-      - name: Checkout repo and submodules
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
+        with: submodules: recursive
 
-      # 2. Node.js for Notion Sync
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: 20
+        with: node-version: 20
 
-      # 3 Notion → Markdown
-      - name: Sync Notion database to content/posts
+      - name: Sync Notion → Markdown
         env:
-          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
         run: |
-          # 安装依赖（本地，不要 -g）
-          npm install --no-save '@notionhq/client@^2.3.0' 'notion-to-md@^2.4.0'
-
-          # 写入同步脚本
-          cat <<'EOF' > sync.mjs
-          import { Client } from "@notionhq/client";
-          import { NotionToMarkdown } from "notion-to-md";
-          import fs from "node:fs/promises";
-          import path from "node:path";
-
-          const notion = new Client({ auth: process.env.NOTION_TOKEN });
-          const n2m    = new NotionToMarkdown({ notionClient: notion });
-          const db     = process.env.NOTION_DATABASE_ID;
-          const outDir = "content/posts";
-
-          async function sync() {
-            await fs.rm(outDir, { recursive: true, force: true });
-            await fs.mkdir(outDir, { recursive: true });
-
-            // 你的 status 栏位是 “Select” 类型
-            const filter = { property: "status", select: { equals: "Published" } };
-
-            let cursor = undefined;
-            let total  = 0;
-
-            do {
-              const resp = await notion.databases.query({
-                database_id: db,
-                filter,
-                start_cursor: cursor,
-                page_size: 100,
-              });
-
-              console.log(`Fetched ${resp.results.length} pages (cursor: ${cursor || "first"})`);
-              total += resp.results.length;
-
-              for (const page of resp.results) {
-                const title = page.properties.Title.title[0]?.plain_text ?? "Untitled";
-                const slug  = page.properties.slug.rich_text[0]?.plain_text;
-                const date  = page.properties.date.date?.start;
-                const tags  = page.properties.tags.multi_select.map(t => t.name);
-
-                if (!slug) {
-                  console.warn(`Skipping "${title}" (no slug)`);
-                  continue;
-                }
-
-                const mdBlocks = await n2m.pageToMarkdown(page.id);
-                const md       = n2m.toMarkdownString(mdBlocks);
-
-                const front = `---\n`
-                            + `title: "${title.replace(/"/g,'\\"')}"\n`
-                            + `date: ${date}\n`
-                            + `slug: "${slug}"\n`
-                            + `tags: [${tags.map(t=>`"${t}"`).join(", ")}]\n`
-                            + `---\n\n`;
-
-                await fs.writeFile(
-                  path.join(outDir, `${slug}.md`),
-                  front + md.parent
-                );
-              }
-
-              cursor = resp.has_more ? resp.next_cursor : undefined;
-            } while (cursor);
-
-            console.log(`Total synced: ${total} pages`);
-          }
-
-          sync().catch(err => { console.error(err); process.exit(1); });
-          EOF
-
-          # 执行同步脚本
+          npm install @notionhq/client notion-to-md
           node sync.mjs
 
-      ## 4-a. 安装转换工具
-      #- name: Install HEIC → JPEG tools
-      #  run: |
-      #    sudo apt-get update
-      #    sudo apt-get -y install imagemagick libheif-examples
-
-      ## 4‑b. 下载远端 HEIC 并转换为 JPEG
-      #- name: Download and convert remote HEIC images
-      #  run: |
-      #    sudo apt-get update -y
-      #    sudo apt-get -y install file imagemagick libheif-examples
-
-      #    mkdir -p static/uploads
-      #    grep -rhoE 'https[^ )]+\.heic|https[^ )]+\.heif' content/posts | sort -u > /tmp/heic_urls.txt || true
-
-      #    while read -r URL; do
-      #      [[ -z "$URL" ]] && continue        # 跳过空行
-
-      #      FILENAME="$(basename "${URL%.*}")"
-      #      TMP="/tmp/${FILENAME}.bin"
-      #      OUT="static/uploads/${FILENAME}.jpeg"
-
-      #      echo "⬇️  $FILENAME ..."
-      #      if ! curl -L --fail --silent --output "$TMP" "$URL"; then
-      #        echo "  ⚠️  下载失败，跳过"
-      #        rm -f "$TMP"; continue;
-      #      fi
-
-      #      MIME=$(file --mime-type -b "$TMP")
-      #      echo "  → MIME: $MIME"
-
-      #      case "$MIME" in
-      #        image/heic|image/heif)
-      #          if heif-convert "$TMP" "$OUT" >/dev/null 2>&1; then
-      #            echo "  ✅ heif-convert → $OUT"
-      #          else
-      #            echo "  ⚠️  heif-convert 失败，跳过"
-      #            rm -f "$TMP"; continue
-      #          fi
-      #          ;;
-      #        image/jpeg|image/png)
-      #          # 已是浏览器可识别格式，直接重命名为 .jpeg
-      #          cp "$TMP" "$OUT"
-      #          echo "  ✅ 已是 $MIME，复制为 $OUT"
-      #          ;;
-      #        *)
-      #          echo "  ⚠️  非图像或未知格式，跳过"
-      #          rm -f "$TMP"; continue
-      #          ;;
-      #      esac
-
-      #      rm -f "$TMP"
-      #    done < /tmp/heic_urls.txt
-
-      #    # 统一把 Markdown 中的外链换成本地 /uploads/*.jpeg
-      #    find content/posts -name '*.md' -exec \
-      #      sed -i -E 's#https[^ )]*/([^/?]+)\.hei[cf][^ )]*#/uploads/\L\1.jpeg#g' {} +
-
-
-      # 5. 合并主题文件
-      - name: Merge Blowfish theme overrides
+      - name: Merge Blowfish theme
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
           cp -rT themes/blowfish/assets/ assets/
 
-      # 6. 安装 Hugo
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 0.124.1
           extended: true
 
-      # 7. 构建网站
       - name: Build site
         run: hugo --minify
 
-      # 8. 上传构建产物
-      - name: Upload build artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
@@ -198,15 +54,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    environment: name: github-pages
     steps:
-      - name: Deploy to GitHub Pages
+      - uses: actions/deploy-pages@v4
         id: deployment
-        uses: actions/deploy-pages@v4
 
-      # 清理 Cloudflare Cache
       - name: Purge Cloudflare Cache
         if: ${{ success() }}
         run: |
