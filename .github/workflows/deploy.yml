@@ -1,15 +1,16 @@
-name: Notion → Hugo → GitHub Pages + Cloudflare
+name: "Notion -> Hugo -> GitHub Pages + Cloudflare"
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
   schedule:
-    - cron: "*/20 * * * *"
+    - cron: '*/20 * * * *'
 
 permissions:
   contents: write
-  pages:    write
+  pages: write
   id-token: write
 
 concurrency:
@@ -20,8 +21,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:            # FIX: with 必须与 uses 同层
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
           submodules: recursive
 
       - name: Setup Node.js
@@ -29,18 +31,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Sync Notion → Markdown
+      - name: Sync Notion -> Markdown
         env:
-          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          # TODO: 改好 secrets 名称后再换；目前沿用 NOTION_PAGE_URL
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
         run: |
           npm install @notionhq/client notion-to-md
           node sync.mjs
 
-      - name: Merge Blowfish theme
+      - name: Merge Blowfish theme overrides
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
-          cp -rT themes/blowfish/assets/  assets/
+          cp -rT themes/blowfish/assets/ assets/
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
@@ -60,15 +63,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: github-pages      # FIX: environment 需展开为映射，不能写同一行
-      url:  ${{ steps.deployment.outputs.page_url }}
-
+      name: github-pages
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
 
       - name: Purge Cloudflare Cache
-        if: success()
+        if: ${{ success() }}
         run: |
           curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
