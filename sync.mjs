@@ -11,7 +11,7 @@ const DB_ID   = process.env.NOTION_DATABASE_ID;
 const OUT_DIR = "content/posts";
 
 // 只同步 Status = Published 的頁面
-const filter = { property: "status", select: { equals: "Published" } };
+const filter = { property: "status", status: { equals: "Published" } };
 
 async function sync() {
   /* ---------- 零结果保护：避免误删整站 ---------- */
