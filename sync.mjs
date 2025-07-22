@@ -36,6 +36,16 @@ async function sync() {
       const tags  = page.properties.tags?.multi_select.map(t => t.name) ?? [];
 
       if (!slug) continue;                          // 没 slug 就跳过
+      
+      /* ---------- 取封面／圖示 ---------- */
+      const cover =
+        page.cover?.external?.url ||
+        page.cover?.file?.url    || "";
+ 
+      const icon =
+        page.icon?.emoji ||
+        page.icon?.external?.url ||
+        page.icon?.file?.url     || "";
 
       /* ---------- Markdown 转换 ---------- */
       const mdBlocks = await n2m.pageToMarkdown(page.id);
@@ -53,6 +63,8 @@ async function sync() {
                   + `date: ${date}\n`
                   + `slug: "${slug}"\n`
                   + `tags: [${tags.map(t => `"${t}"`).join(", ")}]\n`
+                  + `cover: "${cover}"\n`
++                 + `icon: "${icon}"\n`
                   + `---\n\n`;
 
       const filePath = path.join(out, `${slug}.md`);
