@@ -58,14 +58,14 @@ async function sync() {
       );
 
       // －－－ Front‑matter（注意結尾一定要再加一行 ---）－－－
-      const front = `---
-      title: "${title.replace(/"/g, '\\"')}"
-      date: ${date}
-      slug: "${slug}"
-      tags: [${tags.map(t => `"${t}"`).join(", ")}]
-      cover: "${cover}"
-      icon: "${icon}"
-      ---
+      const front = `---\n`
+            + `title: "${title.replace(/"/g, '\\"')}"\n`
+            + date: ${date}
+            + slug: "${slug}"
+            + tags: [${tags.map(t => `"${t}"`).join(", ")}]
+            + cover: "${cover}"
+            + `icon: "${icon}"\n`
+            + `---\n`;     // ← 结尾别漏
       `;
 
       const filePath = path.join(out, `${slug}.md`);
