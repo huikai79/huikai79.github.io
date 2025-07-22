@@ -41,6 +41,12 @@ async function sync() {
       const mdBlocks = await n2m.pageToMarkdown(page.id);
       const mdString = n2m.toMarkdownString(mdBlocks);
 
+      // 自动把 YouTube 链接换短码（可选）
+      mdString = mdString.replace(
+        /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11}).*/g,
+        (_m, id) => `{{< youtube ${id} >}}`
+      );
+
       const front = `---\n`
                   + `title: "${title.replace(/"/g,'\\"')}"\n`
                   + `date: ${date}\n`
