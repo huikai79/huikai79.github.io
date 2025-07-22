@@ -1,0 +1,42 @@
+{{ define "main" }}
+<article class="flex flex-col max-w-prose mx-auto">
+
+  {{/* ------ 封面图 ------ */}}
+  {{ with .Params.cover }}
+    <figure class="my-6 rounded-xl overflow-hidden">
+      <img src="{{ . }}" class="w-full" alt="{{ $.Title }}">
+    </figure>
+  {{ end }}
+
+  {{/* ------ 标题 + Icon ------ */}}
+  <header id="single_header" class="flex items-center gap-3">
+    {{ with .Params.icon }}
+      {{ if hasPrefix . "http" }}
+        <img src="{{ . }}" class="w-10 h-10">
+      {{ else }}
+        <span class="text-4xl">{{ . }}</span>
+      {{ end }}
+    {{ end }}
+    <h1 class="text-3xl font-bold">{{ .Title }}</h1>
+  </header>
+
+  {{/* ------ 自订属性列 ------ */}}
+  <section class="my-4 text-sm opacity-75 flex flex-wrap gap-4">
+    <span>{{ .Date.Format "02 Jan 2006" }}</span>
+    {{ with .Params.categories }}
+      <span class="px-2 py-1 bg-slate-700 rounded">{{ index . 0 }}</span>
+    {{ end }}
+    {{ with .Params.tags }}
+      {{ range . }}
+        <span class="px-2 py-1 bg-slate-700 rounded">{{ . }}</span>
+      {{ end }}
+    {{ end }}
+  </section>
+
+  {{/* ------ 正文 ------ */}}
+  <div class="article-content max-w-prose mb-20">
+    {{ .Content | safeHTML }}
+  </div>
+
+</article>
+{{ end }}
