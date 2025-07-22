@@ -34,24 +34,23 @@ async function sync() {
     total += resp.results.length;
 
     for (const page of resp.results) {
+      // 取得完整 Page 以便拿 cover / icon
+      const fullPage = await notion.pages.retrieve({ page_id: page.id });
+
       const title = page.properties.Title?.title[0]?.plain_text ?? "";
       const slug  = page.properties.slug?.rich_text[0]?.plain_text ?? "";
       const date  = page.properties.date?.date?.start ?? "";
       const tags  = page.properties.tags?.multi_select.map(t => t.name) ?? [];
+      if (!title || !slug || !date) continue;
 
-      if (!title || !slug || !date) {
-        console.warn(`⚠️ 页面资料不完整 (title/slug/date)，跳过:`, page.id);
-        continue;
-      }
+      const cover =
+        fullPage.cover?.external?.url ||
+        fullPage.cover?.file?.url    || "";
 
-      // cover / icon 支援
-      const cover = page.cover?.external?.url
-                  || page.cover?.file?.url
-                  || "";
-      const icon  = page.icon?.emoji
-                  || page.icon?.external?.url
-                  || page.icon?.file?.url
-                  || "";
+      const icon  =
+        fullPage.icon?.emoji ||
+        fullPage.icon?.external?.url ||
+        fullPage.icon?.file?.url     || "";
 
       const mdBlocks = await n2m.pageToMarkdown(page.id);
       let mdString = n2m.toMarkdownString(mdBlocks).parent;
