@@ -72,4 +72,17 @@ async function sync() {
                   + `---\n\n`;
 
       const filePath = path.join(out, `${slug}.md`);
-      await fs.write
+      await fs.writeFile(filePath, front + mdString);
+      console.log(`✅ 写入 => ${filePath}`);
+    }
+
+    cursor = resp.has_more ? resp.next_cursor : undefined;
+  } while (cursor);
+
+  console.log(`🎉 同步完成，共 ${total} 篇已同步内容`);
+}
+
+sync().catch(err => {
+  console.error("❌ 同步失败：", err);
+  process.exit(1);
+});
