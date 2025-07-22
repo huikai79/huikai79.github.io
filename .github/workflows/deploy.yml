@@ -3,13 +3,13 @@ name: Notion → Hugo → GitHub Pages + Cloudflare
 on:
   push:
     branches:
-      - main  
-  schedule:     
-    - cron: '*/20 * * * *' 
+      - main
+  schedule:
+    - cron: "*/20 * * * *"
 
 permissions:
   contents: write
-  pages: write
+  pages:    write
   id-token: write
 
 concurrency:
@@ -21,15 +21,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: submodules: recursive
+        with:            # FIX: with 必须与 uses 同层
+          submodules: recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with: node-version: 20
+        with:
+          node-version: 20
 
       - name: Sync Notion → Markdown
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
         run: |
           npm install @notionhq/client notion-to-md
@@ -38,7 +40,7 @@ jobs:
       - name: Merge Blowfish theme
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
-          cp -rT themes/blowfish/assets/ assets/
+          cp -rT themes/blowfish/assets/  assets/
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
@@ -57,13 +59,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment: name: github-pages
+    environment:
+      name: github-pages      # FIX: environment 需展开为映射，不能写同一行
+      url:  ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Purge Cloudflare Cache
-        if: ${{ success() }}
+        if: success()
         run: |
           curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
