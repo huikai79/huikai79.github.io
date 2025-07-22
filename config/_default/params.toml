@@ -36,7 +36,7 @@ giteaDefaultServer = "https://git.fsfe.org"
 forgejoDefaultServer = "https://v8.next.forgejo.org"
 
 [header]
-  layout = "fixed" # valid options: basic, fixed, fixed-fill, fixed-gradient, fixed-fill-blur
+  layout = "basic" # valid options: basic, fixed, fixed-fill, fixed-gradient, fixed-fill-blur
 
 [footer]
   showMenu = true
@@ -55,7 +55,7 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showHero = true
   showAllPosts = false
   cardView = true
-  layoutBackgroundBlur = false
+  layoutBackgroundBlur = true
   disableHeroImageFilter = false
 
 [article]
