@@ -16,7 +16,10 @@ async function sync() {
     console.error("❌ No pages matched filter — abort");
     process.exit(1);
   }
-
+  if (resp.results.length === 0) {
+    console.error("⚠️ Status filter撞空，终止以免站点被清空");
+    process.exit(1);
+  }
   await fs.rm(out, { recursive: true, force: true });
   await fs.mkdir(out, { recursive: true });
 
