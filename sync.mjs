@@ -9,7 +9,7 @@ const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const n2m   = new NotionToMarkdown({ notionClient: notion });
 const db    = process.env.NOTION_DATABASE_ID;
 const out   = "content/posts";
-const filter = { property: "status", select: { equals: "Published" } };
+const filter = { property: "status", status: { equals: "Published" } };
 
 async function sync() {
   // 检查至少有一篇文章，否则终止，避免清空内容
