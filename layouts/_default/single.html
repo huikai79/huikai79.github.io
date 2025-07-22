@@ -1,29 +1,26 @@
 {{ define "main" }}
-<article class="flex flex-col max-w-prose mx-auto">
+<article class="prose dark:prose-invert mx-auto">
 
-  {{/* 封面 */}}
+  {{/* 封面（Hero）*/}}
   {{ with .Params.cover }}
-    <figure class="my-6 rounded-xl overflow-hidden">
-      <img src="{{ . }}" alt="{{ $.Title }}" class="w-full" />
-    </figure>
+    <img src="{{ . }}" alt="{{ $.Title }}" class="w-full rounded-xl mb-6">
   {{ end }}
 
-  {{/* 标题 + 图标 */}}
-  <header class="flex items-center gap-3 mb-4">
+  {{/* 标题 + Icon */}}
+  <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
       {{ if hasPrefix . "http" }}
-        <img src="{{ . }}" class="w-10 h-10" />
+        <img src="{{ . }}" class="w-8 h-8">
       {{ else }}
-        <span class="text-4xl">{{ . }}</span>
+        <span class="text-3xl">{{ . }}</span>
       {{ end }}
     {{ end }}
-    <h1 class="text-3xl font-bold">{{ .Title }}</h1>
-  </header>
+    {{ .Title }}
+  </h1>
 
-  {{/* 正文 */}}
-  <div class="article-content">
-    {{ .Content | safeHTML }}
-  </div>
+  <p class="text-sm opacity-70 mb-8">{{ .Date.Format "02 January 2006" }}</p>
+
+  {{ .Content | safeHTML }}
 
 </article>
 {{ end }}
