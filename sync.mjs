@@ -65,14 +65,14 @@ async function sync() {
 
       /* ---------- 生成 Front‑matter ---------- */
       const front = `---
-title: "${title.replace(/"/g, '\\"')}"
-date: ${date}
-slug: "${slug}"
-tags: [${tags.map(t => `"${t}"`).join(", ")}]
-cover: "${cover}"
-icon: "${icon}"
----
-`;
+      title: "${title.replace(/"/g, '\\"')}"
+      date: ${date}
+      slug: "${slug}"
+      tags: [${tags.map(t => `"${t}"`).join(", ")}]
+      cover: "${cover}"
+      icon: "${icon}"
+      ---
+      `;
 
       const filePath = path.join(OUT_DIR, `${slug}.md`);
       await fs.writeFile(filePath, front + mdString);
