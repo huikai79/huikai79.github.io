@@ -1,7 +1,9 @@
 name: Notion → Hugo → GitHub Pages + Cloudflare
 
 on:
-  push: branches: [main]
+  push:
+    branches:
+      - main
   schedule: - cron: '*/20 * * * *'
 
 permissions:
