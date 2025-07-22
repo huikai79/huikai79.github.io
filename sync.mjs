@@ -36,16 +36,41 @@ async function sync() {
       const tags  = page.properties.tags?.multi_select.map(t => t.name) ?? [];
 
       if (!slug) continue;                          // 没 slug 就跳过
-      
-      /* ---------- 取封面／圖示 ---------- */
+
+      // －－－ 封面 / Icon －－－
       const cover =
         page.cover?.external?.url ||
         page.cover?.file?.url    || "";
- 
+
       const icon =
         page.icon?.emoji ||
         page.icon?.external?.url ||
         page.icon?.file?.url     || "";
+
+      // －－－ Markdown 轉換－－－
+      const mdBlocks = await n2m.pageToMarkdown(page.id);
+      let mdString   = n2m.toMarkdownString(mdBlocks).parent;
+
+      // 把 YouTube 連結轉成 Hugo shortcode
+      mdString = mdString.replace(
+        /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]{11})\S*/g,
+        (_m, id) => `{{< youtube ${id} >}}`
+      );
+
+      // －－－ Front‑matter（注意結尾一定要再加一行 ---）－－－
+      const front = `---
+      title: "${title.replace(/"/g, '\\"')}"
+      date: ${date}
+      slug: "${slug}"
+      tags: [${tags.map(t => `"${t}"`).join(", ")}]
+      cover: "${cover}"
+      icon: "${icon}"
+      ---
+      `;
+
+      const filePath = path.join(out, `${slug}.md`);
+            await fs.writeFile(filePath, front + mdString);
+            console.log("📝 寫入", filePath);
 
       /* ---------- Markdown 转换 ---------- */
       const mdBlocks = await n2m.pageToMarkdown(page.id);
