@@ -38,7 +38,7 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
         run: |
           npm install @notionhq/client notion-to-md
-          node sync.mjs
+          node ./sync.mjs
 
       - name: Merge Blowfish theme overrides
         run: |
