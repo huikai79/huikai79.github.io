@@ -59,7 +59,7 @@ async function sync() {
       // 转换 YouTube 链结为 Hugo Shortcode
       mdString = mdString.replace(
         /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})\S*/g,
-        (_m, id) => `{{< youtube ${id} >}}`
+        (_match, id) => `{{< youtube ${id} >}}`
       );
 
       const front = `---\n`
