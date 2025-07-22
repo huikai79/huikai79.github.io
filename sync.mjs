@@ -1,32 +1,38 @@
+// sync.mjs －－ Notion ➜ Markdown for Hugo Blowfish
 import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
-import fs from "node:fs/promises";
+import fs   from "node:fs/promises";
 import path from "node:path";
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const n2m   = new NotionToMarkdown({ notionClient: notion });
+const n2m    = new NotionToMarkdown({ notionClient: notion });
 
-const db   = process.env.NOTION_DATABASE_ID;
-const out  = "content/posts";                 // 一律用 out
+const DB_ID   = process.env.NOTION_DATABASE_ID;
+const OUT_DIR = "content/posts";
 
-// Status → "Published"
-const filter = { property: "status", status: { equals: "Published" } };
+// 只同步 Status = Published 的頁面
+const filter = { property: "status", select: { equals: "Published" } };
 
 async function sync() {
-  /* --------------- 预检查：若 0 条则退出，避免删光文章 --------------- */
-  const test = await notion.databases.query({ database_id: db, filter, page_size: 1 });
-  if (test.results.length === 0) {
-    console.error("⚠️ 未找到任何符合条件的记录，终止同步以免站点被清空");
+  /* ---------- 零结果保护：避免误删整站 ---------- */
+  const probe = await notion.databases.query({ database_id: DB_ID, filter, page_size: 1 });
+  if (probe.results.length === 0) {
+    console.error("⚠️  未找到任何 Published 文章，终止同步以免清空站点");
     process.exit(1);
   }
 
-  /* --------------- 重新生成 posts 目录 --------------- */
-  await fs.rm(out, { recursive: true, force: true });
-  await fs.mkdir(out, { recursive: true });
+  /* ---------- 重新生成 posts 目录 ---------- */
+  await fs.rm(OUT_DIR, { recursive: true, force: true });
+  await fs.mkdir(OUT_DIR, { recursive: true });
 
   let cursor, total = 0;
   do {
-    const resp = await notion.databases.query({ database_id: db, filter, start_cursor: cursor, page_size: 100 });
+    const resp = await notion.databases.query({
+      database_id: DB_ID,
+      filter,
+      start_cursor: cursor,
+      page_size: 100,
+    });
     total += resp.results.length;
 
     for (const page of resp.results) {
@@ -35,9 +41,9 @@ async function sync() {
       const date  = page.properties.date?.date?.start;
       const tags  = page.properties.tags?.multi_select.map(t => t.name) ?? [];
 
-      if (!slug) continue;                          // 没 slug 就跳过
+      if (!slug) continue; // 没 slug 就跳过
 
-      /* ---------- 取封面／图示 ---------- */
+      /* ---------- 封面 / 图示 ---------- */
       const cover =
         page.cover?.external?.url ||
         page.cover?.file?.url    || "";
@@ -51,48 +57,24 @@ async function sync() {
       const mdBlocks = await n2m.pageToMarkdown(page.id);
       let mdString   = n2m.toMarkdownString(mdBlocks).parent;
 
-      /* 把 YouTube 链接替换成 Hugo shortcode */
+      /* 替换 YouTube 链接为 Hugo shortcode */
       mdString = mdString.replace(
         /https?:\/\/(?:www\.)?(?:youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]{11})\S*/g,
-        (_m, id) => `{{< youtube ${id} >}}`
+        (_match, id) => `{{< youtube ${id} >}}`
       );
 
-      /* ---------- Front‑matter ---------- */
+      /* ---------- 生成 Front‑matter ---------- */
       const front = `---
-      title: "${title.replace(/"/g, '\\"')}"
-      date: ${date}
-      slug: "${slug}"
-      tags: [${tags.map(t => `"${t}"`).join(", ")}]
-      cover: "${cover}"
-      icon: "${icon}"
-      ---
-      `;
+title: "${title.replace(/"/g, '\\"')}"
+date: ${date}
+slug: "${slug}"
+tags: [${tags.map(t => `"${t}"`).join(", ")}]
+cover: "${cover}"
+icon: "${icon}"
+---
+`;
 
-      const filePath = path.join(out, `${slug}.md`);
-      await fs.writeFile(filePath, front + mdString);
-      console.log("📝 写入", filePath);
-
-      /* ---------- Markdown 转换 ---------- */
-      const mdBlocks = await n2m.pageToMarkdown(page.id);
-      let   mdString = n2m.toMarkdownString(mdBlocks).parent;   // 直接取正文
-
-      /* 替换 YouTube 链接 → Hugo shortcode */
-      mdString = mdString.replace(
-        /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})\S*/g,
-        (_m, id) => `{{< youtube ${id} >}}`
-      );  // :contentReference[oaicite:1]{index=1}
-
-      /* ---------- 写 front‑matter + 内容 ---------- */
-      const front = `---\n`
-                  + `title: "${title.replace(/"/g, '\\"')}"\n`
-                  + `date: ${date}\n`
-                  + `slug: "${slug}"\n`
-                  + `tags: [${tags.map(t => `"${t}"`).join(", ")}]\n`
-                  + `cover: "${cover}"\n`
-+                 + `icon: "${icon}"\n`
-                  + `---\n\n`;
-
-      const filePath = path.join(out, `${slug}.md`);
+      const filePath = path.join(OUT_DIR, `${slug}.md`);
       await fs.writeFile(filePath, front + mdString);
       console.log("📝 写入", filePath);
     }
@@ -103,4 +85,7 @@ async function sync() {
   console.log(`✅ 同步完成，共 ${total} 篇文章`);
 }
 
-sync().catch(err => { console.error(err); process.exit(1); });
+sync().catch(err => {
+  console.error("❌ FATAL:", err);
+  process.exit(1);
+});
