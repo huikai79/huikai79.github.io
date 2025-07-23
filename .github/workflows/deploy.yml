@@ -38,7 +38,6 @@ jobs:
             'node-fetch@^3.4.0'
 
       - name: Sync Notion -> Markdown
-        run: node sync.mjs
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
