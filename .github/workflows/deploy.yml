@@ -23,19 +23,25 @@ jobs:
     steps:
       - name: Checkout (with submodules)
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+        with: { submodules: recursive }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: 20
+        with: { node-version: 20 }
+
+      - name: Install npm dependencies        # ← 新名称
+        run: |
+          npm install --no-save \
+            '@notionhq/client@^2.3.0' \
+            'notion-to-md@^2.4.0'     \
+            'p-limit@^5.0.0'          \
+            'node-fetch@^3.4.0'
 
       - name: Sync Notion -> Markdown
+        run: node sync.mjs
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          # TODO: 改好 secrets 名称后再换；目前沿用 NOTION_PAGE_URL
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_PAGE_URL }}
+          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: |
           npm install @notionhq/client notion-to-md
           node ./sync.mjs
