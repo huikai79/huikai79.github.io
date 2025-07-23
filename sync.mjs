@@ -18,16 +18,16 @@ async function downloadImage(url, filepath) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
       if (res.statusCode !== 200) {
-        return reject(new Error(`Failed to get '${url}' (${res.statusCode})`));
+        return reject(new Error(`Failed to get \'${url}\' (${res.statusCode})`));
       }
       const fileStream = fs.createWriteStream(filepath);
       res.pipe(fileStream);
-      fileStream.on('finish', () => {
+      fileStream.on(\'finish\', () => {
         fileStream.close();
         resolve();
       });
-      fileStream.on('error', (err) => reject(err));
-    }).on('error', (err) => reject(err));
+      fileStream.on(\'error\', (err) => reject(err));
+    }).on(\'error\', (err) => reject(err));
   });
 }
 
@@ -57,7 +57,7 @@ async function sync() {
       let coverPath = "";
       const coverUrl = full.cover?.external?.url || full.cover?.file?.url || "";
       if (coverUrl) {
-        const coverFileName = `${slug}-cover${path.extname(coverUrl) || '.jpg'}`;
+        const coverFileName = `${slug}-cover${path.extname(coverUrl) || ".jpg"}`;
         coverPath = path.join("/images", coverFileName); // Hugo 访问路径
         const fullCoverPath = path.join(STATIC_IMG_DIR, coverFileName);
         try {
@@ -71,12 +71,12 @@ async function sync() {
 
       let iconValue = "";
       const iconType = full.icon?.type;
-      if (iconType === 'emoji') {
+      if (iconType === \'emoji\') {
         iconValue = full.icon.emoji;
-      } else if (iconType === 'external' || iconType === 'file') {
+      } else if (iconType === \'external\' || iconType === \'file\') {
         const iconUrl = full.icon?.external?.url || full.icon?.file?.url || "";
         if (iconUrl) {
-          const iconFileName = `${slug}-icon${path.extname(iconUrl) || '.png'}`;
+          const iconFileName = `${slug}-icon${path.extname(iconUrl) || ".png"}`;
           iconValue = path.join("/images", iconFileName); // Hugo 访问路径
           const fullIconPath = path.join(STATIC_IMG_DIR, iconFileName);
           try {
@@ -94,7 +94,7 @@ async function sync() {
                               (_m,id)=>`{{< youtube ${id} >}}`);
 
       const front = `---\n`
-                  + `title: "${title.replace(/"/g,\'\\"\')}"\n`
+                  + `title: "${title.replace(/"/g, \'\\\\"\')}"\n` // 修正了这里的转义
                   + `date: ${date}\n`
                   + `slug: "${slug}"\n`
                   + `tags: [${tags.map(t=>`"${t}"`).join(", ")}]\n`
@@ -111,5 +111,3 @@ async function sync() {
   console.log(`✅ 完成，共 ${total} 篇`);
 }
 sync().catch(e=>{console.error(e);process.exit(1);});
-
-
