@@ -29,12 +29,13 @@ jobs:
         uses: actions/setup-node@v4
         with: { node-version: 20 }
 
-      - name: Install npm dependencies        # ← 新名称
+      # .github/workflows/deploy.yml 关键段
+      - name: Install npm dependencies
         run: |
           npm install --no-save \
             '@notionhq/client@^2.3.0' \
             'notion-to-md@^2.4.0'     \
-            'p-limit@^5.0.0'          \
+            'p-limit@^6.2.0'          \
             'node-fetch@^3.3.2'
 
       - name: Sync Notion -> Markdown
@@ -42,7 +43,6 @@ jobs:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: |
-          npm install @notionhq/client notion-to-md
           node ./sync.mjs
 
       - name: Merge Blowfish theme overrides
