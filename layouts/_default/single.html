@@ -1,14 +1,17 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
 
+  {{/* 封面（若 cover 有值）*/}}
   {{ with .Params.cover }}
-    <img src="{{ . }}" alt="{{ $.Title }}" class="w-full rounded-xl mb-6" />
+    <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl mb-6" />
   {{ end }}
 
+  {{/* 标题 + Icon */}}
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
-      {{ if hasPrefix . "http" }}
-        <img src="{{ . }}" class="w-8 h-8" />
+      {{- /* 若是本地 images/ 路径 → 图档；否则视为 emoji */ -}}
+      {{ if hasPrefix . "images/" }}
+        <img src="{{ . | relURL }}" class="w-8 h-8" />
       {{ else }}
         <span class="text-3xl">{{ . }}</span>
       {{ end }}
