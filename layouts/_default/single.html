@@ -1,17 +1,15 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
 
-  {{/* 封面（Hero）——只有有 URL 时才输出 <img> */}}
   {{ with .Params.cover }}
     <img src="{{ . }}" alt="{{ $.Title }}" class="w-full rounded-xl mb-6" />
   {{ end }}
 
-  {{/* 标题 + Icon（emoji 或图片） */}}
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
-      {{ if hasPrefix . "http" }}         {{/* icon 是 URL */}}
+      {{ if hasPrefix . "http" }}
         <img src="{{ . }}" class="w-8 h-8" />
-      {{ else }}                          {{/* icon 是 emoji 字符 */}}
+      {{ else }}
         <span class="text-3xl">{{ . }}</span>
       {{ end }}
     {{ end }}
@@ -19,7 +17,6 @@
   </h1>
 
   <p class="text-sm opacity-70 mb-8">{{ .Date.Format "02 January 2006" }}</p>
-
   {{ .Content }}
 </article>
 {{ end }}
