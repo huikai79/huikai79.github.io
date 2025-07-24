@@ -1,10 +1,11 @@
 ---
 title: "如何活着"
-date: 2025-07-22
+date: "2025-07-22"
 slug: "bealife"
 tags: ["创业", "测试"]
 cover: "images/bealife-cover.jpg"
 icon: "images/bealife-icon.svg"
+images: ["images/bealife-cover.jpg"]
 ---
 
 你想创办一家新创公司吗？那你必须知道：如果你能避免死亡，就能致富。这听起来像笑话，但确实反映了多数新创公司的现况。

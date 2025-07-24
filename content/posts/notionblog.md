@@ -1,6 +1,6 @@
 ---
 title: "Notion Blog 的心路历程(第一版)"
-date: 2025-07-14
+date: "2025-07-14"
 slug: "notionblog"
 tags: ["技术学习", "测试"]
 ---
