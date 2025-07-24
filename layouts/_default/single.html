@@ -1,7 +1,7 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
 
-  {{/* 封面（Hero） */}}
+  {{/* 封面 */}}
   {{ with .Params.cover }}
     <figure class="mb-6">
       <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy" />
@@ -27,12 +27,17 @@
   {{ .Content | safeHTML }}
 </article>
 
-{{/* 作者卡片 */}}
+{{/* -------- 上一篇 / 下一篇 -------- */}}
+{{ if or (.Site.Params.article.showPagination) (not (isset .Site.Params.article "showPagination")) }}
+  {{ partial "pagination.html" . }}
+{{ end }}
+
+{{/* -------- 作者卡片 -------- */}}
 {{ if or (.Site.Params.article.showAuthor) (not (isset .Site.Params.article "showAuthor")) }}
   {{ partial "author.html" . }}
 {{ end }}
 
-{{/* 相关文章 */}}
+{{/* -------- 相关文章 -------- */}}
 {{ if or (.Site.Params.article.showRelated) (not (isset .Site.Params.article "showRelated")) }}
   {{ partial "related.html" . }}
 {{ end }}
