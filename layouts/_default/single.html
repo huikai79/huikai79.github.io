@@ -29,7 +29,7 @@
 
 {{/* -------- 上一篇 / 下一篇 -------- */}}
 {{ if or (.Site.Params.article.showPagination) (not (isset .Site.Params.article "showPagination")) }}
-  {{ partial "pagination.html" . }}
+  {{ partial "article/pagination.html" . }}
 {{ end }}
 
 {{/* -------- 作者卡片 -------- */}}
