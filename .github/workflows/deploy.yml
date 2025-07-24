@@ -88,8 +88,14 @@ jobs:
       - name: Restore custom single & pagination
         run: |
           mkdir -p layouts/_default layouts/partials/article
-          [ -f my_overrides/layouts/_default/single.html ] && cp -f my_overrides/layouts/_default/single.html layouts/_default/single.html
-          [ -f my_overrides/layouts/partials/article/pagination.html ] && cp -f my_overrides/layouts/partials/article/pagination.html layouts/partials/article/pagination.html
+
+          if [ -f my_overrides/layouts/_default/single.html ]; then
+            cp -f my_overrides/layouts/_default/single.html layouts/_default/single.html
+          fi
+
+          if [ -f my_overrides/layouts/partials/article/pagination.html ]; then
+            cp -f my_overrides/layouts/partials/article/pagination.html layouts/partials/article/pagination.html
+          fi
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
