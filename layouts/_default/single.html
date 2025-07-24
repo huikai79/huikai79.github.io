@@ -1,44 +1,28 @@
 {{ define "main" }}
-<main class="main-content">
+<article class="prose dark:prose-invert mx-auto">
 
-  {{ partial "breadcrumbs.html" . }}
+  {{/* ---------- 封面（Cover） ---------- */}}
+  {{ with .Params.cover }}
+    <figure class="mb-6">
+      <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy" />
+    </figure>
+  {{ end }}
 
-  <article class="article">
-
-    <header class="article-header">
-      {{ with .Params.cover }}
-        <img src="{{ . | relURL }}" alt="封面圖片" class="post-cover" />
+  {{/* ---------- 标题 + Icon ---------- */}}
+  <h1 class="flex items-center gap-2">
+    {{ with .Params.icon }}
+      {{ if hasPrefix . "images/" }}
+        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy" />
+      {{ else }}
+        <span class="text-3xl">{{ . }}</span>
       {{ end }}
-      {{ with .Params.icon }}
-        <img src="{{ . | relURL }}" alt="文章圖示" class="post-icon" />
-      {{ end }}
-
-      <h1 class="article-title">{{ .Title }}</h1>
-
-      {{ if .Params.showDate | default true }}
-        <div class="article-meta">
-          <time datetime="{{ .Date }}">{{ .Date.Format "02 January 2006" }}</time>
-          • {{ .ReadingTime }} min
-        </div>
-      {{ end }}
-    </header>
-
-    <div class="article-content">
-      {{ .Content }}
-    </div>
-
-    {{ if .Params.tags }}
-      <footer class="article-footer">
-        <ul class="article-tags">
-          {{ range .Params.tags }}
-            <li><a href="{{ "tags/" | relLangURL }}{{ . | urlize }}">{{ . }}</a></li>
-          {{ end }}
-        </ul>
-      </footer>
     {{ end }}
+    {{ .Title }}
+  </h1>
 
-    {{ partial "comments.html" . }}
+  <p class="text-sm opacity-70 mb-8">{{ .Date.Format "02 January 2006" }} · {{ .ReadingTime }} min</p>
 
-  </article>
-</main>
+  {{ .Content }}
+
+</article>
 {{ end }}
