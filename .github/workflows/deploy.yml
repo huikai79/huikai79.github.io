@@ -69,7 +69,7 @@ jobs:
           extended: true
 
       - name: Debug which templates are used
-        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
+        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints --minify
 
       - name: Build site
         run: hugo --minify
