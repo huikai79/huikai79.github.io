@@ -51,19 +51,12 @@ jobs:
 
       - name: Commit & push synced content
         run: |
-          git config user.name  "github-actions"
-          git config user.email "github-actions@github.com"
-
-          # 1. 拉远端最新的 main
-          git fetch origin main
-          git pull --rebase origin main || true   # 有冲突时会停下，rebase 保持历史线性
-
-          # 2. 添加并提交变更
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull --rebase origin main || true
           git add content/posts static/images
-          git commit -m "🔄 Sync from Notion ($(date -u +'%Y-%m-%dT%H:%M:%SZ'))" || echo "Nothing to commit"
-
-          # 3. 推送
-          git push origin HEAD:main
+          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))" || echo "Nothing to commit"
+          git push origin main || echo "Push skipped"
 
       - name: Merge Blowfish theme overrides (no overwrite)
         run: |
@@ -103,6 +96,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
+          
+      - name: Debug HTML output
+        run: |
+          head -n 80 public/posts/bealife/index.html || true
+          echo "---- size ----"
+          wc -c public/posts/bealife/index.html || true
 
   deploy:
     runs-on: ubuntu-latest
