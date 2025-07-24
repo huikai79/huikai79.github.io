@@ -83,12 +83,18 @@ jobs:
           hugo-version: 0.124.1
           extended: true
 
+      - name: Ensure new Hugo is first in PATH   # ← 加这段
+        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Check Hugo version                 # ← 可保留调试
+        run: hugo version
+
       - name: Debug which templates are used
-        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints --minify
+        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
 
       - name: Build site
         run: hugo --minify
-
+        
       - name: List generated js/css
         run: ls -R public/js public/css || true
 
