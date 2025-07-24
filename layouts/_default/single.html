@@ -41,7 +41,9 @@
     </div>
   </nav>
 
-  {{ partial "article/pagination.html" . }}
+  {{/* 如果还想显示作者/相关文章，可加下面两句 */}}
+  {{ partial "article/author.html" . }}
+  {{ partial "article/related.html" . }}
 
 </article>
 {{ end }}
