@@ -25,9 +25,15 @@
     {{ partial "article/author.html" . }}
   {{ end }}
 
-  {{ if site.Params.article.showRelated }}
-    {{ partial "related.html" . }}
+  {{/* ---- Related posts ---- */}}
+  {{ if and (isset .Site.Params.article "showRelated") .Site.Params.article.showRelated }}
+    {{ if partialExists "article/related.html" }}
+      {{ partial "article/related.html" . }}
+    {{ else if partialExists "related.html" }}
+      {{ partial "related.html" . }}
+    {{ end }}
   {{ end }}
+
 
   {{ partial "article/pagination.html" . }}
 
