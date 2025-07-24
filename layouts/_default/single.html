@@ -1,15 +1,16 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
+
   {{ with .Params.cover }}
     <figure class="mb-6">
-      <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy" />
+      <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy">
     </figure>
   {{ end }}
 
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
       {{ if hasPrefix . "images/" }}
-        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy" />
+        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
       {{ else }}
         <span class="text-3xl">{{ . }}</span>
       {{ end }}
@@ -21,21 +22,20 @@
 
   {{ .Content }}
 
-  {{ if site.Params.article.showAuthor }}
+  {{/* ---------- 作者卡片 ---------- */}}
+  {{ if templates.Exists "partials/article/author.html" }}
     {{ partial "article/author.html" . }}
   {{ end }}
 
-  {{/* ---- Related posts ---- */}}
-  {{ if and (isset .Site.Params.article "showRelated") .Site.Params.article.showRelated }}
-    {{ if partialExists "article/related.html" }}
-      {{ partial "article/related.html" . }}
-    {{ else if partialExists "related.html" }}
-      {{ partial "related.html" . }}
-    {{ end }}
+  {{/* ---------- 上一篇 / 下一篇 ---------- */}}
+  {{ if templates.Exists "partials/article/pagination.html" }}
+    {{ partial "article/pagination.html" . }}
   {{ end }}
 
-
-  {{ partial "article/pagination.html" . }}
+  {{/* ---------- Related Posts ---------- */}}
+  {{ if templates.Exists "partials/article/related.html" }}
+    {{ partial "article/related.html" . }}
+  {{ end }}
 
 </article>
 {{ end }}
