@@ -1,25 +1,44 @@
 {{ define "main" }}
-<article class="prose dark:prose-invert mx-auto">
+<main class="main-content">
 
-  {{/* 封面（若 cover 有值）*/}}
-  {{ with .Params.cover }}
-    <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl mb-6" />
-  {{ end }}
+  {{ partial "breadcrumbs.html" . }}
 
-  {{/* 标题 + Icon */}}
-  <h1 class="flex items-center gap-2">
-    {{ with .Params.icon }}
-      {{- /* 若是本地 images/ 路径 → 图档；否则视为 emoji */ -}}
-      {{ if hasPrefix . "images/" }}
-        <img src="{{ . | relURL }}" class="w-8 h-8" />
-      {{ else }}
-        <span class="text-3xl">{{ . }}</span>
+  <article class="article">
+
+    <header class="article-header">
+      {{ with .Params.cover }}
+        <img src="{{ . | relURL }}" alt="封面圖片" class="post-cover" />
       {{ end }}
-    {{ end }}
-    {{ .Title }}
-  </h1>
+      {{ with .Params.icon }}
+        <img src="{{ . | relURL }}" alt="文章圖示" class="post-icon" />
+      {{ end }}
 
-  <p class="text-sm opacity-70 mb-8">{{ .Date.Format "02 January 2006" }}</p>
-  {{ .Content }}
-</article>
+      <h1 class="article-title">{{ .Title }}</h1>
+
+      {{ if .Params.showDate | default true }}
+        <div class="article-meta">
+          <time datetime="{{ .Date }}">{{ .Date.Format "02 January 2006" }}</time>
+          • {{ .ReadingTime }} min
+        </div>
+      {{ end }}
+    </header>
+
+    <div class="article-content">
+      {{ .Content }}
+    </div>
+
+    {{ if .Params.tags }}
+      <footer class="article-footer">
+        <ul class="article-tags">
+          {{ range .Params.tags }}
+            <li><a href="{{ "tags/" | relLangURL }}{{ . | urlize }}">{{ . }}</a></li>
+          {{ end }}
+        </ul>
+      </footer>
+    {{ end }}
+
+    {{ partial "comments.html" . }}
+
+  </article>
+</main>
 {{ end }}
