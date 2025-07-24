@@ -105,20 +105,24 @@ async function sync() {
         );
 
       // -------- Front‑matter --------
+      const escape = (s = "") => s.replace(/"/g, '\\"');  // 简单转义
+
       const front = [
         "---",
-        `title: "${title.replace(/"/g, '\\"')}"`,
-        `date: ${date}`,
+        `title: "${escape(title)}"`,
+        `date: "${date}"`,
         `slug: "${slug}"`,
-        `tags: [${tags.map(t => `"${t}"`).join(", ")}]`,
+        `tags: [${tags.map(t => `"${escape(t)}"`).join(", ")}]`,
         coverField && `cover: "${coverField}"`,
         iconField  && `icon: "${iconField}"`,
+        coverField && `images: ["${coverField}"]`,
         "---",
         ""
       ].filter(Boolean).join("\n");
 
       const filePath = path.join(OUT_DIR, `${slug}.md`);
       await fs.writeFile(filePath, front + mdBody);
+      console.log("📄  Wrote", filePath);
       console.log("📄  Wrote", filePath);
     }
 
