@@ -46,6 +46,17 @@ jobs:
           echo "DB_ID=$NOTION_DATABASE_ID"   # ← 觀察輸出
           node ./sync.mjs
 
+      - name: 查看同步结果
+        run: ls -al content/posts && ls -al static/images
+
+      - name: Commit changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add content/posts static/images
+          git commit -m "🔄 Sync from Notion" || echo "Nothing to commit"
+          git push
+
       - name: Merge Blowfish theme overrides
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
