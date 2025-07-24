@@ -1,28 +1,31 @@
-<!-- >>> DEBUG: I am in _default/single.html <<< -->
-
 {{ define "main" }}
+<!-- DEBUG: my custom single.html is used -->
+
 <article class="prose dark:prose-invert mx-auto">
 
-  {{/* ---------- 封面（Cover） ---------- */}}
+  {{/* -------- 封面（Hero）--------- */}}
   {{ with .Params.cover }}
     <figure class="mb-6">
       <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy" />
     </figure>
   {{ end }}
 
-  {{/* ---------- 标题 + Icon ---------- */}}
+  {{/* -------- 标题 + Icon --------- */}}
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
-      {{ if hasPrefix . "images/" }}
-        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy" />
+      {{ $icon := . }}
+      {{ if hasPrefix $icon "images/" }}
+        <img src="{{ $icon | relURL }}" class="w-8 h-8" alt="icon" loading="lazy" />
       {{ else }}
-        <span class="text-3xl">{{ . }}</span>
+        <span class="text-3xl">{{ $icon }}</span>
       {{ end }}
     {{ end }}
     {{ .Title }}
   </h1>
 
-  <p class="text-sm opacity-70 mb-8">{{ .Date.Format "02 January 2006" }} · {{ .ReadingTime }} min</p>
+  <p class="text-sm opacity-70 mb-8">
+    {{ .Date.Format "02 January 2006" }} · {{ .ReadingTime }} min
+  </p>
 
   {{ .Content }}
 
