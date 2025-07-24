@@ -1,23 +1,20 @@
 {{ define "main" }}
-<!-- DEBUG: my custom single.html is used -->
-
 <article class="prose dark:prose-invert mx-auto">
 
-  {{/* -------- 封面（Hero）--------- */}}
+  {{/* 封面（Hero） */}}
   {{ with .Params.cover }}
     <figure class="mb-6">
       <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy" />
     </figure>
   {{ end }}
 
-  {{/* -------- 标题 + Icon --------- */}}
+  {{/* 标题 + Icon */}}
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
-      {{ $icon := . }}
-      {{ if hasPrefix $icon "images/" }}
-        <img src="{{ $icon | relURL }}" class="w-8 h-8" alt="icon" loading="lazy" />
+      {{ if hasPrefix . "images/" }}
+        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy" />
       {{ else }}
-        <span class="text-3xl">{{ $icon }}</span>
+        <span class="text-3xl">{{ . }}</span>
       {{ end }}
     {{ end }}
     {{ .Title }}
@@ -27,7 +24,17 @@
     {{ .Date.Format "02 January 2006" }} · {{ .ReadingTime }} min
   </p>
 
-  {{ .Content }}
-
+  {{ .Content | safeHTML }}
 </article>
+
+{{/* 作者卡片 */}}
+{{ if or (.Site.Params.article.showAuthor) (not (isset .Site.Params.article "showAuthor")) }}
+  {{ partial "author.html" . }}
+{{ end }}
+
+{{/* 相关文章 */}}
+{{ if or (.Site.Params.article.showRelated) (not (isset .Site.Params.article "showRelated")) }}
+  {{ partial "related.html" . }}
+{{ end }}
+
 {{ end }}
