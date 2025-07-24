@@ -57,14 +57,11 @@ jobs:
           git commit -m "🔄 Sync from Notion" || echo "Nothing to commit"
           git push
 
-      - name: Merge Blowfish theme overrides
+      - name: Merge Blowfish theme overrides (no overwrite)
         run: |
-          cp -rT themes/blowfish/layouts/ layouts/
-          cp -rT themes/blowfish/assets/  assets/
-
-      # 复制回我们的自定义文件（如果你把它放在 repo 的某个备份路径）
-      - name: Restore custom single
-        run: cp my_overrides/single.html layouts/_default/single.html
+          mkdir -p layouts assets
+          rsync -a --ignore-existing themes/blowfish/layouts/ layouts/
+          rsync -a --ignore-existing themes/blowfish/assets/  assets/
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
