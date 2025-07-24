@@ -1,1 +1,14 @@
+.post-cover {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.post-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+}
 
