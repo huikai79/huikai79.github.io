@@ -50,32 +50,19 @@ jobs:
         run: ls -al content/posts && ls -al static/images
 
       - name: Commit & push synced content
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
+          git config user.name  "github-actions"
+          git config user.email "github-actions@github.com"
 
-          # 配置提交者信息
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # 先同步远端 main（避免 push 被拒）
+          # 1. 拉远端最新的 main
           git fetch origin main
-          git pull --rebase origin main || true
+          git pull --rebase origin main || true   # 有冲突时会停下，rebase 保持历史线性
 
-          # 加入你要提交的目录
+          # 2. 添加并提交变更
           git add content/posts static/images
+          git commit -m "🔄 Sync from Notion ($(date -u +'%Y-%m-%dT%H:%M:%SZ'))" || echo "Nothing to commit"
 
-          # 如果没有变化就跳过提交
-          if git diff --cached --quiet; then
-            echo "Nothing to commit"
-            exit 0
-          fi
-
-          # 有变化就提交
-          git commit -m "🔄 Sync from Notion ($(date -u +'%Y-%m-%dT%H:%M:%SZ'))"
-
-          # 推上 main
+          # 3. 推送
           git push origin HEAD:main
 
       - name: Merge Blowfish theme overrides (no overwrite)
