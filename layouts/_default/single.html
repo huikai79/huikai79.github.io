@@ -41,9 +41,7 @@
     </div>
   </nav>
 
-  {{/* 作者与相关文章（Blowfish 自带的 partial，路径要对）*/}}
-  {{ partial "article/author.html" . }}
-  {{ partial "article/related.html" . }}
+  {{ partial "article/pagination.html" . }}
 
 </article>
 {{ end }}
