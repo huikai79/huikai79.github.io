@@ -49,13 +49,34 @@ jobs:
       - name: 查看同步结果
         run: ls -al content/posts && ls -al static/images
 
-      - name: Commit changes
+      - name: Commit & push synced content
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+          set -e
+
+          # 配置提交者信息
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 先同步远端 main（避免 push 被拒）
+          git fetch origin main
+          git pull --rebase origin main || true
+
+          # 加入你要提交的目录
           git add content/posts static/images
-          git commit -m "🔄 Sync from Notion" || echo "Nothing to commit"
-          git push
+
+          # 如果没有变化就跳过提交
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+
+          # 有变化就提交
+          git commit -m "🔄 Sync from Notion ($(date -u +'%Y-%m-%dT%H:%M:%SZ'))"
+
+          # 推上 main
+          git push origin HEAD:main
 
       - name: Merge Blowfish theme overrides (no overwrite)
         run: |
