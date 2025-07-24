@@ -57,6 +57,9 @@ jobs:
           git commit -m "🔄 Sync from Notion" || echo "Nothing to commit"
           git push
 
+      - name: Debug which templates are used
+        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
+
       - name: Merge Blowfish theme overrides
         run: |
           cp -rT themes/blowfish/layouts/ layouts/
