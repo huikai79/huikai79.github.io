@@ -1,32 +1,26 @@
 #!/usr/bin/env node
-/**
- * Sync Notion database → Hugo Markdown
- * - 下載 cover / icon 至 static/images
- * - 支援 YouTube 連結轉 Hugo shortcode
- * 需要環境變數：
- *   NOTION_TOKEN
- *   NOTION_DATABASE_ID  (32+4 UUID)
- */
-import { Client } from "@notionhq/client";
+
+import { Client }           from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
-import fs from "node:fs/promises";
-import path from "node:path";
-import fetch from "node-fetch";
-import pLimit from "p-limit";
+import fs                   from "node:fs/promises";
+import path                 from "node:path";
+import fetch                from "node-fetch";
+import pLimit               from "p-limit";
 
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const n2m = new NotionToMarkdown({ notionClient: notion });
+const notion   = new Client({ auth: process.env.NOTION_TOKEN });
+const n2m      = new NotionToMarkdown({ notionClient: notion });
 
-const DB_ID = process.env.NOTION_DATABASE_ID;
-const OUT_DIR = "content/posts";
-const IMG_DIR = "static/images";
-const filter = { property: "status", status: { equals: "Published" } };
-const dlLimit = pLimit(5);
+const DB_ID    = process.env.NOTION_DATABASE_ID;
+const OUT_DIR  = "content/posts";
+const IMG_DIR  = "static/images";
+const filter   = { property: "status", status: { equals: "Published" } };
+
+const dlLimit  = pLimit(5); // 同时最多下载 5 个文件
 
 async function download(url, dest) {
   await fs.mkdir(path.dirname(dest), { recursive: true });
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} ⟨${url}⟩`);
+  if (!res.ok) throw new Error(`下載失敗 HTTP ${res.status} ⟨${url}⟩`);
   await fs.writeFile(dest, Buffer.from(await res.arrayBuffer()));
 }
 
@@ -35,6 +29,7 @@ function safeSlug(s) {
 }
 
 async function sync() {
+  // 避免沒有內容時就清空資料夾
   const probe = await notion.databases.query({ database_id: DB_ID, filter, page_size: 1 });
   if (!probe.results.length) {
     console.error("⚠️  無 Published 文章，停止同步");
@@ -56,52 +51,52 @@ async function sync() {
       const p = brief.properties;
 
       const title = p.Title?.title[0]?.plain_text ?? "";
-      const slug = safeSlug(p.slug?.rich_text[0]?.plain_text ?? "");
-      const date = p.date?.date?.start ?? "";
-      const tags = p.tags?.multi_select.map(t => t.name) ?? [];
-      if (!title || !slug || !date) continue;
+      const slug  = safeSlug(p.slug?.rich_text[0]?.plain_text ?? "");
+      const date  = p.date?.date?.start ?? "";
+      const tags  = p.tags?.multi_select.map(t => t.name) ?? [];
 
-      /* ---------- 封面 ---------- */
-      let coverField = "";
-      if (full.cover?.type === "external") {
-        const coverUrl = full.cover.external.url;
-        if (coverUrl) {
-          const coverFile = `${slug}-cover${path.extname(new URL(coverUrl).pathname) || ".jpg"}`;
-          const coverDest = path.join(IMG_DIR, coverFile);
-          try {
-            await dlLimit(() => download(coverUrl, coverDest));
-            coverField = path.posix.join("images", coverFile);
-            console.log("🖼️  Saved cover", coverDest);
-          } catch (err) {
-            console.warn("⚠️  Cover download failed:", err.message);
-          }
-        }
-      } else if (full.cover) {
-        console.warn("⚠️  封面不是 external URL，請使用『Link』方式指定圖片：", full.cover.type);
+      if (!title || !slug || !date) {
+        console.warn("⏭️  缺必要欄位，略過頁面", title || brief.id);
+        continue;
       }
 
-      /* ---------- Icon ---------- */
+      // -------- Cover 下载 --------
+      let coverField = "";
+      const coverUrl = full.cover?.external?.url || full.cover?.file?.url || "";
+      if (coverUrl) {
+        const ext = path.extname(new URL(coverUrl).pathname) || ".jpg";
+        const file = `${slug}-cover${ext}`;
+        const dest = path.join(IMG_DIR, file);
+        try {
+          await dlLimit(() => download(coverUrl, dest));
+          coverField = path.posix.join("images", file);
+          console.log("🖼️  Saved cover", dest);
+        } catch (err) {
+          console.warn("⚠️  Cover fail:", err.message);
+        }
+      }
+
+      // -------- Icon 下载 --------
       let iconField = "";
       if (full.icon?.type === "emoji") {
         iconField = full.icon.emoji;
-      } else if (full.icon?.type === "external") {
-        const iconUrl = full.icon.external.url;
+      } else {
+        const iconUrl = full.icon?.external?.url || full.icon?.file?.url || "";
         if (iconUrl) {
-          const iconFile = `${slug}-icon${path.extname(new URL(iconUrl).pathname) || ".png"}`;
-          const iconDest = path.join(IMG_DIR, iconFile);
+          const ext = path.extname(new URL(iconUrl).pathname) || ".png";
+          const file = `${slug}-icon${ext}`;
+          const dest = path.join(IMG_DIR, file);
           try {
-            await dlLimit(() => download(iconUrl, iconDest));
-            iconField = path.posix.join("images", iconFile);
-            console.log("✨  Saved icon", iconDest);
+            await dlLimit(() => download(iconUrl, dest));
+            iconField = path.posix.join("images", file);
+            console.log("✨  Saved icon", dest);
           } catch (err) {
-            console.warn("⚠️  Icon download failed:", err.message);
+            console.warn("⚠️  Icon fail:", err.message);
           }
         }
-      } else if (full.icon) {
-        console.warn("⚠️  Icon 不是 external URL，無法下載：", full.icon.type);
       }
 
-      /* ---------- 內容轉 Markdown ---------- */
+      // -------- Markdown 内容 --------
       const mdBlocks = await n2m.pageToMarkdown(brief.id);
       let mdBody = n2m.toMarkdownString(mdBlocks).parent
         .replace(
@@ -109,7 +104,7 @@ async function sync() {
           (_m, id) => `{{< youtube ${id} >}}`
         );
 
-      /* ---------- Front‑matter ---------- */
+      // -------- Front‑matter --------
       const front = [
         "---",
         `title: "${title.replace(/"/g, '\\"')}"`,
@@ -117,7 +112,7 @@ async function sync() {
         `slug: "${slug}"`,
         `tags: [${tags.map(t => `"${t}"`).join(", ")}]`,
         coverField && `cover: "${coverField}"`,
-        iconField && `icon: "${iconField}"`,
+        iconField  && `icon: "${iconField}"`,
         "---",
         ""
       ].filter(Boolean).join("\n");
@@ -134,6 +129,7 @@ async function sync() {
 }
 
 sync().catch(err => {
-  console.error("❌", err);
+  console.error("❌ 同步失敗：", err.message);
   process.exit(1);
 });
+
