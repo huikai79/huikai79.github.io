@@ -97,3 +97,6 @@ a[href="#the-top"]{
   pointer-events: auto !important;
   cursor: pointer !important;
 }
+
+/* 防止主题在 body 上施加左右 padding 影响滚动条视觉位置 */
+body { padding-left: 0 !important; padding-right: 0 !important; }
