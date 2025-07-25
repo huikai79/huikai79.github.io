@@ -13,17 +13,17 @@
 .post-cover{
   display: block;
   width: 100vw;               /* 与容器一致 */
-  height: 16vh;               /* 小屏高度 */
+  height: 13vh;               /* 小屏高度 */
   object-fit: cover;          /* 居中裁剪 */
   object-position: center;    /* 以中心为裁剪基准 */
 }
 
 /* 中等与大屏提高可视高度 */
 @media (min-width: 768px){
-  .post-cover{ height: 28vh; }
+  .post-cover{ height: 19vh; }
 }
 @media (min-width: 1024px){
-  .post-cover{ height: 36vh; }
+  .post-cover{ height: 26vh; }
 }
 
 /* 可选：圆角/阴影，如需就放开
