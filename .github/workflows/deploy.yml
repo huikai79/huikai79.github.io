@@ -41,9 +41,10 @@ jobs:
       - name: Sync Notion -> Markdown
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}  # 必須確定這個 secret 名對
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          IMG_DIR: static/images          # ← 新增这一行
         run: |
-          echo "DB_ID=$NOTION_DATABASE_ID"   # ← 觀察輸出
+          echo "DB_ID=$NOTION_DATABASE_ID"
           node ./sync.mjs
 
       - name: 查看同步结果
