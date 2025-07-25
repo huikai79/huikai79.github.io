@@ -90,3 +90,10 @@ a[href="#top"]:hover,
 a[href="#the-top"]:hover{
   filter: brightness(1.08) !important;
 }
+
+/* 确保回到顶部按钮始终可点 */
+a[href="#top"],
+a[href="#the-top"]{
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
