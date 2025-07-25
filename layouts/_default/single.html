@@ -1,15 +1,15 @@
 {{ define "main" }}
 
-{{/* ---------- Cover Hero ---------- */}}
-{{- $raw := .Resources.GetMatch "cover*" -}}
-{{- if $raw }}
-  {{ $src := $raw.Fill "1920x1080 center" }}  {{/* 一张最大图就够 */}}
-  <div class="w-screen md:max-w-none overflow-hidden">
-    <img src="{{ $src.RelPermalink }}"
-         alt="{{ $.Title }}"
-         class="w-full h-[40vh] object-cover"   
-         loading="lazy">
-  </div>
+{{- /* ---------- Cover Hero ---------- */ -}}
+{{- with .Resources.GetMatch "cover*" }}
+  {{ $src := .Fill "1920x1080 center" }}
+  <figure class="mb-6 overflow-hidden rounded-xl">
+    <img
+      src="{{ $src.RelPermalink }}"
+      alt="{{ $.Title }}"
+      class="w-full h-[40vh] md:h-[50vh] object-cover"
+      loading="lazy">
+  </figure>
 {{- end }}
 
 <article class="prose dark:prose-invert mx-auto mt-8">
