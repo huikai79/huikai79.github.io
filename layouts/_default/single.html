@@ -1,17 +1,16 @@
 {{ define "main" }}
 
 {{/* ---------- Cover Hero ---------- */}}
-{{- with .Resources.GetMatch "cover*" }}
-  {{ $src := .Fill "1920x1080 center" }}
-  <!-- 负 margin 抵消主题 body/main 的 px-6 / sm:px-14 / lg:px-32 -->
-  <div class="post-hero -mx-6 sm:-mx-14 lg:-mx-32">
+{{ with .Resources.GetMatch "cover*" }}
+  {{ $src := .Fill "2400x1350 center" }}  {{/* 16:9，大图一次到位 */}}
+  <div class="w-screen md:max-w-none overflow-hidden post-hero">
     <img
       src="{{ $src.RelPermalink }}"
       alt="{{ $.Title }}"
       class="post-cover"
       loading="lazy">
   </div>
-{{- end }}
+{{ end }}
 
 <article class="prose dark:prose-invert mx-auto mt-8">
 
