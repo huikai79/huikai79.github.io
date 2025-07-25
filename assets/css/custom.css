@@ -1,9 +1,9 @@
-/* ===== Full‑bleed hero ===== */
-.post-hero{
-  /* 让子元素可以超出 body 的 max-width，但不出现横向滚动条 */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+/* 强制移除所有 margin/padding */
+.post-hero {
+  width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  padding: 0 !important;
   overflow: hidden;
 }
 @supports (width: 100dvw){
@@ -35,15 +35,9 @@ html, body { overflow-x: hidden !important; }
 .content pre,
 .content code { white-space: pre-wrap; word-break: break-word; }
 
-/* ===== 右侧 12px 遮罩与回到顶部按钮 ===== */
-/* 彻底让 top-scroller 不占位、不拦截点击 */
-#top-scroller{
-  position: static !important;
-  inset: auto !important;
-  width: 0 !important;
-  height: 0 !important;
-  pointer-events: none !important;
-  display: contents !important;  /* 里面的 <a> 仍要渲染 */
+#top-scroller {
+  /* 千万不要设 display: contents，也不要 pointer-events: none */
+  /* 请直接移除这整段 CSS 定义！让主题自己控制这个组件 */
 }
 
 /* 固定到右下角的“回到顶部”按钮 */
