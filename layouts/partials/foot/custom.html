@@ -1,17 +1,11 @@
 <script>
-(function () {
-  function scrollToTop(e) {
-    if (e) e.preventDefault();
-    var el = document.scrollingElement || document.documentElement || document.body;
-    el.scrollTo({ top: 0, behavior: 'smooth' });
-    return false;
-  }
-
-  // 捕获模式兜底：无论按钮被放在哪，都能拦截到
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href="#the-top"], a[href="#top"]');
-    if (!a) return;
-    scrollToTop(e);
-  }, true);
+(() => {
+  const btns = document.querySelectorAll('a[href="#top"], a[href="#the-top"]');
+  btns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, { passive: false });
+  });
 })();
 </script>
