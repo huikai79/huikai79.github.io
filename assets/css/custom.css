@@ -43,7 +43,7 @@ html, body { overflow-x: hidden !important; }
 /* 固定到右下角的“回到顶部”按钮 */
 a[href="#top"], a[href="#the-top"]{
   position: fixed !important;
-  right: 380px !important;
+  right: 290px !important;
   bottom: 280px !important;
   width: 44px !important;
   height: 44px !important;
