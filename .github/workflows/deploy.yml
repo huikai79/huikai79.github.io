@@ -39,15 +39,10 @@ jobs:
             'node-fetch@^3.3.2'
 
       - name: Sync Notion -> Markdown
-        env:                             # <<< 所有脚本要用到的变数
+        env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          IMG_DIR: static/images         # 只要在這裡宣告一次
-        run: |
-          echo "DB_ID=$NOTION_DATABASE_ID"
-          echo "IMG_DIR=$IMG_DIR"
-          node ./sync.mjs                # 這裏不用再 export 了
-
+        run: node ./sync.mjs
 
       - name: 查看同步结果
         run: ls -al content/posts && ls -al static/images
