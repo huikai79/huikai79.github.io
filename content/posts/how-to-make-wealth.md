@@ -26,3 +26,8 @@ icon: "💬"
 
 不要追求被动稳定，而要成为主动创造价值的节点。这种人也许不多，但他们是真正推动社会与技术进步的力量，也最可能在长期内，获得“连睡觉时也能继续变富”的回报。
 
+
+```javascript
+https://notebooklm.google.com/notebook/605f73c8-4627-418b-9bbd-cc607b13f4f8/audio
+```
+

@@ -1,5 +1,5 @@
 ---
-title: "Notion+ Github + Hugo 的好处"
+title: "Notion+Github+Hugo 的好处"
 date: "2025-07-17"
 slug: "ngh"
 tags: ["技术学习", "测试"]
