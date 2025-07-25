@@ -45,15 +45,18 @@ jobs:
         run: node ./sync.mjs
 
       - name: 查看同步结果
-        run: ls -al content/posts && ls -al static/images
+        run: |
+          echo "=== 文章 bundle 列表 ==="
+          find content/posts -maxdepth 2 -type f -name "index.md"
 
       - name: Commit & push synced content
         run: |
-          git config user.name github-actions
+          git config user.name  github-actions
           git config user.email github-actions@github.com
           git pull --rebase origin main || true
-          git add content/posts static/images
-          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))" || echo "Nothing to commit"
+          git add content/posts                    # 只提交文章目录
+          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))" \
+            || echo "Nothing to commit"
           git push origin main || echo "Push skipped"
 
       - name: Merge Blowfish theme overrides (no overwrite)
