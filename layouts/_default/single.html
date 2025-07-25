@@ -4,12 +4,12 @@
 {{ with .Resources.GetMatch "cover*" }}
   {{ $src := .Fill "1920x1080 center" }}
 
-  <!-- 负 margin 抵消 Blowfish 默认的 px‑6 / 14 / 32 -->
-  <div class="-mx-6 sm:-mx-14 lg:-mx-32 overflow-hidden">
+  <!-- 抵消主题左右 padding，且自己也设定高度 -->
+  <div class="-mx-6 sm:-mx-14 lg:-mx-32 h-[18vh] md:h-[28vh] overflow-hidden">
     <img
       src="{{ $src.RelPermalink }}"
       alt="{{ $.Title }}"
-      class="w-full h-[25vh] md:h-[45vh] object-cover"
+      class="w-full h-full object-cover"   <!-- 用 h-full
       loading="lazy" />
   </div>
 {{ end }}
