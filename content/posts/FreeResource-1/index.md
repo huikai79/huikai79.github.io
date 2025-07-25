@@ -3,9 +3,9 @@ title: "免费资源"
 date: "2025-07-22"
 slug: "FreeResource-1"
 tags: ["技术学习", "测试"]
-cover: "images/FreeResource-1-cover.jpg"
+cover: "cover.jpg"
 icon: "📁"
-images: ["images/FreeResource-1-cover.jpg"]
+images: ["cover.jpg"]
 ---
 {{< youtube X5mMR9bmngM >}}
 

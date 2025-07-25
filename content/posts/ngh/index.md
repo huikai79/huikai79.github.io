@@ -3,9 +3,9 @@ title: "Notion+Github+Hugo 的好处"
 date: "2025-07-17"
 slug: "ngh"
 tags: ["技术学习", "测试"]
-cover: "images/ngh-cover.jpg"
+cover: "cover.jpg"
 icon: "💜"
-images: ["images/ngh-cover.jpg"]
+images: ["cover.jpg"]
 ---
 以下内容以 Notion + GitHub + Hugo （简称 NGH 流程）为基准，概述运作机制、核心优缺点，并与「一般网站架设」（动态 CMS 或手刻静态站）对比。
 
