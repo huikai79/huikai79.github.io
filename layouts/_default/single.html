@@ -1,23 +1,29 @@
 {{ define "main" }}
 
-{{- with .Resources.GetMatch "cover*" }}
+{{/* ---------- Cover Hero ---------- */}}
+{{ with .Resources.GetMatch "cover*" }}
   {{ $src := .Fill "1920x1080 center" }}
-  <div class="w-screen max-w-none overflow-hidden">
-    <img src="{{ $src.RelPermalink }}"
-         alt="{{ $.Title }}"
-         class="block w-full h-[55vh] h-[60vh] object-cover"
-         loading="lazy">
+
+  <!-- 负 margin 抵消 Blowfish 默认的 px‑6 / 14 / 32 -->
+  <div class="-mx-6 sm:-mx-14 lg:-mx-32 overflow-hidden">
+    <img
+      src="{{ $src.RelPermalink }}"
+      alt="{{ $.Title }}"
+      class="w-full h-[45vh] md:h-[60vh] object-cover"
+      loading="lazy" />
   </div>
-{{- end }}
+{{ end }}
 
-<article class="prose dark:prose-invert mx-auto my-8">
+<article class="prose dark:prose-invert mx-auto mt-8">
 
-  <!-- 标题 + Icon -->
+  {{/* ---------- 标题 + Icon ---------- */}}
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
       {{ if hasPrefix . "images/" }}
-        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon">
-      {{ else }}<span class="text-3xl">{{ . }}</span>{{ end }}
+        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
+      {{ else }}
+        <span class="text-3xl">{{ . }}</span>
+      {{ end }}
     {{ end }}
     {{ .Title }}
   </h1>
@@ -28,9 +34,10 @@
 
   {{ .Content }}
 
-  {{ partial "article/author.html"    . | default "" }}
-  {{ partial "article/pagination.html" . | default "" }}
-  {{ partial "article/related.html"    . | default "" }}
+  {{/* 作者卡 / 上下篇 / Related */}}
+  {{ if templates.Exists "partials/article/author.html" }}{{ partial "article/author.html" . }}{{ end }}
+  {{ if templates.Exists "partials/article/pagination.html" }}{{ partial "article/pagination.html" . }}{{ end }}
+  {{ if templates.Exists "partials/article/related.html" }}{{ partial "article/related.html" . }}{{ end }}
 
 </article>
 {{ end }}
