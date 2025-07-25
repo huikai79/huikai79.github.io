@@ -11,8 +11,7 @@ const notion   = new Client({ auth: process.env.NOTION_TOKEN });
 const n2m      = new NotionToMarkdown({ notionClient: notion });
 
 const DB_ID    = process.env.NOTION_DATABASE_ID;
-const OUT_DIR  = "content/posts";
-const IMG_DIR  = "static/images";
+const OUT_DIR  = "content/posts";          // 根目录不变
 const filter   = { property: "status", status: { equals: "Published" } };
 
 const dlLimit  = pLimit(5); // 同时最多下载 5 个文件
@@ -60,16 +59,20 @@ async function sync() {
         continue;
       }
 
-      // -------- Cover 下载 --------
-      let coverField = "";
+      /* ---------- 封面 & 图示 ---------- */
+      // ❷ 先确定本篇文章要写到哪个 bundle 目录
+      const bundleDir = path.join(OUT_DIR, slug);
+      await fs.mkdir(bundleDir, { recursive: true });
+
+      let coverField = "";                 // 只写文件名，留给 Front‑matter
       const coverUrl = full.cover?.external?.url || full.cover?.file?.url || "";
       if (coverUrl) {
-        const ext = path.extname(new URL(coverUrl).pathname) || ".jpg";
+        const coverFile = `cover${path.extname(new URL(coverUrl).pathname) || ".jpg"}`;
         const file = `${slug}-cover${ext}`;
-        const dest = path.join(IMG_DIR, file);
+        const dest = path.join(bundleDir, coverFile);
         try {
           await dlLimit(() => download(coverUrl, dest));
-          coverField = path.posix.join("images", file);
+          coverField = coverFile;          // 写给 Front‑matter
           console.log("🖼️  Saved cover", dest);
         } catch (err) {
           console.warn("⚠️  Cover fail:", err.message);
@@ -83,12 +86,12 @@ async function sync() {
       } else {
         const iconUrl = full.icon?.external?.url || full.icon?.file?.url || "";
         if (iconUrl) {
-          const ext = path.extname(new URL(iconUrl).pathname) || ".png";
+          const iconFile = `icon${path.extname(new URL(iconUrl).pathname) || ".png"}`;
           const file = `${slug}-icon${ext}`;
-          const dest = path.join(IMG_DIR, file);
+          const dest = path.join(bundleDir, iconFile);
           try {
             await dlLimit(() => download(iconUrl, dest));
-            iconField = path.posix.join("images", file);
+            iconField = iconFile;
             console.log("✨  Saved icon", dest);
           } catch (err) {
             console.warn("⚠️  Icon fail:", err.message);
@@ -120,7 +123,7 @@ async function sync() {
         ""
       ].filter(Boolean).join("\n");
 
-      const filePath = path.join(OUT_DIR, `${slug}.md`);
+      const filePath = path.join(bundleDir, "index.md");   // ❸ 改写成 index.md
       await fs.writeFile(filePath, front + mdBody);
       console.log("📄  Wrote", filePath);
       console.log("📄  Wrote", filePath);
