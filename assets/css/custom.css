@@ -1,8 +1,8 @@
 /* 强制移除所有 margin/padding */
 .post-hero {
   width: 100vw !important;
-  margin-left: calc(50% - 5vw) !important;
-  margin-right: calc(50% - 5vw) !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
   padding: 0 !important;
   overflow: hidden;
 }
@@ -60,7 +60,7 @@ a[href="#top"], a[href="#the-top"]{
 }
 a[href="#top"]:hover,
 a[href="#the-top"]:hover{
-  filter: brightness(1.08) !important;
+  filter: brightness(1.09) !important;
 }
 
 /* 头像尺寸（如需） */
