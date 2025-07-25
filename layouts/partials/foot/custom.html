@@ -1,12 +1,11 @@
 <script>
-document.addEventListener('click', (e) => {
-  const a = e.target.closest('a[href="#top"], a[href="#the-top"]');
-  if (!a) return;
-  e.preventDefault();
-  try {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } catch (_) {
-    window.scrollTo(0, 0);
+document.addEventListener("DOMContentLoaded", function () {
+  const btn = document.querySelector('a[href="#top"]');
+  if (btn) {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 });
 </script>
