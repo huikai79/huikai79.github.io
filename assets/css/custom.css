@@ -17,12 +17,12 @@
 
 /* —— 封面尺寸 —— */
 .post-cover{
-  height: 45vh;               /* 默认高度 */
+  height: 16vh;               /* 默认高度 */
   object-fit: cover;
   object-position: center;
 }
-@media (min-width:768px){ .post-cover{ height: 60vh; } }
-@media (min-width:1024px){ .post-cover{ height: 70vh; } }
+@media (min-width:768px){ .post-cover{ height: 28vh; } }
+@media (min-width:1024px){ .post-cover{ height: 36vh; } }
 
 /* —— 彻底失效右侧 12px 占位条 —— */
 #top-scroller{
@@ -32,22 +32,6 @@
   height: 0 !important;
   pointer-events: none !important;
   display: contents !important;     /* 不再占布局宽度 */
-}
-
-/* 固定到右下角的按钮 */
-a[href="#top"], a[href="#the-top"]{
-  position: fixed !important;
-  right: 16px !important;
-  bottom: 32px !important;
-  width: 44px !important;
-  height: 44px !important;
-  margin: 0 !important;
-  border-radius: 9999px !important;
-  display: grid !important;
-  place-items: center !important;
-  z-index: 10000 !important;
-  pointer-events: auto !important;
-  cursor: pointer !important;
 }
 
 /* 任何偶发超宽都不要出现横向滚动条 */
@@ -65,8 +49,8 @@ html, body { overflow-x: hidden !important; }
 
 /* 头像 */
 .post-icon {
-  width: 46px;
-  height: 46px;
+  width: 45px;
+  height: 45px;
   margin-bottom: 1rem;
 }
 
@@ -83,7 +67,7 @@ html, body { overflow-x: hidden !important; }
 a[href="#top"],
 a[href="#the-top"]{
   position: fixed !important;
-  right: 38px !important;
+  right: 60px !important;
   bottom: 20px !important;
   width: 44px !important;
   height: 44px !important;
