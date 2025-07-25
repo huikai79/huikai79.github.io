@@ -2,7 +2,7 @@
 title: "寫作與演講"
 date: "2025-07-26"
 slug: "Writing-and-speaking"
-tags: ["好文推荐"]
+tags: ["好文推荐", "测试"]
 cover: "cover.jpg"
 icon: "🗣️"
 images: ["cover.jpg"]
