@@ -52,8 +52,8 @@ html, body { overflow-x: hidden !important; }
 
 /* 头像 */
 .post-icon {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   margin-bottom: 1rem;
 }
 
@@ -70,7 +70,7 @@ html, body { overflow-x: hidden !important; }
 a[href="#top"],
 a[href="#the-top"]{
   position: fixed !important;
-  right: 16px !important;
+  right: 38px !important;
   bottom: 20px !important;
   width: 44px !important;
   height: 44px !important;
