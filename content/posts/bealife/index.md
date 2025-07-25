@@ -4,7 +4,7 @@ date: "2025-07-22"
 slug: "bealife"
 tags: ["创业", "测试"]
 cover: "cover.jpg"
-icon: "icon.svg"
+icon: "☀️"
 images: ["cover.jpg"]
 ---
 
