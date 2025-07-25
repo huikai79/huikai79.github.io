@@ -1,8 +1,8 @@
 /* 强制移除所有 margin/padding */
 .post-hero {
   width: 100vw !important;
-  margin-left: calc(50% - 50vw) !important;
-  margin-right: calc(50% - 50vw) !important;
+  margin-left: calc(50% - 5vw) !important;
+  margin-right: calc(50% - 5vw) !important;
   padding: 0 !important;
   overflow: hidden;
 }
