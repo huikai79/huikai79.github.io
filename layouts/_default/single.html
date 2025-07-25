@@ -1,6 +1,30 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
 
+  {{/* 取得封面资源 */}}
+  {{ $raw := .Page.Resources.GetMatch (printf "*%s" .Params.cover) }}
+  {{ if not $raw }}
+    {{ $raw = resources.Get .Params.cover }}  {{/* 若放在 assets/ */}}
+  {{ end }}
+
+  {{/* 生成不同⼤⼩ */}}
+  {{ $sm  := $raw.Fill "800x450 center" }}
+  {{ $md  := $raw.Fill "1280x720 center" }}
+  {{ $lg  := $raw.Fill "1920x1080 center" }}
+
+    <figure class="mb-6 overflow-hidden rounded-xl">
+      <picture class="block">
+        <source media="(min-width: 1024px)" srcset="{{ $lg.RelPermalink }}" />
+        <source media="(min-width: 768px)"  srcset="{{ $md.RelPermalink }}" />
+        <img
+          src="{{ $sm.RelPermalink }}"
+          alt="{{ $.Title }}"
+          class="w-full h-[45vh] md:h-[55vh] lg:h-[65vh] object-cover"
+          loading="lazy"
+        />
+      </picture>
+    </figure>
+
   {{ with .Params.cover }}
     <figure class="mb-6">
       <img src="{{ . | relURL }}" alt="{{ $.Title }}" class="w-full rounded-xl" loading="lazy">
