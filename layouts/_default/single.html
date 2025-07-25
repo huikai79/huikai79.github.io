@@ -1,34 +1,28 @@
 {{ define "main" }}
-<article class="prose dark:prose-invert mx-auto">
 
-  {{/* ---- Cover ---------------------------------------------------------- */}}
-  {{- with .Resources.GetMatch "cover*" -}}
-    {{/* 16 : 9 裁剪三份（sm / md / lg）*/}}
-    {{ $sm := .Fill "800x450 center"   }}
-    {{ $md := .Fill "1280x720 center"  }}
-    {{ $lg := .Fill "1920x1080 center" }}
+{{/* ---------- Cover Hero ---------- */}}
+{{- $raw := .Resources.GetMatch "cover*" -}}
+{{- if $raw }}
+  {{ $src := $raw.Fill "1920x1080 center" }}  {{/* 一张最大图就够 */}}
+  <div class="w-screen md:max-w-none overflow-hidden">
+    <img  src="{{ $src.RelPermalink }}"
+          alt="{{ $.Title }}"
+          class="w-full aspect-video object-cover md:h-[60vh]"
+          loading="lazy">
+  </div>
+{{- end }}
 
-    <figure class="mb-6 overflow-hidden rounded-xl">
-      <picture class="block">
-        <source media="(min-width:1024px)" srcset="{{ $lg.RelPermalink }}">
-        <source media="(min-width:768px)"  srcset="{{ $md.RelPermalink }}">
-        <img  src="{{ $sm.RelPermalink }}"
-              alt="{{ $.Title }}"
-              class="w-full max-h-[80vh] object-cover"
-              loading="lazy">
-      </picture>
-    </figure>
-  {{- end }}
+<article class="prose dark:prose-invert mx-auto mt-8">
 
-  {{/* ---- 标题 + Icon ---------------------------------------------------- */}}
+  {{/* ---------- 标题 + Icon ---------- */}}
   <h1 class="flex items-center gap-2">
-    {{- with .Params.icon -}}
-      {{- if hasPrefix . "images/" -}}
+    {{ with .Params.icon }}
+      {{ if hasPrefix . "images/" }}
         <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
-      {{- else -}}
+      {{ else }}
         <span class="text-3xl">{{ . }}</span>
-      {{- end -}}
-    {{- end -}}
+      {{ end }}
+    {{ end }}
     {{ .Title }}
   </h1>
 
@@ -38,17 +32,17 @@
 
   {{ .Content }}
 
-  {{/* ----- Author card --------------------------------------------------- */}}
+  {{/* ---------- 作者卡 ---------- */}}
   {{ if templates.Exists "partials/article/author.html" }}
     {{ partial "article/author.html" . }}
   {{ end }}
 
-  {{/* ----- Prev / Next --------------------------------------------------- */}}
+  {{/* ---------- 上一篇 / 下一篇 ---------- */}}
   {{ if templates.Exists "partials/article/pagination.html" }}
     {{ partial "article/pagination.html" . }}
   {{ end }}
 
-  {{/* ----- Related ------------------------------------------------------- */}}
+  {{/* ---------- Related ---------- */}}
   {{ if templates.Exists "partials/article/related.html" }}
     {{ partial "article/related.html" . }}
   {{ end }}
