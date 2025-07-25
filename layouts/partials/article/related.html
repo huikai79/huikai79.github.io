@@ -1,12 +1,16 @@
-
 {{- $related := first 3 (site.RegularPages.Related .) -}}
 {{- if gt (len $related) 0 -}}
 <section class="mt-12">
   <h2 class="font-semibold mb-6">{{ i18n "related" | default "Related" }}</h2>
-  <div class="grid gap-6 md:grid-cols-3">
+  <ul class="space-y-4">
     {{ range $related }}
-      {{ partial "article/card.html" . }}
+      <li>
+        <a href="{{ .RelPermalink }}" class="text-primary-600 hover:underline">
+          {{ .Title }}
+        </a>
+        <span class="text-sm opacity-70 ml-2">{{ .Date.Format "02 January 2006" }}</span>
+      </li>
     {{ end }}
-  </div>
+  </ul>
 </section>
 {{- end -}}
