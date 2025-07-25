@@ -1,11 +1,12 @@
 <script>
-(() => {
-  const btns = document.querySelectorAll('a[href="#top"], a[href="#the-top"]');
-  btns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, { passive: false });
-  });
-})();
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href="#top"], a[href="#the-top"]');
+  if (!a) return;
+  e.preventDefault();
+  try {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (_) {
+    window.scrollTo(0, 0);
+  }
+});
 </script>
