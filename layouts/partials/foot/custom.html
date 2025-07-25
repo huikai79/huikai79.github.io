@@ -1,0 +1,24 @@
+<script>
+(function () {
+  function scrollToTop(e) {
+    if (e) e.preventDefault();
+    var el = document.scrollingElement || document.documentElement || document.body;
+    el.scrollTo({ top: 0, behavior: 'smooth' });
+    return false;
+  }
+
+  function bind() {
+    var btn = document.querySelector('a[href="#the-top"], a[href="#top"]');
+    if (btn) {
+      btn.addEventListener('click', scrollToTop, { passive: false });
+    }
+  }
+
+  // 主题会动态渲染，等 DOM ready 再绑定
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();
+</script>
