@@ -1,121 +1,113 @@
 #!/usr/bin/env node
-
-import { Client }           from "@notionhq/client";
+import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
-import fs                   from "node:fs/promises";
-import path                 from "node:path";
-import fetch                from "node-fetch";
-import pLimit               from "p-limit";
+import fs   from "node:fs/promises";
+import path from "node:path";
+import fetch from "node-fetch";
+import pLimit from "p-limit";
 
-const notion   = new Client({ auth: process.env.NOTION_TOKEN });
-const n2m      = new NotionToMarkdown({ notionClient: notion });
+/* ---------- 基本设定 ---------- */
+const notion = new Client({ auth: process.env.NOTION_TOKEN });
+const n2m    = new NotionToMarkdown({ notionClient: notion });
 
-const DB_ID    = process.env.NOTION_DATABASE_ID;
-const OUT_DIR  = "content/posts";          // 根目录不变
-const filter   = { property: "status", status: { equals: "Published" } };
+const DB_ID   = process.env.NOTION_DATABASE_ID;
+const OUT_DIR = "content/posts";                       // 固定
+const filter  = { property: "status", status: { equals: "Published" } };
+const dl      = pLimit(5);                             // 同时最多 5 个下载
 
-const dlLimit  = pLimit(5); // 同时最多下载 5 个文件
+/* ---------- 工具函数 ---------- */
+const safeSlug = s => (s ?? "").replace(/[^a-zA-Z0-9-_]/g, "-");
 
 async function download(url, dest) {
   await fs.mkdir(path.dirname(dest), { recursive: true });
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`下載失敗 HTTP ${res.status} ⟨${url}⟩`);
-  await fs.writeFile(dest, Buffer.from(await res.arrayBuffer()));
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status} ← ${url}`);
+  await fs.writeFile(dest, Buffer.from(await r.arrayBuffer()));
 }
 
-function safeSlug(s) {
-  return s.replace(/[^a-zA-Z0-9-_]/g, "-");
-}
-
+/* ---------- 主流程 ---------- */
 async function sync() {
-  // 避免沒有內容時就清空資料夾
+  /* 0. 若没有 Published 文章就直接退出 */
   const probe = await notion.databases.query({ database_id: DB_ID, filter, page_size: 1 });
   if (!probe.results.length) {
-    console.error("⚠️  無 Published 文章，停止同步");
-    process.exit(1);
+    console.error("⚠️  没有 Published 文章，停止同步");
+    process.exit(0);
   }
 
+  /* 1. 清空旧输出（只清 index.md 与其附件目录） */
   await fs.rm(OUT_DIR, { recursive: true, force: true });
-  await fs.rm(IMG_DIR, { recursive: true, force: true });
   await fs.mkdir(OUT_DIR, { recursive: true });
-  await fs.mkdir(IMG_DIR, { recursive: true });
 
+  /* 2. 分页抓取 Notion 数据库 */
   let cursor, total = 0;
   do {
-    const resp = await notion.databases.query({ database_id: DB_ID, filter, start_cursor: cursor, page_size: 100 });
+    const resp = await notion.databases.query({ database_id: DB_ID, filter, start_cursor: cursor });
     total += resp.results.length;
 
-    for (const brief of resp.results) {
-      const full = await notion.pages.retrieve({ page_id: brief.id });
-      const p = brief.properties;
+    for (const page of resp.results) {
+      const full = await notion.pages.retrieve({ page_id: page.id });
+      const p    = page.properties;
 
+      /* 2‑1 基本字段 */
       const title = p.Title?.title[0]?.plain_text ?? "";
-      const slug  = safeSlug(p.slug?.rich_text[0]?.plain_text ?? "");
-      const date  = p.date?.date?.start ?? "";
+      const slug  = safeSlug(p.slug?.rich_text[0]?.plain_text);
+      const date  = p.date?.date?.start;
       const tags  = p.tags?.multi_select.map(t => t.name) ?? [];
 
       if (!title || !slug || !date) {
-        console.warn("⏭️  缺必要欄位，略過頁面", title || brief.id);
+        console.warn("⏭️  缺必要欄位，跳过", title || page.id);
         continue;
       }
 
-      /* ---------- 封面 & 图示 ---------- */
-      // ❷ 先确定本篇文章要写到哪个 bundle 目录
-      const bundleDir = path.join(OUT_DIR, slug);
-      await fs.mkdir(bundleDir, { recursive: true });
+      /* 2‑2 文章目录（bundle） */
+      const bundle = path.join(OUT_DIR, slug);
+      await fs.mkdir(bundle, { recursive: true });
 
-      let coverField = "";                 // 只写文件名，留给 Front‑matter
+      /* 2‑3 处理封面 */
+      let coverField = "";
       const coverUrl = full.cover?.external?.url || full.cover?.file?.url || "";
       if (coverUrl) {
-        const coverFile = `cover${path.extname(new URL(coverUrl).pathname) || ".jpg"}`;
-        const file = `${slug}-cover${ext}`;
-        const dest = path.join(bundleDir, coverFile);
+        const ext  = path.extname(new URL(coverUrl).pathname) || ".jpg";
+        const file = `cover${ext}`;
         try {
-          await dlLimit(() => download(coverUrl, dest));
-          coverField = coverFile;          // 写给 Front‑matter
-          console.log("🖼️  Saved cover", dest);
-        } catch (err) {
-          console.warn("⚠️  Cover fail:", err.message);
-        }
+          await dl(() => download(coverUrl, path.join(bundle, file)));
+          coverField = file;
+          console.log("🖼️  封面", file);
+        } catch (e) { console.warn("⚠️  封面下载失败", e.message); }
       }
 
-      // -------- Icon 下载 --------
+      /* 2‑4 处理 icon */
       let iconField = "";
       if (full.icon?.type === "emoji") {
         iconField = full.icon.emoji;
       } else {
         const iconUrl = full.icon?.external?.url || full.icon?.file?.url || "";
         if (iconUrl) {
-          const iconFile = `icon${path.extname(new URL(iconUrl).pathname) || ".png"}`;
-          const file = `${slug}-icon${ext}`;
-          const dest = path.join(bundleDir, iconFile);
+          const ext  = path.extname(new URL(iconUrl).pathname) || ".png";
+          const file = `icon${ext}`;
           try {
-            await dlLimit(() => download(iconUrl, dest));
-            iconField = iconFile;
-            console.log("✨  Saved icon", dest);
-          } catch (err) {
-            console.warn("⚠️  Icon fail:", err.message);
-          }
+            await dl(() => download(iconUrl, path.join(bundle, file)));
+            iconField = file;
+            console.log("✨  图标", file);
+          } catch (e) { console.warn("⚠️  图标下载失败", e.message); }
         }
       }
 
-      // -------- Markdown 内容 --------
-      const mdBlocks = await n2m.pageToMarkdown(brief.id);
-      let mdBody = n2m.toMarkdownString(mdBlocks).parent
-        .replace(
-          /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})\S*/g,
-          (_m, id) => `{{< youtube ${id} >}}`
-        );
+      /* 2‑5 Notion → Markdown */
+      const mdBlocks = await n2m.pageToMarkdown(page.id);
+      const mdBody   = n2m.toMarkdownString(mdBlocks).parent.replace(
+        /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})\S*/g,
+        (_m, id) => `{{< youtube ${id} >}}`
+      );
 
-      // -------- Front‑matter --------
-      const escape = (s = "") => s.replace(/"/g, '\\"');  // 简单转义
-
+      /* 2‑6 Front‑matter */
+      const esc = s => s?.replace(/"/g, '\\"');
       const front = [
         "---",
-        `title: "${escape(title)}"`,
+        `title: "${esc(title)}"`,
         `date: "${date}"`,
         `slug: "${slug}"`,
-        `tags: [${tags.map(t => `"${escape(t)}"`).join(", ")}]`,
+        `tags: [${tags.map(t => `"${esc(t)}"`).join(", ")}]`,
         coverField && `cover: "${coverField}"`,
         iconField  && `icon: "${iconField}"`,
         coverField && `images: ["${coverField}"]`,
@@ -123,10 +115,9 @@ async function sync() {
         ""
       ].filter(Boolean).join("\n");
 
-      const filePath = path.join(bundleDir, "index.md");   // ❸ 改写成 index.md
-      await fs.writeFile(filePath, front + mdBody);
-      console.log("📄  Wrote", filePath);
-      console.log("📄  Wrote", filePath);
+      /* 2‑7 写文件（bundle 里必须叫 index.md） */
+      await fs.writeFile(path.join(bundle, "index.md"), front + mdBody);
+      console.log("📄  写入", `${slug}/index.md`);
     }
 
     cursor = resp.has_more ? resp.next_cursor : undefined;
@@ -135,8 +126,4 @@ async function sync() {
   console.log(`✅ 完成，共 ${total} 篇`);
 }
 
-sync().catch(err => {
-  console.error("❌ 同步失敗：", err.message);
-  process.exit(1);
-});
-
+sync().catch(e => { console.error("❌", e); process.exit(1); });
