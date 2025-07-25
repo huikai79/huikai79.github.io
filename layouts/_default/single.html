@@ -1,59 +1,54 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
 
-  {{/* -------------------- 封面（Page Bundle 内的 cover.*） -------------------- */}}
-  {{ with .Resources.GetMatch "cover*" }}
-    {{ $sm := .Fill "800x450 center" }}
-    {{ $md := .Fill "1280x720 center" }}
+  {{/* ---- Cover ---------------------------------------------------------- */}}
+  {{- with .Resources.GetMatch "cover*" -}}
+    {{/* 16 : 9 裁剪三份（sm / md / lg）*/}}
+    {{ $sm := .Fill "800x450 center"   }}
+    {{ $md := .Fill "1280x720 center"  }}
     {{ $lg := .Fill "1920x1080 center" }}
+
     <figure class="mb-6 overflow-hidden rounded-xl">
       <picture class="block">
         <source media="(min-width:1024px)" srcset="{{ $lg.RelPermalink }}">
         <source media="(min-width:768px)"  srcset="{{ $md.RelPermalink }}">
-        <img
-          src="{{ $sm.RelPermalink }}"
-          alt="{{ $.Title }}"
-          class="w-full h-[45vh] md:h-[55vh] lg:h-[65vh] object-cover"
-          loading="lazy">
+        <img  src="{{ $sm.RelPermalink }}"
+              alt="{{ $.Title }}"
+              class="w-full max-h-[80vh] object-cover"
+              loading="lazy">
       </picture>
     </figure>
-  {{ end }}
+  {{- end }}
 
-  {{/* -------------------- 标题 + Icon -------------------- */}}
+  {{/* ---- 标题 + Icon ---------------------------------------------------- */}}
   <h1 class="flex items-center gap-2">
-    {{- $iconParam := .Params.icon -}}
-    {{- $iconRes   := .Resources.GetMatch "icon*" -}}
-
-    {{- if $iconParam }}
-      {{- if hasPrefix $iconParam "images/" }}
-        <img src="{{ $iconParam | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
-      {{- else }}
-        <span class="text-3xl">{{ $iconParam }}</span>
-      {{- end }}
-    {{- else if $iconRes }}
-      <img src="{{ $iconRes.RelPermalink }}" class="w-8 h-8" alt="icon" loading="lazy">
-    {{- end }}
-
+    {{- with .Params.icon -}}
+      {{- if hasPrefix . "images/" -}}
+        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
+      {{- else -}}
+        <span class="text-3xl">{{ . }}</span>
+      {{- end -}}
+    {{- end -}}
     {{ .Title }}
   </h1>
 
   <p class="text-sm opacity-70 mb-8">
-    {{ .Date.Format "02 January 2006" }} · {{ .ReadingTime }} min
+    {{ .Date.Format "02 January 2006" }} · {{ .ReadingTime }} min
   </p>
 
   {{ .Content }}
 
-  {{/* -------------------- 作者卡片 -------------------- */}}
+  {{/* ----- Author card --------------------------------------------------- */}}
   {{ if templates.Exists "partials/article/author.html" }}
     {{ partial "article/author.html" . }}
   {{ end }}
 
-  {{/* -------------------- 上一篇 / 下一篇 -------------------- */}}
+  {{/* ----- Prev / Next --------------------------------------------------- */}}
   {{ if templates.Exists "partials/article/pagination.html" }}
     {{ partial "article/pagination.html" . }}
   {{ end }}
 
-  {{/* -------------------- 相关文章 -------------------- */}}
+  {{/* ----- Related ------------------------------------------------------- */}}
   {{ if templates.Exists "partials/article/related.html" }}
     {{ partial "article/related.html" . }}
   {{ end }}
