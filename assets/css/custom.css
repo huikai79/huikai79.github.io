@@ -1,74 +1,57 @@
-/* 覆盖全宽但不产生超宽 */
+/* =========================
+   Cover Hero（不产生水平滚动）
+   ========================= */
+
+/* 只负责裁剪与隐藏溢出；全宽交给模板中的 -mx-* 处理 */
 .post-hero{
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
   overflow: hidden;
 }
 
-/* 支持动态视口宽度时，使用 100dvw 准确覆盖 */
-@supports (width: 100dvw){
-  .post-hero{
-    width: 100dvw;
-    margin-left: calc(50% - 50dvw);
-    margin-right: calc(50% - 50dvw);
-  }
-}
-
-/* —— 封面尺寸 —— */
+/* 封面图：铺满并裁剪，按断点调整可视高度 */
 .post-cover{
-  height: 16vh;               /* 默认高度 */
+  display: block;
+  width: 100%;
+  height: 10vh;               /* 手机 */
   object-fit: cover;
   object-position: center;
 }
-@media (min-width:768px){ .post-cover{ height: 28vh; } }
-@media (min-width:1024px){ .post-cover{ height: 36vh; } }
+@media (min-width:768px){  .post-cover{ height: 18vh; } }   /* 平板 */
+@media (min-width:1024px){ .post-cover{ height: 28vh; } }   /* 桌面 */
 
-/* —— 彻底失效右侧 12px 占位条 —— */
+/* 兜底：任何偶发超宽都不要出现横向滚动条 */
+html, body { overflow-x: hidden !important; }
+
+/* 防止长内容把页面撑宽（代码块/表格等） */
+.content pre,
+.content code,
+.content table { max-width: 100%; }
+.content pre,
+.content code { white-space: pre-wrap; word-break: break-word; }
+
+/* 让段落也不易产生溢出 */
+.prose { overflow-wrap: anywhere; }
+
+/* 头像大小（可按需） */
+.post-icon { width: 48px; height: 48px; margin-bottom: 1rem; }
+
+/* =========================
+   去除右侧 12px 透明滚动辅助条
+   ========================= */
 #top-scroller{
   position: static !important;
   inset: auto !important;
   width: 0 !important;
   height: 0 !important;
   pointer-events: none !important;
-  display: contents !important;     /* 不再占布局宽度 */
+  display: contents !important; /* 不占布局盒，内部锚点仍可显示 */
 }
 
-/* 任何偶发超宽都不要出现横向滚动条 */
-html, body { overflow-x: hidden !important; }
-
-/* 防止长内容把页面撑宽 */
-.content pre,
-.content code,
-.content table { max-width: 100%; }
-.content pre,
-.content code   { white-space: pre-wrap; word-break: break-word; }
-
-/* 可选：让文字也更不容易撑宽 */
-.prose { overflow-wrap: anywhere; }
-
-/* 头像 */
-.post-icon {
-  width: 45px;
-  height: 45px;
-  margin-bottom: 1rem;
-}
-
-/* 彻底消除右侧 12px 透明遮罩带 */
-#top-scroller{
-  width: 0 !important;
-  right: 0 !important;
-  left: auto !important;
-  pointer-events: none !important;
-  display: contents !important;   /* 不要用 display:none，里面的锚点还要显示 */
-}
-
-/* 将回到顶部按钮固定到右下角，并压过主题原样式 */
+/* 固定右下角的回到顶部按钮，覆盖主题原样式 */
 a[href="#top"],
 a[href="#the-top"]{
   position: fixed !important;
-  right: 60px !important;
-  bottom: 20px !important;
+  right: 72px !important;
+  bottom: 32px !important;
   width: 44px !important;
   height: 44px !important;
   margin: 0 !important;
@@ -76,24 +59,12 @@ a[href="#the-top"]{
   display: grid !important;
   place-items: center !important;
   z-index: 10000 !important;
-
-  background: var(--color-primary, #2563eb) !important;
-  color: #fff !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
-  text-decoration: none !important;
-}
-
-a[href="#top"]:hover,
-a[href="#the-top"]:hover{
-  filter: brightness(1.08) !important;
-}
-
-/* 确保回到顶部按钮始终可点 */
-a[href="#top"],
-a[href="#the-top"]{
   pointer-events: auto !important;
   cursor: pointer !important;
 }
 
-/* 防止主题在 body 上施加左右 padding 影响滚动条视觉位置 */
-body { padding-left: 0 !important; padding-right: 0 !important; }
+/* 主题会设置颜色，这里只微调悬停亮度（可选） */
+a[href="#top"]:hover,
+a[href="#the-top"]:hover{
+  filter: brightness(1.08) !important;
+}
