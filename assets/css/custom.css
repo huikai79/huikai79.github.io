@@ -15,29 +15,42 @@
   }
 }
 
-/* 封面图：铺满且裁剪 */
+/* —— 封面尺寸 —— */
 .post-cover{
-  display: block;
-  width: 100vw;
-  height: 13vh;                 /* 小屏 */
+  height: 45vh;               /* 默认高度 */
   object-fit: cover;
   object-position: center;
-  max-width: none;              /* 避免父级 max-width 影响 */
+}
+@media (min-width:768px){ .post-cover{ height: 60vh; } }
+@media (min-width:1024px){ .post-cover{ height: 70vh; } }
+
+/* —— 彻底失效右侧 12px 占位条 —— */
+#top-scroller{
+  position: static !important;
+  inset: auto !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+  display: contents !important;     /* 不再占布局宽度 */
 }
 
-@supports (width: 100dvw){
-  .post-cover{ width: 100dvw; }
+/* 固定到右下角的按钮 */
+a[href="#top"], a[href="#the-top"]{
+  position: fixed !important;
+  right: 16px !important;
+  bottom: 32px !important;
+  width: 44px !important;
+  height: 44px !important;
+  margin: 0 !important;
+  border-radius: 9999px !important;
+  display: grid !important;
+  place-items: center !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
-/* 中等与大屏提高可视高度 */
-@media (min-width: 768px){
-  .post-cover{ height: 19vh; }
-}
-@media (min-width: 1024px){
-  .post-cover{ height: 26vh; }
-}
-
-/* 兜底：任何偶发的超宽都不显示横向滚动条（保留一次写法即可） */
+/* 任何偶发超宽都不要出现横向滚动条 */
 html, body { overflow-x: hidden !important; }
 
 /* 防止长内容把页面撑宽 */
