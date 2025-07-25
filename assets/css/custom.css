@@ -43,8 +43,8 @@ html, body { overflow-x: hidden !important; }
 /* 固定到右下角的“回到顶部”按钮 */
 a[href="#top"], a[href="#the-top"]{
   position: fixed !important;
-  right: 80px !important;
-  bottom: 280px !important;
+  right: 580px !important;
+  bottom: 580px !important;
   width: 44px !important;
   height: 44px !important;
   margin: 0 !important;
@@ -64,4 +64,4 @@ a[href="#the-top"]:hover{
 }
 
 /* 头像尺寸（如需） */
-.post-icon{ width:45px; height:45px; margin-bottom:1rem; }
+.post-icon{ width:46px; height:46px; margin-bottom:1rem; }
