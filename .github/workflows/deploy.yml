@@ -42,9 +42,10 @@ jobs:
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          IMG_DIR: static/images          # ← 新增这一行
+          IMG_DIR:            static/images      # ← 一定要跟 NOTION_* 平行缩进
         run: |
           echo "DB_ID=$NOTION_DATABASE_ID"
+          echo "IMG_DIR=$IMG_DIR"
           node ./sync.mjs
 
       - name: 查看同步结果
