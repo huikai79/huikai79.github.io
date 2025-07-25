@@ -25,15 +25,15 @@ html, body {
 .post-cover {
   display: block;
   width: 100%;
-  height: 16vh;
+  height: 15vh;
   object-fit: cover;
   object-position: center;
 }
 @media (min-width: 768px) {
-  .post-cover { height: 28vh; }
+  .post-cover { height: 24vh; }
 }
 @media (min-width: 1024px) {
-  .post-cover { height: 36vh; }
+  .post-cover { height: 30vh; }
 }
 
 /* ----------------- 回到顶部按钮样式优化 ----------------- */
@@ -43,13 +43,13 @@ a[href="#the-top"] {
   position: fixed !important;
   right: 293px !important;
   bottom: 24px !important;
-  width: 40px !important;
-  height: 40px !important;
+  width: 39px !important;
+  height: 39px !important;
   border-radius: 9999px !important;
   display: grid !important;
   place-items: center !important;
   background: var(--color-primary, #2563eb) !important;
-  color: #fff !important;
+  color: #fee !important;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
   z-index: 9999 !important;
   cursor: pointer !important;
