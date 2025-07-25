@@ -57,6 +57,7 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showHero = true
   showAllPosts = false
   cardView = true
+  cardViewScreenWidth = false
   layoutBackgroundBlur = true
   disableHeroImageFilter = false
 
@@ -85,7 +86,7 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showReadingTime = true
   showTableOfContents = false
   showRelatedContent = true
-  relatedContentLimit = 3
+  relatedContentLimit = 5
   showTaxonomies = false # use showTaxonomies OR showCategoryOnly, not both
   showCategoryOnly = false # use showTaxonomies OR showCategoryOnly, not both
   showAuthorsBadges = false
