@@ -3,16 +3,30 @@
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  overflow: hidden;           /* 防止内部元素再溢出 */
+  overflow: hidden;
+}
+
+/* 支持动态视口宽度时，使用 100dvw 准确覆盖 */
+@supports (width: 100dvw){
+  .post-hero{
+    width: 100dvw;
+    margin-left: calc(50% - 50dvw);
+    margin-right: calc(50% - 50dvw);
+  }
 }
 
 /* 封面图：铺满且裁剪 */
 .post-cover{
   display: block;
-  width: 100vw;               /* 与容器一致 */
-  height: 13vh;               /* 小屏高度 */
-  object-fit: cover;          /* 居中裁剪 */
-  object-position: center;    /* 以中心为裁剪基准 */
+  width: 100vw;
+  height: 13vh;                 /* 小屏 */
+  object-fit: cover;
+  object-position: center;
+  max-width: none;              /* 避免父级 max-width 影响 */
+}
+
+@supports (width: 100dvw){
+  .post-cover{ width: 100dvw; }
 }
 
 /* 中等与大屏提高可视高度 */
@@ -23,60 +37,56 @@
   .post-cover{ height: 26vh; }
 }
 
-/* 可选：圆角/阴影，如需就放开
-.post-hero { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
-*/
+/* 兜底：任何偶发的超宽都不显示横向滚动条（保留一次写法即可） */
+html, body { overflow-x: hidden !important; }
 
-/* 兜底：任何偶发的 1px 超宽都不显示横向滚动条 */
-html, body { overflow-x: hidden; }
-
-/* 移除 Blowfish 右侧 12px 覆盖带，滚动条贴边 */
-#top-scroller{
-  width: 0 !important;
-  right: 0 !important;
-  left: auto !important;
-  pointer-events: none !important; /* 覆盖层彻底失效，避免挡点 */
-}
-
-/* 防止长内容把页面撑宽（可选，但推荐） */
+/* 防止长内容把页面撑宽 */
 .content pre,
 .content code,
-.content table {
-  max-width: 100%;
-}
+.content table { max-width: 100%; }
 .content pre,
-.content code {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+.content code   { white-space: pre-wrap; word-break: break-word; }
 
+/* 可选：让文字也更不容易撑宽 */
+.prose { overflow-wrap: anywhere; }
+
+/* 头像 */
 .post-icon {
   width: 48px;
   height: 48px;
   margin-bottom: 1rem;
 }
 
-/* 统一把锚点 #top / #the-top 变成悬浮按钮 */
+/* 彻底消除右侧 12px 透明遮罩带 */
+#top-scroller{
+  width: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  pointer-events: none !important;
+  display: contents !important;   /* 不要用 display:none，里面的锚点还要显示 */
+}
+
+/* 将回到顶部按钮固定到右下角，并压过主题原样式 */
 a[href="#top"],
 a[href="#the-top"]{
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
-  display: grid;
-  place-items: center;
-  text-decoration: none !important;
-  background: var(--color-primary, #2563eb);
+  position: fixed !important;
+  right: 16px !important;
+  bottom: 20px !important;
+  width: 44px !important;
+  height: 44px !important;
+  margin: 0 !important;
+  border-radius: 9999px !important;
+  display: grid !important;
+  place-items: center !important;
+  z-index: 10000 !important;
+
+  background: var(--color-primary, #2563eb) !important;
   color: #fff !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,.18);
-  z-index: 1100;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
+  text-decoration: none !important;
 }
 
-/* 悬停稍微亮一点 */
 a[href="#top"]:hover,
 a[href="#the-top"]:hover{
-  filter: brightness(1.1);
+  filter: brightness(1.08) !important;
 }
-
