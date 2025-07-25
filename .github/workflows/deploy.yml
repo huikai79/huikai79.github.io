@@ -39,14 +39,15 @@ jobs:
             'node-fetch@^3.3.2'
 
       - name: Sync Notion -> Markdown
+        # 这里保持和 run 同一缩进层级
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          IMG_DIR:            static/images      # ← 一定要跟 NOTION_* 平行缩进
-        run: |
-          echo "DB_ID=$NOTION_DATABASE_ID"
-          echo "IMG_DIR=$IMG_DIR"
-          node ./sync.mjs
+          IMG_DIR:            static/images      # ← 关键行
+          run: |
+            export IMG_DIR=static/images
+            echo "IMG_DIR=$IMG_DIR"        # 可删
+            node ./sync.mjs
 
       - name: 查看同步结果
         run: ls -al content/posts && ls -al static/images
