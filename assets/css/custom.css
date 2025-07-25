@@ -30,6 +30,14 @@
 /* 兜底：任何偶发的 1px 超宽都不显示横向滚动条 */
 html, body { overflow-x: hidden; }
 
+/* 移除 Blowfish 右侧 12px 覆盖带，滚动条贴边 */
+#top-scroller{
+  width: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  pointer-events: none !important; /* 覆盖层彻底失效，避免挡点 */
+}
+
 /* 防止长内容把页面撑宽（可选，但推荐） */
 .content pre,
 .content code,
@@ -47,3 +55,28 @@ html, body { overflow-x: hidden; }
   height: 48px;
   margin-bottom: 1rem;
 }
+
+/* 统一把锚点 #top / #the-top 变成悬浮按钮 */
+a[href="#top"],
+a[href="#the-top"]{
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  text-decoration: none !important;
+  background: var(--color-primary, #2563eb);
+  color: #fff !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  z-index: 1100;
+}
+
+/* 悬停稍微亮一点 */
+a[href="#top"]:hover,
+a[href="#the-top"]:hover{
+  filter: brightness(1.1);
+}
+
