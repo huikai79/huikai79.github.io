@@ -43,10 +43,10 @@ html, body { overflow-x: hidden !important; }
 /* 固定到右下角的“回到顶部”按钮 */
 a[href="#top"], a[href="#the-top"]{
   position: fixed !important;
-  right: 292px !important;
+  right: 293px !important;
   bottom: 180px !important;
-  width: 42px !important;
-  height: 42px !important;
+  width: 40px !important;
+  height: 40px !important;
   margin: 0 !important;
   border-radius: 9999px !important;
   display: grid !important;
@@ -55,7 +55,7 @@ a[href="#top"], a[href="#the-top"]{
   pointer-events: auto !important;
   cursor: pointer !important;
   background: var(--color-primary, #2563eb) !important;
-  color: #fff !important;
+  color: #ffe !important;
   box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
 }
 a[href="#top"]:hover,
