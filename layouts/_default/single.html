@@ -2,9 +2,14 @@
 
 {{/* ---------- Cover Hero ---------- */}}
 {{- with .Resources.GetMatch "cover*" }}
-  {{ $src := .Fill "2400x1350 center" }}   {{/* 生成一张足够大的裁剪图 */}}
-  <div class="post-hero">
-    <img src="{{ $src.RelPermalink }}" alt="{{ $.Title }}" class="post-cover" loading="lazy">
+  {{ $src := .Fill "1920x1080 center" }}
+  <!-- 抵消 Blowfish 的 px-6 / 14 / 32，避免左右留白，同时不产生横向滚动 -->
+  <div class="-mx-6 sm:-mx-14 lg:-mx-32 overflow-hidden post-hero">
+    <img
+      src="{{ $src.RelPermalink }}"
+      alt="{{ $.Title }}"
+      class="block w-full post-cover"
+      loading="lazy">
   </div>
 {{- end }}
 
