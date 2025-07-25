@@ -1,14 +1,12 @@
 {{ define "main" }}
 
-{{/* ---------- Cover Hero（裁一张 1920x1080，宽度锁定 100vw） ---------- */}}
 {{- with .Resources.GetMatch "cover*" }}
   {{ $src := .Fill "1920x1080 center" }}
   <div class="w-screen max-w-none overflow-hidden">
-    <img
-      src="{{ $src.RelPermalink }}"
-      alt="{{ $.Title }}"
-      class="w-full h-[45vh] md:h-[60vh] object-cover"
-      loading="lazy">
+    <img src="{{ $src.RelPermalink }}"
+         alt="{{ $.Title }}"
+         class="block w-full h-[55vh] h-[60vh] object-cover"
+         loading="lazy">
   </div>
 {{- end }}
 
