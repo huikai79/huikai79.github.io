@@ -1,47 +1,39 @@
 {{ define "main" }}
 <article class="prose dark:prose-invert mx-auto">
 
-  {{/* ---------- 封面（可选） ---------- */}}
-  {{ $coverPath := .Params.cover }}
-  {{ if $coverPath }}
-    {{/* 先尝试 Page Bundle（content/posts/slug/cover.xxx）*/}}
-    {{ $raw := .Page.Resources.GetMatch (printf "*%s" $coverPath) }}
-
-    {{/* 若失败再从 assets/ 或 static/ 读取 */}}
-    {{ if not $raw }}
-      {{ $raw = resources.Get $coverPath }}
-    {{ end }}
-
-    {{/* 真的找到了就做裁剪；否则整段跳过 */}}
-    {{ if $raw }}
-      {{ $sm := $raw.Fill "800x450 center"   }}
-      {{ $md := $raw.Fill "1280x720 center"  }}
-      {{ $lg := $raw.Fill "1920x1080 center" }}
-
-      <figure class="mb-6 overflow-hidden rounded-xl">
-        <picture class="block">
-          <source media="(min-width: 1024px)" srcset="{{ $lg.RelPermalink }}" />
-          <source media="(min-width: 768px)"  srcset="{{ $md.RelPermalink }}" />
-          <img
-            src="{{ $sm.RelPermalink }}"
-            alt="{{ $.Title }}"
-            class="w-full h-[45vh] md:h-[55vh] lg:h-[65vh] object-cover"
-            loading="lazy"
-          />
-        </picture>
-      </figure>
-    {{ end }}
+  {{/* -------------------- 封面（Page Bundle 内的 cover.*） -------------------- */}}
+  {{ with .Resources.GetMatch "cover*" }}
+    {{ $sm := .Fill "800x450 center" }}
+    {{ $md := .Fill "1280x720 center" }}
+    {{ $lg := .Fill "1920x1080 center" }}
+    <figure class="mb-6 overflow-hidden rounded-xl">
+      <picture class="block">
+        <source media="(min-width:1024px)" srcset="{{ $lg.RelPermalink }}">
+        <source media="(min-width:768px)"  srcset="{{ $md.RelPermalink }}">
+        <img
+          src="{{ $sm.RelPermalink }}"
+          alt="{{ $.Title }}"
+          class="w-full h-[45vh] md:h-[55vh] lg:h-[65vh] object-cover"
+          loading="lazy">
+      </picture>
+    </figure>
   {{ end }}
 
-  {{/* ---------- 标题 + Icon ---------- */}}
+  {{/* -------------------- 标题 + Icon -------------------- */}}
   <h1 class="flex items-center gap-2">
-    {{ with .Params.icon }}
-      {{ if hasPrefix . "images/" }}
-        <img src="{{ . | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
-      {{ else }}
-        <span class="text-3xl">{{ . }}</span>
-      {{ end }}
-    {{ end }}
+    {{- $iconParam := .Params.icon -}}
+    {{- $iconRes   := .Resources.GetMatch "icon*" -}}
+
+    {{- if $iconParam }}
+      {{- if hasPrefix $iconParam "images/" }}
+        <img src="{{ $iconParam | relURL }}" class="w-8 h-8" alt="icon" loading="lazy">
+      {{- else }}
+        <span class="text-3xl">{{ $iconParam }}</span>
+      {{- end }}
+    {{- else if $iconRes }}
+      <img src="{{ $iconRes.RelPermalink }}" class="w-8 h-8" alt="icon" loading="lazy">
+    {{- end }}
+
     {{ .Title }}
   </h1>
 
@@ -51,17 +43,17 @@
 
   {{ .Content }}
 
-  {{/* ---------- 作者卡 ---------- */}}
+  {{/* -------------------- 作者卡片 -------------------- */}}
   {{ if templates.Exists "partials/article/author.html" }}
     {{ partial "article/author.html" . }}
   {{ end }}
 
-  {{/* ---------- 上一篇 / 下一篇 ---------- */}}
+  {{/* -------------------- 上一篇 / 下一篇 -------------------- */}}
   {{ if templates.Exists "partials/article/pagination.html" }}
     {{ partial "article/pagination.html" . }}
   {{ end }}
 
-  {{/* ---------- Related Posts ---------- */}}
+  {{/* -------------------- 相关文章 -------------------- */}}
   {{ if templates.Exists "partials/article/related.html" }}
     {{ partial "article/related.html" . }}
   {{ end }}
