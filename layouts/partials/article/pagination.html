@@ -1,12 +1,14 @@
-<nav class="flex justify-between mt-13 text-sm opacity-70">
-  <div>
-    {{ with .PrevInSection }}
-      ← <a href="{{ .RelPermalink }}">{{ .Title }}</a>
-    {{ end }}
-  </div>
-  <div>
-    {{ with .NextInSection }}
-      <a href="{{ .RelPermalink }}">{{ .Title }}</a> →
-    {{ end }}
-  </div>
-</nav>
+<div class="max-w-3xl mx-auto px-4">
+  <nav class="flex justify-between mt-13 text-sm opacity-70">
+    <div>
+      {{ with .PrevInSection }}
+        ← <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+      {{ end }}
+    </div>
+    <div>
+      {{ with .NextInSection }}
+        <a href="{{ .RelPermalink }}">{{ .Title }}</a> →
+      {{ end }}
+    </div>
+  </nav>
+</div>
