@@ -1,5 +1,5 @@
 ---
-title: "改写与不该写"
+title: "该写与不该写"
 date: "2025-07-26"
 slug: "Writes-and-Write-Nots"
 tags: ["好文推荐"]

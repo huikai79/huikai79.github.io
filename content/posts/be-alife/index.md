@@ -1,7 +1,7 @@
 ---
 title: "如何活着"
 date: "2025-07-22"
-slug: "bealife"
+slug: "be-alife"
 tags: ["创业", "测试"]
 cover: "cover.jpg"
 icon: "☀️"
