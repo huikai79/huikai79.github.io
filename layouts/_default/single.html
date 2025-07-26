@@ -12,6 +12,11 @@
   </div>
 {{ end }}
 
+<!-- single.html 中 -->
+<div class="post-hero -mx-6 sm:-mx-14 lg:-mx-32">
+  <img src="{{ $src.RelPermalink }}" class="post-cover" alt="{{ .Title }}" loading="lazy">
+</div>
+
 <article class="prose dark:prose-invert mx-auto mt-8">
 
   {{/* ---------- 标题 + Icon ---------- */}}
