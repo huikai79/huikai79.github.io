@@ -109,8 +109,8 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   orderByWeight = false
   groupByYear = true
   cardView = true
-  cardViewScreenWidth = false
-  constrainItemsWidth = false
+  cardViewScreenWidth = true
+  constrainItemsWidth = true
 
 [sitemap]
   excludedKinds = ["taxonomy", "term"]
