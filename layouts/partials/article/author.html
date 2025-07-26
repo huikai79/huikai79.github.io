@@ -1,47 +1,17 @@
-{{ $disableImageOptimization := .Site.Params.disableImageOptimization | default false }}
-<div class="flex author">
-  {{ with .Site.Params.Author.image }}
-    {{ $authorImage := "" }}
-    {{ if or (strings.HasPrefix . "http:") (strings.HasPrefix . "https:") }}
-      {{ $authorImage = resources.GetRemote . }}
-    {{ else }}
-      {{ $authorImage = resources.Get . }}
-    {{ end }}
-    {{ if $authorImage }}
-      {{ if not $disableImageOptimization }}
-        {{ $authorImage = $authorImage.Fill "192x192" }}
-      {{ end }}
-      <img
-        class="!mt-0 !mb-0 h-24 w-24 rounded-full ltr:mr-4 rtl:ml-4"
-        width="96"
-        height="96"
-        alt="{{ $.Site.Params.Author.name | default " Author" }}"
-        src="{{ $authorImage.RelPermalink }}">
-    {{ else }}
-      {{ $authorImage := resources.GetRemote . }}
-      {{ if not $disableImageOptimization }}
-        {{ $authorImage = $authorImage.Fill "192x192" }}
-      {{ end }}
-      <img
-        class="!mt-0 !mb-0 h-24 w-24 rounded-full ltr:mr-4 rtl:ml-4"
-        width="96"
-        height="96"
-        alt="{{ $.Site.Params.Author.name | default " Author" }}"
-        src="{{ $authorImage.RelPermalink }}">
-    {{ end }}
-  {{ end }}
-  <div class="place-self-center">
-    {{ with .Site.Params.Author.name | markdownify }}
-      <div class="text-[0.6rem] uppercase leading-3 text-neutral-500 dark:text-neutral-400">
-        {{ i18n "author.byline_title" | markdownify }}
+<div class="mt-16 mb-12 border-t border-gray-600 pt-8">
+  <div class="flex items-center gap-6">
+    <!-- Avatar -->
+    <img src="/images/author.png" alt="Author Avatar" class="w-20 h-20 rounded-full border-4 border-yellow-500 shadow-md">
+
+    <!-- Info -->
+    <div>
+      <div class="text-sm text-gray-400 uppercase font-bold">AUTHOR</div>
+      <div class="text-xl font-semibold text-white">庄辉恺</div>
+      <div class="text-sm text-gray-300 mb-2">A little bit about me</div>
+      <div class="flex gap-3 text-gray-400 text-xl">
+        <a href="https://github.com/huikai79" target="_blank" class="hover:text-white">🐱</a>
+        <a href="mailto:hi@huikai.com" class="hover:text-white">✉️</a>
       </div>
-      <div class="font-semibold leading-6 text-neutral-800 dark:text-neutral-300">
-        {{ . }}
-      </div>
-    {{ end }}
-    {{ with .Site.Params.Author.bio | markdownify }}
-      <div class="text-sm text-neutral-700 dark:text-neutral-400">{{ . }}</div>
-    {{ end }}
-    <div class="text-2xl sm:text-lg">{{ partialCached "author-links.html" . }}</div>
+    </div>
   </div>
 </div>
