@@ -97,7 +97,7 @@ a[href="#the-top"]:hover {
 .post-author,
 .related,
 .pagination {
-  max-width: 68ch !important;   /* 或用 100ch/50rem 看视觉效果 */
+  max-width: 50ch !important;   /* 或用 100ch/50rem 看视觉效果 */
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
