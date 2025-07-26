@@ -83,7 +83,7 @@ a[href="#the-top"]:hover {
 /* ----------------- 可选：文字不换行时也避免超宽 ----------------- */
 .prose {
   overflow-wrap: anywhere;
-  max-width: 80ch
+  max-width: 68ch
 }
 
 /* 统一文章底部元素宽度与间距 */
