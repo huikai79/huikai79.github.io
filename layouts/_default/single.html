@@ -1,25 +1,18 @@
 {{ define "main" }}
 
-{{/* ---------- Cover Hero ---------- */}}
-{{ with .Resources.GetMatch "cover*" }}
-  {{ $src := .Fill "2400x1350 center" }}  {{/* 16:9，大图一次到位 */}}
-  <div class="w-screen md:max-w-none overflow-hidden post-hero">
+{{ $raw := .Resources.GetMatch "cover*" }}
+{{ if $raw }}
+  {{ $src := $raw.Fill "1920x1080 center" }}
+  <div class="post-hero -mx-6 sm:-mx-14 lg:-mx-32">
     <img
       src="{{ $src.RelPermalink }}"
-      alt="{{ $.Title }}"
+      alt="{{ .Title }}"
       class="post-cover"
       loading="lazy">
   </div>
 {{ end }}
 
-<!-- single.html 中 -->
-<div class="post-hero -mx-6 sm:-mx-14 lg:-mx-32">
-  <img src="{{ $src.RelPermalink }}" class="post-cover" alt="{{ .Title }}" loading="lazy">
-</div>
-
 <article class="prose dark:prose-invert mx-auto mt-8">
-
-  {{/* ---------- 标题 + Icon ---------- */}}
   <h1 class="flex items-center gap-2">
     {{ with .Params.icon }}
       {{ if hasPrefix . "images/" }}
@@ -36,11 +29,6 @@
   </p>
 
   {{ .Content }}
-
-  {{/* 作者卡 / 上下篇 / Related */}}
-  {{ if templates.Exists "partials/article/author.html" }}{{ partial "article/author.html" . }}{{ end }}
-  {{ if templates.Exists "partials/article/pagination.html" }}{{ partial "article/pagination.html" . }}{{ end }}
-  {{ if templates.Exists "partials/article/related.html" }}{{ partial "article/related.html" . }}{{ end }}
-
 </article>
+
 {{ end }}
