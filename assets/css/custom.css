@@ -59,7 +59,7 @@ a[href="#the-top"]:hover {
   filter: brightness(1.08);
 }
 
-/* ----------------- 内容安全宽度 ----------------- */
+/* ----------------- Markdown 内容区块限制 ----------------- */
 .content pre,
 .content code,
 .content table {
@@ -90,19 +90,9 @@ a[href="#the-top"]:hover {
   overflow-wrap: anywhere;
 }
 
-/* ----------------- 底部区块（作者、上下篇、相关文章） ----------------- */
-/* 匹配 Tailwind 所产生的实际 class */
+/* ----------------- 底部区块统一宽度（上下篇／Related／旧 class） ----------------- */
 .max-w-3xl,
-.max-w-3xl.mx-auto {
-  max-width: 80ch !important;
-  width: 100% !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* 若使用原主题 class 也一并涵盖（保险） */
+.max-w-3xl.mx-auto,
 .article-author,
 .article-footer .pagination,
 .related-articles {
@@ -114,7 +104,7 @@ a[href="#the-top"]:hover {
   padding-right: 1rem;
 }
 
-/* 美化作者区块 - 覆盖 Tailwind max-w-3xl 限制 */
+/* ----------------- 作者卡片区块（语义化写法） ----------------- */
 .author-card {
   max-width: 80ch !important;
   width: 100%;
@@ -124,17 +114,14 @@ a[href="#the-top"]:hover {
   padding-right: 1rem;
   align-items: center;
   gap: 1.25rem;
+  display: flex;
+  flex-direction: column; /* 默认手机为 column */
+  text-align: center;
 }
 
 @media (min-width: 768px) {
   .author-card {
-    flex-direction: row;
+    flex-direction: row;  /* 桌面为横向排列 */
+    text-align: left;
   }
 }
-@media (max-width: 767px) {
-  .author-card {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
