@@ -3,7 +3,7 @@
 {{ $raw := .Resources.GetMatch "cover*" }}
 {{ if $raw }}
   {{ $src := $raw.Fill "1920x1080 center" }}
-  <div class="post-hero -mx-6 sm:-mx-14 lg:-mx-32">
+  <div class="post-hero">
     <img
       src="{{ $src.RelPermalink }}"
       alt="{{ .Title }}"
