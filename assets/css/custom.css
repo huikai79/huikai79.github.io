@@ -94,6 +94,18 @@ a[href="#the-top"]:hover {
   padding-right: 1rem;
 }
 
+/* 强制拉宽文章底部所有区块 */
+.article-author,
+.article-footer .pagination,
+.related-articles {
+  max-width: 80ch !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+
 /* ----------------- 可选：文字不换行时也避免超宽 ----------------- */
 .prose {
   overflow-wrap: anywhere;
