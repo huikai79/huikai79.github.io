@@ -113,3 +113,28 @@ a[href="#the-top"]:hover {
   padding-left: 1rem;
   padding-right: 1rem;
 }
+
+/* ----------------- 美化作者区块 ----------------- */
+.author-card {
+  max-width: 80ch !important;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* 在手机上垂直堆叠，桌面并排（已写入 HTML class） */
+@media (min-width: 768px) {
+  .author-card {
+    flex-direction: row;
+  }
+}
+@media (max-width: 767px) {
+  .author-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
