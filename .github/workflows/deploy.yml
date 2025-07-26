@@ -64,6 +64,13 @@ jobs:
           mkdir -p layouts assets
           rsync -a --ignore-existing themes/blowfish/layouts/ layouts/
           rsync -a --ignore-existing themes/blowfish/assets/ assets/
+
+      - name: Restore article partials if missing
+        run: |
+          mkdir -p layouts/partials/article
+          cp -n themes/blowfish/layouts/partials/article/author-bottom.html layouts/partials/article/ || true
+          cp -n themes/blowfish/layouts/partials/article/pagination.html layouts/partials/article/ || true
+          cp -n themes/blowfish/layouts/partials/article/related.html layouts/partials/article/ || true
           
       # 在这一步之后，确保把自己的文件再放回去（如果你把自定义文件放 my_overrides）：
       - name: Restore custom single & pagination
