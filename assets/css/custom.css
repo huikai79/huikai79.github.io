@@ -78,8 +78,7 @@ a[href="#the-top"]:hover {
   margin-bottom: 1rem;
 }
 
-/* ----------------- 正文与底部区块统一宽度 ----------------- */
-/* 主文内容区块 */
+/* ----------------- 正文区块统一最大宽度 ----------------- */
 .single article,
 .content,
 .prose {
@@ -91,13 +90,24 @@ a[href="#the-top"]:hover {
   overflow-wrap: anywhere;
 }
 
-/* 底部区块（作者、上下篇、相关文章） */
-.article-footer > .flex,         /* 作者区块 */
-.article-footer .pagination,    /* 上下篇导航 */
-.related-articles,              /* 相关文章 */
-.article-author {               /* 若有额外使用这个类也一并涵盖 */
+/* ----------------- 底部区块（作者、上下篇、相关文章） ----------------- */
+/* 匹配 Tailwind 所产生的实际 class */
+.max-w-3xl,
+.max-w-3xl.mx-auto {
   max-width: 80ch !important;
-  width: 100%;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* 若使用原主题 class 也一并涵盖（保险） */
+.article-author,
+.article-footer .pagination,
+.related-articles {
+  max-width: 80ch !important;
+  width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
   padding-left: 1rem;
