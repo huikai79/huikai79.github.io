@@ -36,6 +36,17 @@ html, body {
   .post-cover { height: 30vh; }
 }
 
+/* 移除 display: contents，恢复默认布局 */
+#top-scroller {
+  position: static !important;
+  inset: auto !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+  /* 先不要用 display: contents */
+  /* display: contents !important; */
+}
+
 /* ----------------- 回到顶部按钮样式优化 ----------------- */
 /* 若主题功能已启用，不需额外 JS，只需修饰样式 */
 a[href="#top"],
