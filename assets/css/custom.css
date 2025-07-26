@@ -114,7 +114,7 @@ a[href="#the-top"]:hover {
   padding-right: 1rem;
 }
 
-/* ----------------- 美化作者区块 ----------------- */
+/* 美化作者区块 - 覆盖 Tailwind max-w-3xl 限制 */
 .author-card {
   max-width: 80ch !important;
   width: 100%;
@@ -126,7 +126,6 @@ a[href="#the-top"]:hover {
   gap: 1.25rem;
 }
 
-/* 在手机上垂直堆叠，桌面并排（已写入 HTML class） */
 @media (min-width: 768px) {
   .author-card {
     flex-direction: row;
@@ -138,3 +137,4 @@ a[href="#the-top"]:hover {
     text-align: center;
   }
 }
+
