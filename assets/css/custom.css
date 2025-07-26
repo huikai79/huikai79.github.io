@@ -83,11 +83,12 @@ a[href="#the-top"]:hover {
 /* ----------------- 可选：文字不换行时也避免超宽 ----------------- */
 .prose {
   overflow-wrap: anywhere;
+  max-width: 80ch
 }
 
 /* 统一文章底部元素宽度与间距 */
 .article-footer {
-  max-width: 48rem;
+  max-width: 52rem;
   margin: 4rem auto 2rem;
   padding: 0 1rem;
 }
