@@ -1,4 +1,4 @@
-{{- $related := first 3 (site.RegularPages.Related .) -}}
+{{- $related := first 5 (site.RegularPages.Related .) -}}
 {{- if gt (len $related) 0 -}}
 <section class="mt-12">
   <h2 class="font-semibold mb-6">{{ i18n "related" | default "Related" }}</h2>
