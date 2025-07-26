@@ -2,7 +2,7 @@
 title: "免费资源"
 date: "2025-07-22"
 slug: "FreeResource-1"
-tags: ["技术学习", "测试"]
+tags: ["技术学习", "Youtube"]
 cover: "cover.jpg"
 icon: "📁"
 images: ["cover.jpg"]
