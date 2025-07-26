@@ -92,3 +92,14 @@ a[href="#the-top"]:hover {
   margin: 4rem auto 2rem;
   padding: 0 1rem;
 }
+
+/* 拉宽作者区块 */
+.post-author,
+.related,
+.pagination {
+  max-width: 68ch !important;   /* 或用 100ch/50rem 看视觉效果 */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
