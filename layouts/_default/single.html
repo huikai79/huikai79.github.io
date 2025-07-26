@@ -1,14 +1,9 @@
 {{ define "main" }}
 
-{{ $raw := .Resources.GetMatch "cover*" }}
-{{ if $raw }}
-  {{ $src := $raw.Fill "1920x1080 center" }}
+{{ with .Resources.GetMatch "cover*" }}
+  {{ $src := .Fill "1920x1080 center" }}
   <div class="post-hero">
-    <img
-      src="{{ $src.RelPermalink }}"
-      alt="{{ .Title }}"
-      class="post-cover"
-      loading="lazy">
+    <img src="{{ $src.RelPermalink }}" alt="{{ $.Title }}" class="post-cover" loading="lazy">
   </div>
 {{ end }}
 
@@ -30,5 +25,9 @@
 
   {{ .Content }}
 </article>
+
+{{ partial "article/author-bottom.html" . }}
+{{ partial "article/pagination.html" . }}
+{{ partial "article/related.html" . }}
 
 {{ end }}
