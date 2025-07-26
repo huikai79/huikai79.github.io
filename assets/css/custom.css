@@ -104,6 +104,35 @@ a[href="#the-top"]:hover {
   padding-right: 1rem;
 }
 
+/* 🔧 作者区块微调：字型与间距回归旧版 */
+.author-card div {
+  text-align: left;
+}
+
+.author-card .text-lg {
+  font-weight: normal !important;
+}
+
+.author-card .text-sm {
+  color: #9ca3af; /* text-gray-400 */
+}
+
+.author-card a i {
+  transition: color 0.3s ease;
+}
+
+/* 可选：图标 hover 改回品牌色 */
+.author-card a:hover i.fa-facebook-f {
+  color: #1877f2;
+}
+.author-card a:hover i.fa-github {
+  color: #333;
+}
+.author-card a:hover i.fa-spotify {
+  color: #1DB954;
+}
+
+
 /* ----------------- 作者卡片区块（语义化写法） ----------------- */
 .author-card {
   max-width: 70ch !important;
