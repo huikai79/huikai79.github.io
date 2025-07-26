@@ -54,7 +54,6 @@ a[href="#the-top"] {
   cursor: pointer !important;
   text-decoration: none !important;
 }
-
 a[href="#top"]:hover,
 a[href="#the-top"]:hover {
   filter: brightness(1.08);
@@ -79,34 +78,28 @@ a[href="#the-top"]:hover {
   margin-bottom: 1rem;
 }
 
-/* ----------------- 文章正文与底部区块统一宽度 ----------------- */
+/* ----------------- 正文与底部区块统一宽度 ----------------- */
+/* 主文内容区块 */
 .single article,
 .content,
-.prose,
-.article-footer,
-.post-author,
-.related,
-.pagination {
+.prose {
   max-width: 80ch !important;
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
+  overflow-wrap: anywhere;
 }
 
-/* 强制拉宽文章底部所有区块 */
-.article-author,
-.article-footer .pagination,
-.related-articles {
+/* 底部区块（作者、上下篇、相关文章） */
+.article-footer > .flex,         /* 作者区块 */
+.article-footer .pagination,    /* 上下篇导航 */
+.related-articles,              /* 相关文章 */
+.article-author {               /* 若有额外使用这个类也一并涵盖 */
   max-width: 80ch !important;
+  width: 100%;
   margin-left: auto !important;
   margin-right: auto !important;
   padding-left: 1rem;
   padding-right: 1rem;
-}
-
-
-/* ----------------- 可选：文字不换行时也避免超宽 ----------------- */
-.prose {
-  overflow-wrap: anywhere;
 }
