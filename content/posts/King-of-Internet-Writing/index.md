@@ -3,6 +3,9 @@ title: "网络文章的王者"
 date: "2025-07-26"
 slug: "King-of-Internet-Writing"
 tags: ["Youtube"]
+cover: "cover.jpg"
+icon: "✍🏻"
+images: ["cover.jpg"]
 ---
 [{{< youtube 2OZ94b3fJvo >}}
 
