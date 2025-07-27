@@ -1,279 +1,29 @@
-/* ----------------- 布局安全：防止横向溢出 ----------------- */
-html, body {
-  overflow-x: hidden !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+/* -------- 修复 author 上下间距与样式 -------- */
+.author-card .text-xs.uppercase {
+  font-size: 0.75rem !important;           /* 12px */
+  text-transform: none !important;         /* 取消大写 */
+  color: #9ca3af !important;               /* 灰色 */
+  font-weight: 500 !important;
+  margin-bottom: 0.15rem !important;       /* 缩小下间距 */
 }
 
-/* ----------------- 封面图撑满页面宽度 ----------------- */
-.post-hero {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  overflow: hidden;
-}
-
-@supports (width: 100dvw) {
-  .post-hero {
-    width: 100dvw;
-    margin-left: calc(50% - 50dvw);
-    margin-right: calc(50% - 50dvw);
-  }
-}
-
-/* 封面图高度：依视窗变化调整 */
-.post-cover {
-  display: block;
-  width: 100%;
-  height: 16vh;
-  object-fit: cover;
-  object-position: center;
-}
-@media (min-width: 768px) {
-  .post-cover { height: 24vh; }
-}
-@media (min-width: 1024px) {
-  .post-cover { height: 30vh; }
-}
-
-/* ----------------- 回到顶部按钮样式优化 ----------------- */
-a[href="#top"],
-a[href="#the-top"] {
-  position: fixed !important;
-  right: 293px !important;
-  bottom: 24px !important;
-  width: 39px !important;
-  height: 39px !important;
+/* -------- icon 蓝底圆形、白色图标 -------- */
+.author-card .text-lg a {
+  background-color: #60a5fa !important;    /* 蓝底 */
+  color: white !important;                 /* 白图标 */
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   border-radius: 9999px !important;
-  display: grid !important;
-  place-items: center !important;
-  background: var(--color-primary, #2563eb) !important;
-  color: #fee !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-  z-index: 9999 !important;
-  cursor: pointer !important;
+  transition: all 0.3s ease-in-out !important;
   text-decoration: none !important;
 }
-a[href="#top"]:hover,
-a[href="#the-top"]:hover {
-  filter: brightness(1.08);
-}
-
-/* ----------------- Markdown 内容区块限制 ----------------- */
-.content pre,
-.content code,
-.content table {
-  max-width: 100%;
-}
-.content pre,
-.content code {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* ----------------- 图标头像统一尺寸 ----------------- */
-.post-icon {
-  width: 46px;
-  height: 46px;
-  margin-bottom: 1rem;
-}
-
-/* ----------------- 正文区块统一最大宽度 ----------------- */
-.single article,
-.content,
-.prose {
-  max-width: 80ch !important;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  overflow-wrap: anywhere;
-}
-
-/* ----------------- 底部区块统一宽度（上下篇／Related／旧 class） ----------------- */
-.max-w-3xl,
-.max-w-3xl.mx-auto,
-.article-author,
-.article-footer .pagination,
-.related-articles {
-  max-width: 70ch !important;
-  width: 100% !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* 🔧 作者区块微调：字型与间距回归旧版 */
-.author-card div {
-  text-align: left;
-}
-
-.author-card .text-lg {
-  font-weight: normal !important;
-}
-
-.author-card .text-sm {
-  color: #9ca3af; /* text-gray-400 */
-}
-
-.author-card a i {
-  transition: color 0.3s ease;
-}
-
-/* 可选：图标 hover 改回品牌色 */
-.author-card a:hover i.fa-facebook-f {
-  color: #1877f2;
-}
-.author-card a:hover i.fa-github {
-  color: #333;
-}
-.author-card a:hover i.fa-spotify {
-  color: #1DB954;
-}
-
-
-/* ----------------- 作者卡片区块（语义化写法） ----------------- */
-.author-card {
-  max-width: 70ch !important;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  align-items: center;
-  gap: 1.25rem;
-  display: flex;
-  flex-direction: column; /* 默认手机为 column */
-  text-align: center;
-}
-
-@media (min-width: 768px) {
-
-  .author-card {
-    flex-direction: row;  /* 桌面为横向排列 */
-    text-align: left;
-  }
-}
-
-/* --- 图标颜色恢复为品牌色 --- */
-.author-card a i.fa-facebook-f {
-  color: #1877f2; /* Facebook 蓝 */
-}
-.author-card a i.fa-github {
-  color: #181717; /* GitHub 黑 */
-}
-.author-card a i.fa-spotify {
-  color: #1DB954; /* Spotify 绿 */
-}
-
-/* 鼠标 hover 稍微亮一点 */
-.author-card a:hover i {
-  filter: brightness(1.15);
-}
-
-/* --- 修正 AUTHOR 字样为灰小字 --- */
-.author-card .author-label {
-  font-size: 0.75rem;        /* 等同 text-xs */
-  font-weight: normal;
-  color: #9ca3af;            /* 等同 text-gray-400 */
-  letter-spacing: normal;    /* 取消 tracking-wide */
-  text-transform: none;      /* 移除 uppercase */
-  margin-bottom: 0.25rem;
-}
-
-/* 修正作者区块 icon 一致蓝色、间距美化 */
-.author-card .fa-facebook-f,
-.author-card .fa-github,
-.author-card .fa-spotify {
-  color: #3b82f6; /* Tailwind blue-500 */
-  font-size: 1.25rem;
-  transition: color 0.3s ease;
-}
-
-.author-card a:hover .fa-facebook-f,
-.author-card a:hover .fa-github,
-.author-card a:hover .fa-spotify {
-  color: #ffffff;
-}
-
-/* 微调上下字距，确保和目标图一致 */
-.author-card .text-xs {
-  font-size: 0.75rem;
-  line-height: 1rem;
-  margin-bottom: 0.25rem;
-  font-weight: normal;  /* 不要太粗 */
-  letter-spacing: 0.05em;
-}
-
-.author-card .text-lg {
-  margin-top: 0.125rem;
-  margin-bottom: 0.25rem;
-}
-
-/* 图标整齐水平对齐，间距自然 */
-.author-card .flex.gap-4 i {
-  display: inline-block;
-  vertical-align: middle;
-}
-
-/* 自定义作者卡片样式 */
-.author-card {
-  max-width: 70ch !important;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-@media (min-width: 768px) {
-  .author-card {
-    flex-direction: row;
-  }
-}
-
-@media (max-width: 767px) {
-  .author-card {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-/* 统一社群 icon 的颜色与 hover 效果 */
-.author-card a {
-  font-size: 1.25rem;
-  color: #3b82f6;
-  transition: color 0.2s ease;
-}
-.author-card a:hover {
-  color: white;
-}
-
-/* -------- 修复 author 文字与间距 -------- */
-.author-card .text-xs.uppercase {
-  font-size: 0.75rem !important;  /* 约12px */
-  text-transform: none !important;
-  color: #9ca3af !important;      /* 灰色字 */
-  font-weight: 500 !important;
-  margin-bottom: 0.25rem !important;
-}
-
-/* -------- icon 蓝色背景圆形化 -------- */
-.author-card .text-lg a {
-  background-color: #60a5fa;      /* 蓝色背景 */
-  color: white !important;        /* 图标颜色统一 */
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  transition: all 0.3s ease-in-out;
+.author-card .text-lg a i {
+  color: white !important;                 /* 控制 <i> 图标颜色 */
+  font-size: 16px !important;
 }
 .author-card .text-lg a:hover {
   filter: brightness(1.1);
 }
-
