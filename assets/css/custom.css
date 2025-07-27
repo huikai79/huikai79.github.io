@@ -219,7 +219,7 @@ a[href="#the-top"]:hover {
 
 /* 自定义作者卡片样式 */
 .author-card {
-  max-width: 80ch !important;
+  max-width: 70ch !important;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
