@@ -94,7 +94,7 @@ a[href="#the-top"]:hover {
 /* 匹配 Tailwind 所产生的实际 class */
 .max-w-3xl,
 .max-w-3xl.mx-auto {
-  max-width: 80ch !important;
+  max-width: 70ch !important;
   width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
@@ -106,7 +106,7 @@ a[href="#the-top"]:hover {
 .article-author,
 .article-footer .pagination,
 .related-articles {
-  max-width: 80ch !important;
+  max-width: 70ch !important;
   width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
@@ -116,7 +116,7 @@ a[href="#the-top"]:hover {
 
 /* ----------------- 作者区块美化 ----------------- */
 .author-card {
-  max-width: 80ch !important;
+  max-width: 70ch !important;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
