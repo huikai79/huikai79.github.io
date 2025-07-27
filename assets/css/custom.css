@@ -1,16 +1,155 @@
-/* -------- 修复 author 上下间距与样式 -------- */
-.author-card .text-xs.uppercase {
-  font-size: 0.75rem !important;           /* 12px */
-  text-transform: none !important;         /* 取消大写 */
-  color: #9ca3af !important;               /* 灰色 */
-  font-weight: 500 !important;
-  margin-bottom: 0.15rem !important;       /* 缩小下间距 */
+/* ----------------- 布局安全：防止横向溢出 ----------------- */
+html, body {
+  overflow-x: hidden !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-/* -------- icon 蓝底圆形、白色图标 -------- */
+/* ----------------- 封面图撑满页面宽度 ----------------- */
+.post-hero {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow: hidden;
+}
+
+@supports (width: 100dvw) {
+  .post-hero {
+    width: 100dvw;
+    margin-left: calc(50% - 50dvw);
+    margin-right: calc(50% - 50dvw);
+  }
+}
+
+/* 封面图高度：依视窗变化调整 */
+.post-cover {
+  display: block;
+  width: 100%;
+  height: 16vh;
+  object-fit: cover;
+  object-position: center;
+}
+@media (min-width: 768px) {
+  .post-cover { height: 24vh; }
+}
+@media (min-width: 1024px) {
+  .post-cover { height: 30vh; }
+}
+
+/* ----------------- 回到顶部按钮样式优化 ----------------- */
+a[href="#top"],
+a[href="#the-top"] {
+  position: fixed !important;
+  right: 293px !important;
+  bottom: 24px !important;
+  width: 39px !important;
+  height: 39px !important;
+  border-radius: 9999px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: var(--color-primary, #2563eb) !important;
+  color: #fee !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+  z-index: 9999 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+a[href="#top"]:hover,
+a[href="#the-top"]:hover {
+  filter: brightness(1.08);
+}
+
+/* ----------------- 内容安全宽度 ----------------- */
+.content pre,
+.content code,
+.content table {
+  max-width: 100%;
+}
+.content pre,
+.content code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ----------------- 图标头像统一尺寸 ----------------- */
+.post-icon {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 1rem;
+}
+
+/* ----------------- 正文区块统一最大宽度 ----------------- */
+.single article,
+.content,
+.prose {
+  max-width: 80ch !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  overflow-wrap: anywhere;
+}
+
+/* ----------------- 底部区块（作者、上下篇、相关文章） ----------------- */
+/* 匹配 Tailwind 所产生的实际 class */
+.max-w-3xl,
+.max-w-3xl.mx-auto {
+  max-width: 80ch !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* 若使用原主题 class 也一并涵盖（保险） */
+.article-author,
+.article-footer .pagination,
+.related-articles {
+  max-width: 80ch !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* ----------------- 作者区块美化 ----------------- */
+.author-card {
+  max-width: 80ch !important;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  align-items: center;
+  gap: 1.25rem;
+}
+@media (min-width: 768px) {
+  .author-card {
+    flex-direction: row;
+  }
+}
+@media (max-width: 767px) {
+  .author-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ------- 修正 Author 小字与图标样式 ------- */
+.author-card .text-xs.uppercase {
+  font-size: 0.75rem !important;
+  text-transform: none !important;
+  color: #9ca3af !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.15rem !important;
+}
+
+/* ------- Icon 蓝底圆形，图标白色统一 ------- */
 .author-card .text-lg a {
-  background-color: #60a5fa !important;    /* 蓝底 */
-  color: white !important;                 /* 白图标 */
+  background-color: #60a5fa !important;
+  color: white !important;
   width: 36px !important;
   height: 36px !important;
   display: inline-flex !important;
@@ -21,7 +160,7 @@
   text-decoration: none !important;
 }
 .author-card .text-lg a i {
-  color: white !important;                 /* 控制 <i> 图标颜色 */
+  color: white !important;
   font-size: 16px !important;
 }
 .author-card .text-lg a:hover {
