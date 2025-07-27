@@ -217,3 +217,38 @@ a[href="#the-top"]:hover {
   vertical-align: middle;
 }
 
+/* 自定义作者卡片样式 */
+.author-card {
+  max-width: 80ch !important;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .author-card {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 767px) {
+  .author-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* 统一社群 icon 的颜色与 hover 效果 */
+.author-card a {
+  font-size: 1.25rem;
+  color: #3b82f6;
+  transition: color 0.2s ease;
+}
+.author-card a:hover {
+  color: white;
+}
+
