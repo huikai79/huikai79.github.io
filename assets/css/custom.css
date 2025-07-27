@@ -143,7 +143,8 @@ a[href="#the-top"]:hover {
   text-transform: none !important;
   color: #9ca3af !important;
   font-weight: 500 !important;
-  margin-bottom: 0.15rem !important;
+  align-items: left !important;
+  margin-bottom: 0.1rem !important;
 }
 
 /* ------- Icon 蓝底圆形，图标白色统一 ------- */
