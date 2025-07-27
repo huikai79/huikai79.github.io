@@ -149,8 +149,35 @@ a[href="#the-top"]:hover {
 }
 
 @media (min-width: 768px) {
+
   .author-card {
     flex-direction: row;  /* 桌面为横向排列 */
     text-align: left;
   }
+}
+
+/* --- 图标颜色恢复为品牌色 --- */
+.author-card a i.fa-facebook-f {
+  color: #1877f2; /* Facebook 蓝 */
+}
+.author-card a i.fa-github {
+  color: #181717; /* GitHub 黑 */
+}
+.author-card a i.fa-spotify {
+  color: #1DB954; /* Spotify 绿 */
+}
+
+/* 鼠标 hover 稍微亮一点 */
+.author-card a:hover i {
+  filter: brightness(1.15);
+}
+
+/* --- 修正 AUTHOR 字样为灰小字 --- */
+.author-card .author-label {
+  font-size: 0.75rem;        /* 等同 text-xs */
+  font-weight: normal;
+  color: #9ca3af;            /* 等同 text-gray-400 */
+  letter-spacing: normal;    /* 取消 tracking-wide */
+  text-transform: none;      /* 移除 uppercase */
+  margin-bottom: 0.25rem;
 }
