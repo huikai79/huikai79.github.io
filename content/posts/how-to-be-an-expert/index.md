@@ -3,8 +3,10 @@ title: "如何在变动的世界中成为专家"
 date: "2025-07-27"
 slug: "how-to-be-an-expert"
 tags: ["创业", "好文推荐"]
+cover: "cover.jpg"
+icon: "😎"
+images: ["cover.jpg"]
 ---
-
 如果这世界是静止不变的，我们对观念的信心就能一路线性上升。某个想法经得起越多样、越严格的考验，就越可能是真的。许多人其实默默相信这一点——对「人性」这种变化不大的领域来说，这么想或许没错。
 
 
@@ -111,4 +113,7 @@ tags: ["创业", "好文推荐"]
 但⋯⋯也许我会错。（最好是）
 
 
+
+
+![](https://prod-files-secure.s3.us-west-2.amazonaws.com/112d0858-5090-4d34-a606-b75eb8d65fd2/46476355-9cf3-4e99-9b7a-3531bc426380/1000202064.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466SFPPV5Q5%2F20250727%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250727T143539Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEE4aCXVzLXdlc3QtMiJGMEQCIFAghFXF5l0kbsK2AicYgzOU%2BblT2i7fHkgX4viKtHx1AiAAwW48ZVsyU%2BZ8UwkwoKgunYCSNjxXCDsEyIVA0kTIUyr%2FAwh3EAAaDDYzNzQyMzE4MzgwNSIMErDe7i04HeCFHZj7KtwDB%2BJ98pzZykgDa%2B7v17gIAOaBT1dzMmI%2BGFVgYdBv3AiFWWmn1qAszcVKXCV0CxUokZ8YsjWh7rBJ07p46rlh6fAPyLZ4ZAVhCG%2Fsn4SEyS0wg9aOPAVZp37Jk1%2B1IccYAgWawNOx4vDwUTxsSVjvp2eSsGjlB9WlpOHVVqHkbBfNJuivdoAkbnOxjK3y7olxkkC2WAqACddEfIiKl%2FmTgvqGKStDxv089BCofCSjLRQGkA6XADadKXnWw6sjtkDyE6bxb0gJKF%2FuDynHsB65lu6ec7UW8BR7UlEQezLhIsEpcclhVGCyGH5DA59EhsQD4sF2O3G4YONbkNQGkVhTbLffr1%2FXB1ErOqLVQO19e5qYg2VIKZZxpaa%2F%2FMV6fqf4iygfAMet0Sz1rXcLJaFse1KL4oojMiSAKMBFAOn7d9S0s2xQ7Noi1OqL%2BSw6A3wOWlp%2B4zdgyExJINc4pZfztNvVcWiPSlHtkS7IoCU3zDmJmvxafBN8%2BHANESKz4THYkaeQDCTsFpPuSQ6Q7V%2F5pAFoTEHIPG2v2LaVLNIPucw8QDVLUaFHP%2Ff6B20UJGPo6%2BgzDO3Pl0ddPrTfcRgdhLf1Ij3uYkSwmDiiFIigiqacBmVF%2BQb5k7J2b0Ywxt6YxAY6pgG6MzKJPTS3tJC2F0hek6qp3M4aw4T6kg5Yto7daODlhB55HboHPe8Oct6vyXYLwuu7u6PRkggAmzKVFP25WgZ%2B6oqgaL%2B3V3DnGg3TiPH9W3U%2BSF9hIixtgPTcFdiFhaOjWTJXFVCs0oIQRb%2FY7lTtJSQcST9blMTHbdSRRxIOriAl7ci%2F%2Fypu9vxVPFHQS6hJblZAL8b8fOD%2FwIS1WZGpn5cB0Mi6&X-Amz-Signature=b2f413a5641031dad7e9ce70de42930bd12c4c79e21b6fa24b098730209f8747&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)
 
