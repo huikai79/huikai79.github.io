@@ -181,3 +181,39 @@ a[href="#the-top"]:hover {
   text-transform: none;      /* 移除 uppercase */
   margin-bottom: 0.25rem;
 }
+
+/* 修正作者区块 icon 一致蓝色、间距美化 */
+.author-card .fa-facebook-f,
+.author-card .fa-github,
+.author-card .fa-spotify {
+  color: #3b82f6; /* Tailwind blue-500 */
+  font-size: 1.25rem;
+  transition: color 0.3s ease;
+}
+
+.author-card a:hover .fa-facebook-f,
+.author-card a:hover .fa-github,
+.author-card a:hover .fa-spotify {
+  color: #ffffff;
+}
+
+/* 微调上下字距，确保和目标图一致 */
+.author-card .text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  margin-bottom: 0.25rem;
+  font-weight: normal;  /* 不要太粗 */
+  letter-spacing: 0.05em;
+}
+
+.author-card .text-lg {
+  margin-top: 0.125rem;
+  margin-bottom: 0.25rem;
+}
+
+/* 图标整齐水平对齐，间距自然 */
+.author-card .flex.gap-4 i {
+  display: inline-block;
+  vertical-align: middle;
+}
+
