@@ -252,3 +252,28 @@ a[href="#the-top"]:hover {
   color: white;
 }
 
+/* -------- 修复 author 文字与间距 -------- */
+.author-card .text-xs.uppercase {
+  font-size: 0.75rem !important;  /* 约12px */
+  text-transform: none !important;
+  color: #9ca3af !important;      /* 灰色字 */
+  font-weight: 500 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* -------- icon 蓝色背景圆形化 -------- */
+.author-card .text-lg a {
+  background-color: #60a5fa;      /* 蓝色背景 */
+  color: white !important;        /* 图标颜色统一 */
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transition: all 0.3s ease-in-out;
+}
+.author-card .text-lg a:hover {
+  filter: brightness(1.1);
+}
+
