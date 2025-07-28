@@ -171,9 +171,9 @@ a[href="#the-top"]:hover {
 /* ------- Author 社群 SVG icon 样式（圆形蓝底、白色 icon） ------- */
 .author-card .social-icon {
   background-color: #60a5fa !important;
-  color: white !important;
-  width: 36px !important;
-  height: 36px !important;
+  color: ffff !important;
+  width: 30px !important;
+  height: 30px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -184,8 +184,8 @@ a[href="#the-top"]:hover {
 }
 
 .author-card .social-icon svg {
-  width: 18px !important;
-  height: 18px !important;
+  width: 16px !important;
+  height: 16px !important;
   fill: currentColor !important;
 }
 
