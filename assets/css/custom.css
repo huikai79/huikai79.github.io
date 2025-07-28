@@ -167,3 +167,28 @@ a[href="#the-top"]:hover {
 .author-card .text-lg a:hover {
   filter: brightness(1.1);
 }
+
+/* ------- Author 社群 SVG icon 样式（圆形蓝底、白色 icon） ------- */
+.author-card .social-icon {
+  background-color: #60a5fa !important;
+  color: white !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  transition: all 0.3s ease-in-out !important;
+  margin-right: 0.5rem;
+  text-decoration: none !important;
+}
+
+.author-card .social-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  fill: currentColor !important;
+}
+
+.author-card .social-icon:hover {
+  filter: brightness(1.1);
+}
