@@ -37,27 +37,33 @@ html, body {
 }
 
 /* ----------------- 回到顶部按钮样式优化 ----------------- */
-a[href="#top"],
-a[href="#the-top"] {
-  position: fixed !important;
-  right: 293px !important;
-  bottom: 24px !important;
-  width: 39px !important;
-  height: 39px !important;
-  border-radius: 9999px !important;
-  display: grid !important;
-  place-items: center !important;
-  background: var(--color-primary, #2563eb) !important;
-  color: #fee !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-  z-index: 9999 !important;
-  cursor: pointer !important;
-  text-decoration: none !important;
+.scroll-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  background-color: #60a5fa;
+  color: white;
+  border-radius: 9999px;
+  padding: 0.5rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: all 0.3s ease-in-out;
+  border: none;
+  cursor: pointer;
 }
-a[href="#top"]:hover,
-a[href="#the-top"]:hover {
-  filter: brightness(1.08);
+.scroll-to-top:hover {
+  filter: brightness(1.1);
 }
+.scroll-to-top svg {
+  fill: white;
+}
+
 
 /* ----------------- 内容安全宽度 ----------------- */
 .content pre,
