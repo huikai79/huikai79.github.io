@@ -6,6 +6,5 @@ max = "0.147.8"
 
 baseURL = "https://huikai.com.kg/"
 
-params:
-  footer:
-    showScrollToTop: true
+[params.footer]
+showScrollToTop = true
