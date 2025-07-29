@@ -151,8 +151,8 @@ a[href="#the-top"]:hover {
 .author-card .text-lg a {
   background-color: #60a5fa !important;
   color: white !important;
-  width: 34px !important;
-  height: 34px !important;
+  width: 32px !important;
+  height: 32px !important;
   display: inline-flex !important;
   align-items: left !important;
   justify-content: left !important;
@@ -172,8 +172,8 @@ a[href="#the-top"]:hover {
 .author-card .social-icon {
   background-color: transparent !important;  /* 初始背景透明 */
   color: white !important;                   /* icon 白色 */
-  width: 38px !important;
-  height: 38px !important;
+  width: 30px !important;
+  height: 30px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -184,8 +184,8 @@ a[href="#the-top"]:hover {
 }
 
 .author-card .social-icon svg {
-  width: 17px !important;
-  height: 17px !important;
+  width: 16px !important;
+  height: 16px !important;
   fill: currentColor !important; /* 跟隨父層 color 白色 */
 }
 
