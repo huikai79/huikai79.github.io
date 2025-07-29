@@ -1,11 +1,18 @@
+<!-- Back to Top Button -->
+<a href="#top" aria-label="Back to Top" class="scroll-to-top">
+  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 4l-8 8h5v8h6v-8h5z" />
+  </svg>
+</a>
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const btn = document.querySelector('a[href="#top"]');
-  if (btn) {
-    btn.addEventListener("click", function (e) {
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
-});
+  document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.querySelector('.scroll-to-top');
+    if (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+  });
 </script>
