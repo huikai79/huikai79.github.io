@@ -156,7 +156,7 @@ a[href="#the-top"]:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
+  border-radius: 8888px;
   background-color: transparent; /* 默认透明 */
   transition: all 0.3s ease-in-out;
 }
