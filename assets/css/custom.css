@@ -147,49 +147,31 @@ a[href="#the-top"]:hover {
   margin-bottom: 0.11rem !important;
 }
 
-/* ------- Icon 蓝底圆形，图标白色统一 ------- */
-.author-card .text-lg a {
-  background-color: #60a5fa !important;
-  color: white !important;
-  width: 28px !important;
-  height: 28px !important;
-  display: inline-flex !important;
-  align-items: left !important;
-  justify-content: left !important;
-  border-radius: 9999px !important;
-  transition: all 0.3s ease-in-out !important;
-  text-decoration: none !important;
-}
-.author-card .text-lg a i {
-  color: white !important;
-  font-size: 16px !important;
-}
-.author-card .text-lg a:hover {
-  filter: brightness(1.1);
-}
 
-/* ------- Author 社群 SVG icon 样式（圆形蓝底、白色 icon） ------- */
+/* --- 统一作者区块社群 icon 样式 --- */
 .author-card .social-icon {
-  background-color: transparent !important;  /* 初始背景透明 */
-  color: white !important;                   /* icon 白色 */
-  width: 26px !important;
-  height: 26px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 9999px !important;
-  transition: all 0.3s ease-in-out !important;
-  text-decoration: none !important;
+  width: 36px;
+  height: 36px;
   margin-right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: transparent; /* 默认透明 */
+  transition: all 0.3s ease-in-out;
 }
 
 .author-card .social-icon svg {
-  width: 16px !important;
-  height: 16px !important;
-  fill: currentColor !important; /* 跟隨父層 color 白色 */
+  width: 20px;
+  height: 20px;
+  fill: #64748b; /* 默认 slate-500 */
+  transition: all 0.3s ease-in-out;
 }
 
+/* hover 效果：蓝底圆形 + 白色 icon */
 .author-card .social-icon:hover {
-  background-color: #60a5fa !important; /* hover 時出現藍底 */
+  background-color: #60a5fa; /* blue-400 */
 }
-
+.author-card .social-icon:hover svg {
+  fill: white;
+}
