@@ -150,8 +150,8 @@ a[href="#the-top"]:hover {
 
 /* --- 统一作者区块社群 icon 样式 --- */
 .author-card .social-icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   margin-right: 0.25rem;
   display: inline-flex;
   align-items: center;
@@ -162,8 +162,8 @@ a[href="#the-top"]:hover {
 }
 
 .author-card .social-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   fill: #64748b; /* 默认 slate-500 */
   transition: all 0.3s ease-in-out;
 }
