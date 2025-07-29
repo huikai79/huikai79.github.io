@@ -152,7 +152,7 @@ a[href="#the-top"]:hover {
 .author-card .social-icon {
   width: 36px;
   height: 36px;
-  margin-right: 0.5rem;
+  margin-right: 0.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
