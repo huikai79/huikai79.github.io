@@ -151,8 +151,8 @@ a[href="#the-top"]:hover {
 .author-card .text-lg a {
   background-color: #60a5fa !important;
   color: white !important;
-  width: 30px !important;
-  height: 30px !important;
+  width: 34px !important;
+  height: 34px !important;
   display: inline-flex !important;
   align-items: left !important;
   justify-content: left !important;
@@ -170,25 +170,26 @@ a[href="#the-top"]:hover {
 
 /* ------- Author 社群 SVG icon 样式（圆形蓝底、白色 icon） ------- */
 .author-card .social-icon {
-  background-color: #60a5fa !important;
-  color: ffff !important;
-  width: 15px !important;
-  height: 15px !important;
+  background-color: transparent !important;  /* 初始背景透明 */
+  color: white !important;                   /* icon 白色 */
+  width: 38px !important;
+  height: 38px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 9999px !important;
   transition: all 0.3s ease-in-out !important;
-  margin-right: 0.5rem;
   text-decoration: none !important;
+  margin-right: 0.5rem;
 }
 
 .author-card .social-icon svg {
-  width: 15px !important;
-  height: 15px !important;
-  fill: currentColor !important;
+  width: 17px !important;
+  height: 17px !important;
+  fill: currentColor !important; /* 跟隨父層 color 白色 */
 }
 
 .author-card .social-icon:hover {
-  filter: brightness(1.1);
+  background-color: #60a5fa !important; /* hover 時出現藍底 */
 }
+
