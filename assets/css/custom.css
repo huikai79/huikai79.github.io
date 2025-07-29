@@ -101,7 +101,7 @@ html, body {
 .max-w-3xl.mx-auto {
   max-width: 70ch !important;
   width: 100% !important;
-  margin-left: 200 !important;
+  margin-left: auto !important;
   margin-right: auto !important;
   padding-left: 1rem;
   padding-right: 1rem;
