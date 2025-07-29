@@ -49,8 +49,8 @@ html, body {
   height: 40px;
   background-color: var(--color-primary, #2563eb);
   color: #fff;
-  border-radius: 9999px;
   border: none;
+  border-radius: 9999px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   transition: filter 0.3s;
@@ -62,7 +62,6 @@ html, body {
   width: 1em;
   height: 1em;
 }
-
 
 
 /* ----------------- 内容安全宽度 ----------------- */
