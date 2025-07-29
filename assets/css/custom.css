@@ -101,7 +101,7 @@ html, body {
 .max-w-3xl.mx-auto {
   max-width: 70ch !important;
   width: 100% !important;
-  margin-left: auto !important;
+  margin-left: 200 !important;
   margin-right: auto !important;
   padding-left: 1rem;
   padding-right: 1rem;
@@ -174,4 +174,13 @@ html, body {
 }
 .author-card .social-icon:hover svg {
   fill: white;
+}
+
+/* 头像紧贴文字、去除自动 margin */
+.author-card img {
+  margin-left: 0 !important;
+  margin-right: 1rem !important; /* 控制和文字的间距，可微调 */
+  float: none !important;         /* 去除 float 影响 */
+  display: inline-block !important;
+  vertical-align: middle !important;
 }
