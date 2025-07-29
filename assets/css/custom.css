@@ -172,8 +172,8 @@ a[href="#the-top"]:hover {
 .author-card .social-icon {
   background-color: transparent !important;  /* 初始背景透明 */
   color: white !important;                   /* icon 白色 */
-  width: 30px !important;
-  height: 30px !important;
+  width: 26px !important;
+  height: 26px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
