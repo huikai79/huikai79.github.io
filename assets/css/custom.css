@@ -184,3 +184,15 @@ html, body {
   display: inline-block !important;
   vertical-align: middle !important;
 }
+@media (min-width: 768px) {
+  .author-card img {
+    margin-left: 0 !important;
+    margin-right: 1rem !important;
+  }
+}
+@media (max-width: 767px) {
+  .author-card img {
+    margin: 0 auto 1rem auto !important; /* 小屏幕居中 */
+    display: block !important;
+  }
+}
