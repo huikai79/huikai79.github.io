@@ -48,7 +48,7 @@ customCSS = ["css/custom.css"]
   showCopyright = true
   showThemeAttribution = false
   showAppearanceSwitcher = true
-  showScrollToTop = true
+  # showScrollToTop = true
 
 [homepage]
   layout = "profile" # valid options: page, profile, hero, card, background, custom
