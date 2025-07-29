@@ -42,26 +42,27 @@ html, body {
   bottom: 2rem;
   right: 2rem;
   z-index: 9999;
-  background-color: #60a5fa;
-  color: white;
-  border-radius: 9999px;
-  padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  transition: all 0.3s ease-in-out;
+  background-color: var(--color-primary, #2563eb);
+  color: #fff;
+  border-radius: 9999px;
   border: none;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: filter 0.3s;
 }
 .scroll-to-top:hover {
   filter: brightness(1.1);
 }
 .scroll-to-top svg {
-  fill: white;
+  width: 1em;
+  height: 1em;
 }
+
 
 
 /* ----------------- 内容安全宽度 ----------------- */
