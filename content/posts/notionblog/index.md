@@ -113,12 +113,6 @@ undefined
 2. 在列表中搜索并选择你第一步创建的那个集成 ("My Hugo Blog")，点击确认。**这一步是授权，必须操作！**
 3. 现在，查看你浏览器的地址栏。URL 看起来像这样：
 
-	https://www.notion.so/your-workspace/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?v=...
-
-
-	那个紧跟在工作区名字后面、问号前面的 32 位字符就是你的 Database ID。这是你的第二把钥匙，请复制并保存好它。
-
-
 ### **第三部分：配置 GitHub 自动化**
 
 
