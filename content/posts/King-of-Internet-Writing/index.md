@@ -13,14 +13,6 @@ images: ["cover.jpg"]
 以下是关于Paul Graham写作理念和成功经验的重点整理：
 
 - **保罗·格雷厄姆 (Paul Graham) 的背景与成功**
-	- 他打破了传统的商业写作规则，不使用行话，而是用**平实简单的语言**写作。
-	- 他没有出版书籍或PDF白皮书，而是选择在互联网上免费发布**长篇论文（文章）**。
-	- 他的写作带来了巨大的成功，他创立的Y Combinator已经为旗下公司创造了**数千亿美元的价值**，包括Reddit、Airbnb和Dropbox等。
-	- Y Combinator的诞生源于他网站上的一篇文章《如何创办一家创业公司》（How to Start a Startup），他的读者成为了Y Combinator的第一批申请者，其中包含了Reddit和Twitch的创始人，以及后来成为Y Combinator总裁的Sam Altman。
-	- 他的写作还吸引了Stripe的创始人Patrick Collison，促使Y Combinator早期投资了Stripe。
-	- Sam Altman从Paul Graham那里学到了很多关于沟通的知识，认为Paul Graham是一位“**不可思议的作家**”，他的写作风格以**清晰、精确、密集**为特点。
-	- Paul Graham的商业写作与普通商业书籍截然不同，它没有装腔作势，内容引人入胜、清晰明了，不浪费读者时间，且感觉真实。
-	- 他的写作不仅因为他是创业专家而优秀，更是**因为他大量写作而成为了创业专家**。
 - **保罗·格雷厄姆的写作心法**
 	- **第一课：力求简洁（Write Simply）**
 		- 避免使用听起来不像日常对话的华丽辞藻或复杂句式。
