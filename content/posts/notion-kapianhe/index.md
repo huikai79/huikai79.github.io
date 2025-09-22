@@ -3,9 +3,7 @@ title: "Notion 卡片盒笔记法"
 date: "2025-07-28"
 slug: "notion-kapianhe"
 tags: ["Youtube"]
-cover: "cover.jpg"
 icon: "🗃️"
-images: ["cover.jpg"]
 ---
 {{< youtube lft-tgU94hc >}}
 
