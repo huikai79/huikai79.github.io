@@ -46,6 +46,13 @@ tags: ["技术学习", "测试"]
 	```
 
 3. **添加主题 (使用 Git Submodule)**: 这是最稳定可靠的方式。我们将以 Blowfish 主题为例。
+
+	```text
+	git submodule add -b main https://github.com/nunocoracao/blowfish.git themes/blowfish
+	
+	
+	```
+
 4. **基础配置**: 在你的网站根目录下，找到或创建 `hugo.toml` 文件（或者在 `config/_default/` 文件夹下），并写入最基础的配置。最关键的是要包含 `theme = "blowfish"` 这一行。
 
 ### **第 2 步：创建 GitHub 仓库并推送**
