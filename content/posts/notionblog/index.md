@@ -129,10 +129,6 @@ undefined
 
 1. 进入你的 GitHub 仓库页面，点击 `Settings` -> `Secrets and variables` -> `Actions`。
 2. 点击 "New repository secret"，创建以下**两个** Secret：
-	- **Name**: `NOTION_TOKEN`
-		- **Value**: 粘贴你从 Notion 集成中获取的那个 `secret_...` Token。
-	- **Name**: `NOTION_PAGE_URL` (我们沿用这个名字，但它的值是数据库ID)
-		- **Value**: 粘贴你从 Notion 数据库 URL 中获取的那个 **32 位 ID**。
 
 ### **第 2 步：创建 GitHub Actions 工作流文件**
 
