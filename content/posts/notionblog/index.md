@@ -60,6 +60,16 @@ tags: ["技术学习", "测试"]
 1. 在 GitHub 上创建一个全新的、**公开 (Public)** 的仓库。建议仓库名和你的 GitHub 用户名一致，例如 `your-username.github.io`。
 2. 在你的本地终端里，将你的本地仓库与远程仓库关联，并进行第一次推送：
 
+	```text
+	git remote add origin https://github.com/your-username/your-repo-name.git
+	git add .
+	git commit -m "Initial Hugo site with Blowfish theme"
+	git push -u origin main
+	
+	
+	```
+
+
 ### **第二部分：配置 Notion (最关键的一步)**
 
 
