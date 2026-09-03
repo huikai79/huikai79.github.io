@@ -61,24 +61,6 @@ jobs:
             git push origin HEAD:main
           fi
 
-      - name: Merge Blowfish theme overrides (no overwrite)
-        run: |
-          mkdir -p layouts assets
-          rsync -a --ignore-existing themes/blowfish/layouts/ layouts/
-          rsync -a --ignore-existing themes/blowfish/assets/ assets/
-
-      - name: Restore custom single & pagination
-        run: |
-          mkdir -p layouts/_default layouts/partials/article
-
-          if [ -f my_overrides/layouts/_default/single.html ]; then
-            cp -f my_overrides/layouts/_default/single.html layouts/_default/single.html
-          fi
-
-          if [ -f my_overrides/layouts/partials/article/pagination.html ]; then
-            cp -f my_overrides/layouts/partials/article/pagination.html layouts/partials/article/pagination.html
-          fi
-
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
@@ -107,6 +89,7 @@ jobs:
           test -s public/index.html
           test -s public/posts/how-to-be-an-expert/index.html
           grep -q 'class=scroll-to-top\|class="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
+          grep -q 'href=#the-top\|href="#the-top"' public/posts/how-to-be-an-expert/index.html
           grep -q 'lang=zh-CN\|lang="zh-CN"' public/index.html
           grep -q '庄辉恺的个人博客' public/index.html
 
