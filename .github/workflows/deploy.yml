@@ -53,11 +53,13 @@ jobs:
         run: |
           git config user.name  github-actions
           git config user.email github-actions@github.com
-          git pull --rebase origin main || true
           git add content/posts                    # 只提交文章目录
-          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))" \
-            || echo "Nothing to commit"
-          git push origin main || echo "Push skipped"
+          if git diff --cached --quiet; then
+            echo "No synced-content changes to commit"
+          else
+            git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
+            git push origin HEAD:main
+          fi
 
       - name: Merge Blowfish theme overrides (no overwrite)
         run: |
@@ -81,7 +83,7 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 0.124.1
+          hugo-version: 0.147.8
           extended: true
 
       - name: Check Hugo version
@@ -90,9 +92,6 @@ jobs:
           hugo version
           hugo env
 
-      - name: Ensure new Hugo is first in PATH   # ← 加这段
-        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        
       - name: Debug which templates are used
         run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
 
@@ -126,7 +125,8 @@ jobs:
       - name: Purge Cloudflare Cache
         if: ${{ success() }}
         run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
+          response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}'
+            --data '{"purge_everything":true}')"
+          echo "$response" | jq -e '.success == true' > /dev/null
