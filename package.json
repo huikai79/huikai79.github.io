@@ -1,0 +1,14 @@
+{
+  "name": "huikai-notion-sync",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "dependencies": {
+    "@notionhq/client": "2.3.0",
+    "node-fetch": "3.3.2",
+    "notion-to-md": "2.7.0",
+    "p-limit": "6.2.0"
+  }
+}
