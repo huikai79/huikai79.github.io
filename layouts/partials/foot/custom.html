@@ -1,10 +1,9 @@
 <script>
-window.addEventListener("load", function () {
-  const btn = document.querySelector('.scroll-to-top');
-  if (!btn) return;
-  btn.onclick = function(e) {
-    e.preventDefault();
-    (document.querySelector('main') || window).scrollTo({ top: 0, behavior: 'smooth' });
-  };
+document.addEventListener("click", function (event) {
+  const button = event.target.closest(".scroll-to-top");
+  if (!button) return;
+
+  event.preventDefault();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 </script>

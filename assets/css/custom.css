@@ -133,7 +133,7 @@ html, body {
 @media (min-width: 768px) {
   .author-card {
     flex-direction: row !important;
-    align-items: center !important;
+    align-items: flex-start !important;
   }
 }
 
@@ -178,6 +178,7 @@ html, body {
 
 /* 头像紧贴文字、去除自动 margin */
 .author-card img {
+  align-self: flex-start;
   margin-left: 0 !important;
   margin-right: 1rem !important; /* 控制和文字的间距，可微调 */
   float: none !important;         /* 去除 float 影响 */
