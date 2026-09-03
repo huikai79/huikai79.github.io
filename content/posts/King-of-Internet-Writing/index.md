@@ -2,6 +2,7 @@
 title: "网络文章的王者"
 date: "2025-07-26"
 slug: "King-of-Internet-Writing"
+description: "[ 以下是关于Paul Graham写作理念和成功经验的重点整理： 保罗·格雷厄姆 (Paul Graham) 的背景与成功 他打破了传统的商业写作规则，不使用行话，而是用 平实简单的语言 写作。 他没有出版书籍或PDF白皮书，而是选择在互联网上免费发布 长篇论文（文章） 。 他的写作带来了巨大的成…"
 tags: ["Youtube"]
 cover: "cover.jpg"
 icon: "✍🏻"

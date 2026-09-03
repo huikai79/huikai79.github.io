@@ -2,6 +2,7 @@
 title: "Notion 卡片盒笔记法"
 date: "2025-07-28"
 slug: "notion-kapianhe"
+description: "影片描述： Notion模板可免費或付費下載。 提供的Notion卡片盒筆記法包括四個步驟： 1. 靈感筆記（Fleeting Notes） 2. 文獻筆記（Literature Notes） 3. 永久筆記（Permanent Notes） 4. 連結各種卡片 影片中介紹如何在Notion中實作卡…"
 tags: ["Youtube"]
 cover: "cover.jpg"
 icon: "🗃️"
