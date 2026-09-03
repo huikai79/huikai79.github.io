@@ -24,11 +24,9 @@ disableTextInHeader = false
 
 disableThemePreloader = true
 
-defaultBackgroundImage = "IMAGE.jpg" # used as default for background images 
-# defaultFeaturedImage = "IMAGE.jpg" # used as default for featured images in all articles
-# defaultSocialImage = "/android-chrome-512x512.png" # used as default for social media sharing (Open Graph and Twitter)
+defaultSocialImage = "/android-chrome-512x512.png"
 
- highlightCurrentMenuArea = true
+highlightCurrentMenuArea = true
 # smartTOC = true
 # smartTOCHideUnfocusedChildren = true
 
@@ -48,11 +46,9 @@ customCSS = ["css/custom.css"]
   showCopyright = true
   showThemeAttribution = false
   showAppearanceSwitcher = true
-  # showScrollToTop = true
 
 [homepage]
   layout = "profile" # valid options: page, profile, hero, card, background, custom
-  homepageImage = "image.jpg" # used in: hero, and card
   showRecent = true
   showRecentItems = 6
   recentLimit = 6
@@ -60,7 +56,6 @@ customCSS = ["css/custom.css"]
   showHero = true
   showAllPosts = false
   cardView = true
-  # cardViewScreenWidth = false
   layoutBackgroundBlur = true
   disableHeroImageFilter = false
 
@@ -80,7 +75,6 @@ customCSS = ["css/custom.css"]
   showBreadcrumbs = false
   showDraftLabel = true
   showEdit = false
-  # editURL = "https://github.com/username/repo/"
   editAppendPath = true
   seriesOpened = false
   showHeadingAnchors = true
@@ -90,19 +84,17 @@ customCSS = ["css/custom.css"]
   showTableOfContents = false
   showRelatedContent = true
   relatedContentLimit = 5
-  showTaxonomies = false # use showTaxonomies OR showCategoryOnly, not both
-  showCategoryOnly = false # use showTaxonomies OR showCategoryOnly, not both
+  showTaxonomies = false
+  showCategoryOnly = false
   showAuthorsBadges = false
   showWordCount = false
   showComments = false
-  # sharingLinks = [ "linkedin", "twitter", "bluesky", "mastodon", "reddit", "pinterest", "facebook", "email", "whatsapp", "telegram", "line"]
   showZenMode = false
 
 [list]
   showHero = true
-  # heroStyle = "background" # valid options: basic, big, background, thumbAndBackground
-  layoutBackgroundBlur = true # only used when heroStyle equals background or thumbAndBackground
-  layoutBackgroundHeaderSpace = true # only used when heroStyle equals background
+  layoutBackgroundBlur = true
+  layoutBackgroundHeaderSpace = true
   showBreadcrumbs = false
   showSummary = false
   showViews = false
@@ -121,7 +113,6 @@ customCSS = ["css/custom.css"]
 [taxonomy]
   showTermCount = true
   showHero = false
-  # heroStyle = "background" # valid options: basic, big, background, thumbAndBackground
   showBreadcrumbs = false
   showViews = false
   showLikes = false
@@ -130,7 +121,6 @@ customCSS = ["css/custom.css"]
 
 [term]
   showHero = false
-  # heroStyle = "background" # valid options: basic, big, background, thumbAndBackground
   showBreadcrumbs = false
   showViews = false
   showLikes = false
@@ -140,49 +130,19 @@ customCSS = ["css/custom.css"]
   cardViewScreenWidth = false
 
 [assetPipeline]
-  # customCSS = ["XXX"]
 
 [firebase]
-  # apiKey = "XXXXXX"
-  # authDomain = "XXXXXX"
-  # projectId = "XXXXXX"
-  # storageBucket = "XXXXXX"
-  # messagingSenderId = "XXXXXX"
-  # appId = "XXXXXX"
-  # measurementId = "XXXXXX"
 
 [fathomAnalytics]
-  # site = "ABC12345"
-  # domain = "llama.yoursite.com"
 
 [umamiAnalytics]
-  # websiteid = "ABC12345"
-  # domain = "llama.yoursite.com"
-  # dataDomains = "yoursite.com,yoursite2.com"
-  # scriptName = ""
-  # enableTrackEvent = true
 
 [selineAnalytics]
-  # token = "XXXXXX"
-  # enableTrackEvent = true
 
 [buymeacoffee]
-  # identifier = ""
-  # globalWidget = true
-  # globalWidgetMessage = "Hello"
-  # globalWidgetColor = "#FFDD00"
-  # globalWidgetPosition = "Right"
 
 [verification]
-  # google = ""
-  # bing = ""
-  # pinterest = ""
-  # yandex = ""
-  # fediverse = ""
 
 [rssnext]
-  # feedId = ""
-  # userId = ""
 
 [advertisement]
-  # adsense = ""
