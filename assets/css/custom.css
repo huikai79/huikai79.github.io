@@ -1,7 +1,10 @@
 /* ----------------- Layout safety ----------------- */
-html,
-body {
+html {
   overflow-x: clip;
+}
+
+body {
+  overflow-x: visible;
 }
 
 /* ----------------- Full-width article hero ----------------- */
