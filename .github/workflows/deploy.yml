@@ -47,6 +47,7 @@ jobs:
         run: |
           echo "=== Article bundle list ==="
           find content/posts -maxdepth 2 -type f -name "index.md" -print
+          test -s content/posts/_index.md
 
       - name: Commit & push synced content
         run: |
@@ -93,22 +94,29 @@ jobs:
       - name: Validate templates
         run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
 
-      - name: Build site
-        run: hugo --minify
+      - name: Build site from a clean destination
+        run: |
+          rm -rf public
+          hugo --minify
 
       - name: List generated js/css
         run: ls -R public/js public/css || true
 
-      - name: Verify representative article output
+      - name: Verify site output
         run: |
+          test -s public/index.html
           test -s public/posts/how-to-be-an-expert/index.html
           grep -q 'class=scroll-to-top\|class="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
-          if grep -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public/posts/how-to-be-an-expert/index.html; then
-            echo "::error::Temporary Notion/S3 image URL is still present in rendered HTML"
+          grep -q 'lang=zh-CN\|lang="zh-CN"' public/index.html
+          grep -q '庄辉恺的个人博客' public/index.html
+
+          if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
+            echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
             exit 1
           fi
-          if grep -q '<svg \.\.\.' public/posts/how-to-be-an-expert/index.html; then
-            echo "::error::Placeholder SVG markup is still present in rendered HTML"
+
+          if grep -R -q '<svg \.\.\.' public; then
+            echo "::error::Placeholder SVG markup is still present in rendered site"
             exit 1
           fi
 

@@ -1,0 +1,16 @@
+[[main]]
+  name = "首页"
+  pageRef = "/"
+  weight = 10
+
+[[main]]
+  name = "文章"
+  pre = "blogger"
+  pageRef = "posts"
+  weight = 20
+
+[[main]]
+  name = "标签"
+  pre = "tag"
+  pageRef = "tags"
+  weight = 30
