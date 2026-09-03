@@ -29,7 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with: { node-version: 20 }
 
-      # .github/workflows/deploy.yml 关键段
       - name: Install npm dependencies
         run: |
           npm install --no-save \
@@ -44,16 +43,16 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node ./sync.mjs
 
-      - name: 查看同步结果
+      - name: Inspect synced article bundles
         run: |
-          echo "=== 文章 bundle 列表 ==="
-          find content/posts -maxdepth 2 -type f -name "index.md"
+          echo "=== Article bundle list ==="
+          find content/posts -maxdepth 2 -type f -name "index.md" -print
 
       - name: Commit & push synced content
         run: |
-          git config user.name  github-actions
+          git config user.name github-actions
           git config user.email github-actions@github.com
-          git add content/posts                    # 只提交文章目录
+          git add content/posts
           if git diff --cached --quiet; then
             echo "No synced-content changes to commit"
           else
@@ -66,8 +65,7 @@ jobs:
           mkdir -p layouts assets
           rsync -a --ignore-existing themes/blowfish/layouts/ layouts/
           rsync -a --ignore-existing themes/blowfish/assets/ assets/
-          
-      # 在这一步之后，确保把自己的文件再放回去（如果你把自定义文件放 my_overrides）：
+
       - name: Restore custom single & pagination
         run: |
           mkdir -p layouts/_default layouts/partials/article
@@ -92,25 +90,32 @@ jobs:
           hugo version
           hugo env
 
-      - name: Debug which templates are used
+      - name: Validate templates
         run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
 
       - name: Build site
         run: hugo --minify
-        
+
       - name: List generated js/css
         run: ls -R public/js public/css || true
+
+      - name: Verify representative article output
+        run: |
+          test -s public/posts/how-to-be-an-expert/index.html
+          grep -q 'class=scroll-to-top\|class="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
+          if grep -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public/posts/how-to-be-an-expert/index.html; then
+            echo "::error::Temporary Notion/S3 image URL is still present in rendered HTML"
+            exit 1
+          fi
+          if grep -q '<svg \.\.\.' public/posts/how-to-be-an-expert/index.html; then
+            echo "::error::Placeholder SVG markup is still present in rendered HTML"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
-          
-      - name: Debug HTML output
-        run: |
-          head -n 80 public/posts/bealife/index.html || true
-          echo "---- size ----"
-          wc -c public/posts/bealife/index.html || true
 
   deploy:
     runs-on: ubuntu-latest
