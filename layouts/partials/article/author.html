@@ -1,32 +1,22 @@
-<div class="article-footer md:flex-row">
-  <div class="author-card justify-left mx-auto">
-    
-    <!-- 作者头像 -->
-    <img
-      src="https://avatars.githubusercontent.com/u/185808855?v=4"
-      alt="庄辉恺"
-      class="w-24 h-24 rounded-full border-4 border-yellow-500 object-cover shadow-md"
-    />
+<div class="article-footer mx-auto mt-10 w-full max-w-3xl px-4">
+  <div class="author-card">
+    {{ with .Site.Params.Author.image }}
+      <img
+        src="{{ . | safeURL }}"
+        alt="{{ $.Site.Params.Author.name | default "Author" }}"
+        class="author-avatar"
+        loading="lazy"
+      />
+    {{ end }}
 
-    <!-- 作者文字与社群 -->
-    <div class="flex flex-col justify-center">
-      <div class="text-[0.6rem] uppercase leading-3 text-neutral-500 dark:text-neutral-400">
-        作者
-      </div>
-      <div class="font-semibold leading-6 text-neutral-800 dark:text-neutral-300">庄辉恺</div>
-      <div class="text-sm text-neutral-700 dark:text-neutral-400 mb-1">A little bit about me</div>
-
-      <!-- 社群 icon -->
-      <div class="flex flex-wrap justify-start text-neutral-400 dark:text-neutral-500">
-        <a class="social-icon" href="https://facebook.com/huikai" target="_blank" aria-label="Facebook">
-          <svg ... class="w-5 h-5 fill-current"></svg>
-        </a>
-        <a class="social-icon" href="https://github.com/huikai79" ...>
-          <svg ... class="w-5 h-5 fill-current"></svg>
-        </a>
-        <a class="social-icon" href="https://open.spotify.com/user/..." ...>
-          <svg ... class="w-5 h-5 fill-current"></svg>
-        </a>
+    <div class="min-w-0 flex-1">
+      <div class="author-label">作者</div>
+      <div class="author-name">{{ .Site.Params.Author.name }}</div>
+      {{ with .Site.Params.Author.bio }}
+        <div class="author-bio">{{ . }}</div>
+      {{ end }}
+      <div class="mt-2">
+        {{ partial "author-links.html" . }}
       </div>
     </div>
   </div>
