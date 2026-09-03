@@ -24,11 +24,11 @@ jobs:
       deploy_needed: ${{ steps.deploy_gate.outputs.deploy_needed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        uses: actions/setup-node@v7
+        with: { node-version: 24 }
 
       - name: Install locked Notion sync dependencies
         run: |
@@ -38,20 +38,27 @@ jobs:
           fi
 
           npm ci --ignore-scripts --no-audit --no-fund
+          node --version
+          npm --version
           npm ls --depth=0 '@notionhq/client' notion-to-md p-limit node-fetch
 
-      - name: Check dependency fingerprint
+      - name: Check runtime and dependency fingerprint
         run: |
-          current_hash="$(sha256sum package-lock.json | awk '{print $1}')"
+          node_major="$(node -p 'process.versions.node.split(".")[0]')"
+          current_hash="$({
+            printf 'node-major=%s\n' "$node_major"
+            sha256sum package-lock.json
+          } | sha256sum | awk '{print $1}')"
           previous_hash="$(cat .notion-sync-deps.sha256 2>/dev/null || true)"
           printf '%s\n' "$current_hash" > /tmp/notion-sync-deps.sha256
 
-          echo "Current dependency fingerprint: $current_hash"
+          echo "Node major: $node_major"
+          echo "Current runtime/dependency fingerprint: $current_hash"
           if [ "$current_hash" != "$previous_hash" ]; then
-            echo "Dependency graph changed; invalidating the previous Notion manifest."
+            echo "Runtime or dependency graph changed; invalidating the previous Notion manifest."
             rm -f .notion-sync-manifest.json
           else
-            echo "Dependency graph unchanged; existing manifest may be reused."
+            echo "Runtime/dependency graph unchanged; existing manifest may be reused."
           fi
 
       - name: Sync Notion -> verified Markdown snapshot
@@ -116,7 +123,7 @@ jobs:
             jq -r '.pages[] | "- `\(.slug)`: **\(.action)** (`\(.reason)`)"' .notion-sync-report.json
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Finalize dependency fingerprint
+      - name: Finalize runtime and dependency fingerprint
         run: cp /tmp/notion-sync-deps.sha256 .notion-sync-deps.sha256
 
       - name: Commit & push synced content
@@ -150,7 +157,7 @@ jobs:
 
       - name: Setup Go
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.24.4'
           cache: true
@@ -210,7 +217,7 @@ jobs:
 
       - name: Upload artifact
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./public
 
@@ -223,7 +230,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Purge Cloudflare Cache
         if: ${{ success() }}
