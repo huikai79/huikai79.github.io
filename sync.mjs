@@ -33,6 +33,22 @@ function fileExtensionFromUrl(url, fallback = ".jpg") {
   }
 }
 
+function plainTextSummary(markdown, maxLength = 150) {
+  const plain = markdown
+    .replace(/{{<[^>]+>}}/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[>*_~|-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!plain) return "";
+  return plain.length > maxLength ? `${plain.slice(0, maxLength).trim()}…` : plain;
+}
+
 async function localizeMarkdownImages(markdown, bundle) {
   const imagePattern = /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)(?:\s+"[^"]*")?\)/g;
   const matches = [...markdown.matchAll(imagePattern)];
@@ -74,6 +90,10 @@ async function sync() {
   /* 1. 重新產生文章輸出 */
   await fs.rm(OUT_DIR, { recursive: true, force: true });
   await fs.mkdir(OUT_DIR, { recursive: true });
+  await fs.writeFile(
+    path.join(OUT_DIR, "_index.md"),
+    '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n'
+  );
 
   /* 2. 分頁抓取 Notion 資料庫 */
   let cursor, total = 0;
@@ -141,6 +161,7 @@ async function sync() {
         (_m, id) => `{{< youtube ${id} >}}`
       );
       mdBody = await localizeMarkdownImages(mdBody, bundle);
+      const description = plainTextSummary(mdBody);
 
       /* 2-6 Front matter */
       const esc = s => s?.replace(/"/g, '\\"');
@@ -149,6 +170,7 @@ async function sync() {
         `title: "${esc(title)}"`,
         `date: "${date}"`,
         `slug: "${slug}"`,
+        description && `description: "${esc(description)}"`,
         `tags: [${tags.map(t => `"${esc(t)}"`).join(", ")}]`,
         coverField && `cover: "${coverField}"`,
         iconField && `icon: "${iconField}"`,
