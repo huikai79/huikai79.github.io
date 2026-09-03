@@ -30,13 +30,13 @@ jobs:
         uses: actions/setup-node@v4
         with: { node-version: 20 }
 
-      - name: Install npm dependencies
+      - name: Install pinned Notion sync dependencies
         run: |
-          npm install --no-save \
-            '@notionhq/client@^2.3.0' \
-            'notion-to-md@^2.4.0'     \
-            'p-limit@^6.2.0'          \
-            'node-fetch@^3.3.2'
+          npm install --no-save --save-exact \
+            '@notionhq/client@2.3.0' \
+            'notion-to-md@2.4.0'     \
+            'p-limit@6.2.0'          \
+            'node-fetch@3.3.2'
 
       - name: Sync Notion -> verified Markdown snapshot
         env:
@@ -47,18 +47,36 @@ jobs:
       - name: Verify sync report and article bundles
         run: |
           test -s .notion-sync-report.json
-          jq -e '.status == "complete" and (.published == .written)' .notion-sync-report.json > /dev/null
+          test -s .notion-sync-manifest.json
+          jq -e '
+            .status == "complete" and
+            (.published == .written) and
+            (.written == (.reused + .rebuilt)) and
+            (.deleted | type == "array") and
+            (.pages | type == "array")
+          ' .notion-sync-report.json > /dev/null
 
           published="$(jq -r '.published' .notion-sync-report.json)"
           written="$(jq -r '.written' .notion-sync-report.json)"
+          reused="$(jq -r '.reused' .notion-sync-report.json)"
+          rebuilt="$(jq -r '.rebuilt' .notion-sync-report.json)"
+          deleted="$(jq -r '.deleted | length' .notion-sync-report.json)"
+          fast_path="$(jq -r '.fastPath' .notion-sync-report.json)"
           bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
+          manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
 
           echo "Published: $published"
           echo "Written: $written"
+          echo "Reused: $reused"
+          echo "Rebuilt: $rebuilt"
+          echo "Deleted: $deleted"
+          echo "Fast path: $fast_path"
           echo "Article bundles: $bundle_count"
+          echo "Manifest pages: $manifest_count"
 
           test "$published" -eq "$written"
           test "$written" -eq "$bundle_count"
+          test "$published" -eq "$manifest_count"
           test -s content/posts/_index.md
 
           if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
@@ -66,12 +84,28 @@ jobs:
             exit 1
           fi
 
+          {
+            echo "## Notion sync"
+            echo ""
+            echo "| Metric | Count |"
+            echo "| --- | ---: |"
+            echo "| Published | $published |"
+            echo "| Reused | $reused |"
+            echo "| Rebuilt | $rebuilt |"
+            echo "| Deleted | $deleted |"
+            echo ""
+            echo "Fast path: **$fast_path**"
+            echo ""
+            echo "### Page decisions"
+            jq -r '.pages[] | "- `\(.slug)`: **\(.action)** (`\(.reason)`)"' .notion-sync-report.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit & push synced content
         id: sync_commit
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add content/posts
+          git add content/posts .notion-sync-manifest.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No synced-content changes to commit"
