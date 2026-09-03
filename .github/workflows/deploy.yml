@@ -125,8 +125,15 @@ jobs:
       - name: Purge Cloudflare Cache
         if: ${{ success() }}
         run: |
-          response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
+          if response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
             -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}')"
-          echo "$response" | jq -e '.success == true' > /dev/null
+            --data '{"purge_everything":true}')"; then
+            if echo "$response" | jq -e '.success == true' > /dev/null; then
+              echo "Cloudflare cache purged"
+            else
+              echo "::warning::GitHub Pages deployed, but Cloudflare rejected the cache-purge response. Check CF_ZONE_ID and CF_API_TOKEN."
+            fi
+          else
+            echo "::warning::GitHub Pages deployed, but Cloudflare cache purge failed. Check CF_ZONE_ID and CF_API_TOKEN."
+          fi
