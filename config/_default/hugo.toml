@@ -2,11 +2,11 @@
 # Refer to the theme docs for more details about each of these parameters.
 # https://blowfish.page/docs/getting-started/
 
-theme = "blowfish" # UNCOMMENT THIS LINE
+theme = "blowfish"
 baseURL = "https://huikai.com.kg/"
-defaultContentLanguage = "en"
+defaultContentLanguage = "zh-CN"
 
-pluralizeListTitles = "true" # hugo function useful for non-english languages, find out more in  https://gohugo.io/getting-started/configuration/#pluralizelisttitles
+pluralizeListTitles = false
 
 enableRobotsTXT = true
 summaryLength = 0
@@ -15,8 +15,6 @@ buildDrafts = false
 buildFuture = false
 
 enableEmoji = true
-
-# googleAnalytics = "G-XXXXXXXXX"
 
 [pagination]
   pagerSize = 15
