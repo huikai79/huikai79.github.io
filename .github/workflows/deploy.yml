@@ -20,6 +20,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      deploy_needed: ${{ steps.deploy_gate.outputs.deploy_needed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,43 +38,79 @@ jobs:
             'p-limit@^6.2.0'          \
             'node-fetch@^3.3.2'
 
-      - name: Sync Notion -> Markdown
+      - name: Sync Notion -> verified Markdown snapshot
         env:
           NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node ./sync.mjs
 
-      - name: Inspect synced article bundles
+      - name: Verify sync report and article bundles
         run: |
-          echo "=== Article bundle list ==="
-          find content/posts -maxdepth 2 -type f -name "index.md" -print
+          test -s .notion-sync-report.json
+          jq -e '.status == "complete" and (.published == .written)' .notion-sync-report.json > /dev/null
+
+          published="$(jq -r '.published' .notion-sync-report.json)"
+          written="$(jq -r '.written' .notion-sync-report.json)"
+          bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
+
+          echo "Published: $published"
+          echo "Written: $written"
+          echo "Article bundles: $bundle_count"
+
+          test "$published" -eq "$written"
+          test "$written" -eq "$bundle_count"
           test -s content/posts/_index.md
 
+          if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
+            echo "::error::Notion sync staging/backup directory leaked after completion"
+            exit 1
+          fi
+
       - name: Commit & push synced content
+        id: sync_commit
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add content/posts
           if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No synced-content changes to commit"
           else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
             git push origin HEAD:main
           fi
 
+      - name: Decide whether deployment is needed
+        id: deploy_gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CONTENT_CHANGED: ${{ steps.sync_commit.outputs.changed }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ] && [ "$CONTENT_CHANGED" != "true" ]; then
+            echo "deploy_needed=false" >> "$GITHUB_OUTPUT"
+            echo "Scheduled sync is unchanged; skipping Hugo build, Pages deploy, and Cloudflare purge."
+          else
+            echo "deploy_needed=true" >> "$GITHUB_OUTPUT"
+            echo "Deployment required for event=$EVENT_NAME content_changed=$CONTENT_CHANGED"
+          fi
+
       - name: Setup Go
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.4'
           cache: true
 
       - name: Setup Hugo
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 0.147.8
           extended: true
 
       - name: Check Hugo and Blowfish versions
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         run: |
           which hugo
           hugo version
@@ -84,17 +122,21 @@ jobs:
           test ! -d themes/blowfish
 
       - name: Validate templates
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
 
       - name: Build site from a clean destination
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         run: |
           rm -rf public
           hugo --minify
 
       - name: List generated js/css
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         run: ls -R public/js public/css || true
 
       - name: Verify site output
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         run: |
           test -s public/index.html
           test -s public/posts/how-to-be-an-expert/index.html
@@ -114,11 +156,13 @@ jobs:
           fi
 
       - name: Upload artifact
+        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
 
   deploy:
+    if: needs.build.outputs.deploy_needed == 'true'
     runs-on: ubuntu-latest
     needs: build
     environment:
