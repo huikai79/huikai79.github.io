@@ -34,9 +34,10 @@ jobs:
         run: |
           npm install --no-save --save-exact \
             '@notionhq/client@2.3.0' \
-            'notion-to-md@2.4.0'     \
+            'notion-to-md@2.7.0'     \
             'p-limit@6.2.0'          \
             'node-fetch@3.3.2'
+          npm ls --depth=0 '@notionhq/client' notion-to-md p-limit node-fetch
 
       - name: Sync Notion -> verified Markdown snapshot
         env:
