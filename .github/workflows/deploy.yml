@@ -30,14 +30,29 @@ jobs:
         uses: actions/setup-node@v4
         with: { node-version: 20 }
 
-      - name: Install pinned Notion sync dependencies
+      - name: Install locked Notion sync dependencies
         run: |
-          npm install --no-save --save-exact \
-            '@notionhq/client@2.3.0' \
-            'notion-to-md@2.7.0'     \
-            'p-limit@6.2.0'          \
-            'node-fetch@3.3.2'
+          if [ ! -s package-lock.json ]; then
+            echo "Bootstrapping package-lock.json from exact package.json dependencies"
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
+
+          npm ci --ignore-scripts --no-audit --no-fund
           npm ls --depth=0 '@notionhq/client' notion-to-md p-limit node-fetch
+
+      - name: Check dependency fingerprint
+        run: |
+          current_hash="$(sha256sum package-lock.json | awk '{print $1}')"
+          previous_hash="$(cat .notion-sync-deps.sha256 2>/dev/null || true)"
+          printf '%s\n' "$current_hash" > /tmp/notion-sync-deps.sha256
+
+          echo "Current dependency fingerprint: $current_hash"
+          if [ "$current_hash" != "$previous_hash" ]; then
+            echo "Dependency graph changed; invalidating the previous Notion manifest."
+            rm -f .notion-sync-manifest.json
+          else
+            echo "Dependency graph unchanged; existing manifest may be reused."
+          fi
 
       - name: Sync Notion -> verified Markdown snapshot
         env:
@@ -101,12 +116,15 @@ jobs:
             jq -r '.pages[] | "- `\(.slug)`: **\(.action)** (`\(.reason)`)"' .notion-sync-report.json
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Finalize dependency fingerprint
+        run: cp /tmp/notion-sync-deps.sha256 .notion-sync-deps.sha256
+
       - name: Commit & push synced content
         id: sync_commit
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add content/posts .notion-sync-manifest.json
+          git add content/posts .notion-sync-manifest.json .notion-sync-deps.sha256 package-lock.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No synced-content changes to commit"
