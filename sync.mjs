@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import fetch from "node-fetch";
@@ -15,9 +16,12 @@ const OUT_DIR = "content/posts";
 const STAGING_DIR = `content/.posts-staging-${process.pid}`;
 const BACKUP_DIR = `content/.posts-backup-${process.pid}`;
 const REPORT_FILE = ".notion-sync-report.json";
+const MANIFEST_FILE = ".notion-sync-manifest.json";
+const MANIFEST_VERSION = 1;
 const ALLOW_EMPTY = process.env.ALLOW_EMPTY_NOTION_SYNC === "true";
 const filter = { property: "status", status: { equals: "Published" } };
 const dl = pLimit(5);
+const SECTION_INDEX = '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n';
 
 /* ---------- 工具函式 ---------- */
 const safeSlug = s => (s ?? "").replace(/[^a-zA-Z0-9-_]/g, "-");
@@ -31,6 +35,70 @@ async function pathExists(target) {
   } catch {
     return false;
   }
+}
+
+async function fileTextEquals(file, expected) {
+  try {
+    return await fs.readFile(file, "utf8") === expected;
+  } catch {
+    return false;
+  }
+}
+
+async function generatorHash() {
+  const source = await fs.readFile(new URL(import.meta.url));
+  return createHash("sha256").update(source).digest("hex");
+}
+
+async function directoryHash(dir) {
+  const files = [];
+
+  async function walk(current, relativeBase = "") {
+    const entries = await fs.readdir(current, { withFileTypes: true });
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const entry of entries) {
+      const full = path.join(current, entry.name);
+      const rel = path.posix.join(relativeBase, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full, rel);
+      } else if (entry.isFile()) {
+        files.push({ full, rel });
+      }
+    }
+  }
+
+  await walk(dir);
+  const hash = createHash("sha256");
+  for (const file of files) {
+    hash.update(file.rel);
+    hash.update("\0");
+    hash.update(await fs.readFile(file.full));
+    hash.update("\0");
+  }
+  return hash.digest("hex");
+}
+
+async function loadManifest(currentGeneratorHash) {
+  let parsed;
+  try {
+    parsed = JSON.parse(await fs.readFile(MANIFEST_FILE, "utf8"));
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      console.warn(`⚠️  無法讀取舊同步 manifest，將完整重建：${error.message}`);
+    }
+    return { manifest: { pages: {} }, reuseAllowed: false, reason: "manifest-missing" };
+  }
+
+  if (parsed.version !== MANIFEST_VERSION || !parsed.pages || typeof parsed.pages !== "object") {
+    return { manifest: parsed, reuseAllowed: false, reason: "manifest-version" };
+  }
+
+  if (parsed.generatorHash !== currentGeneratorHash) {
+    return { manifest: parsed, reuseAllowed: false, reason: "generator-changed" };
+  }
+
+  return { manifest: parsed, reuseAllowed: true, reason: "compatible" };
 }
 
 function safeUrlForLog(url) {
@@ -158,11 +226,13 @@ function validatePages(pages) {
     const slug = safeSlug(rawSlug);
     const date = p.date?.date?.start ?? "";
     const tags = p.tags?.multi_select?.map(tag => tag.name) ?? [];
+    const lastEditedTime = page.last_edited_time ?? "";
 
     const missing = [];
     if (!title) missing.push("Title");
     if (!slug) missing.push("slug");
     if (!date) missing.push("date");
+    if (!lastEditedTime) missing.push("last_edited_time");
 
     if (missing.length) {
       throw new Error(`Published page ${page.id} 缺少必要欄位：${missing.join(", ")}`);
@@ -173,10 +243,36 @@ function validatePages(pages) {
     }
     seenSlugs.set(slug, page.id);
 
-    return { page, title, slug, date, tags };
+    return { page, title, slug, date, tags, lastEditedTime };
   });
 
   return validated.sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+async function reuseDecision(candidate, manifestState) {
+  if (!manifestState.reuseAllowed) {
+    return { reuse: false, reason: manifestState.reason };
+  }
+
+  const previous = manifestState.manifest.pages?.[candidate.page.id];
+  if (!previous) return { reuse: false, reason: "new-page" };
+  if (previous.slug !== candidate.slug) return { reuse: false, reason: "slug-changed" };
+  if (previous.lastEditedTime !== candidate.lastEditedTime) {
+    return { reuse: false, reason: "notion-edited" };
+  }
+  if (!previous.bundleHash) return { reuse: false, reason: "missing-bundle-hash" };
+
+  const oldBundle = path.join(OUT_DIR, candidate.slug);
+  if (!(await pathExists(path.join(oldBundle, "index.md")))) {
+    return { reuse: false, reason: "bundle-missing" };
+  }
+
+  const currentBundleHash = await directoryHash(oldBundle);
+  if (currentBundleHash !== previous.bundleHash) {
+    return { reuse: false, reason: "bundle-drift" };
+  }
+
+  return { reuse: true, reason: "unchanged", bundleHash: currentBundleHash };
 }
 
 async function buildArticle(candidate) {
@@ -236,7 +332,8 @@ async function buildArticle(candidate) {
   ].filter(Boolean).join("\n");
 
   await fs.writeFile(path.join(bundle, "index.md"), front + mdBody);
-  console.log("📄  寫入", `${slug}/index.md`);
+  console.log("📄  重建", `${slug}/index.md`);
+  return directoryHash(bundle);
 }
 
 async function replaceOutput() {
@@ -261,6 +358,12 @@ async function replaceOutput() {
   }
 }
 
+function stablePagesObject(entries) {
+  return Object.fromEntries(
+    [...entries.entries()].sort(([a], [b]) => a.localeCompare(b))
+  );
+}
+
 /* ---------- 主流程 ---------- */
 async function sync() {
   if (!process.env.NOTION_TOKEN) throw new Error("NOTION_TOKEN 未設定");
@@ -271,41 +374,118 @@ async function sync() {
   await fs.rm(BACKUP_DIR, { recursive: true, force: true });
 
   try {
-    /* 1. 先完整抓取並驗證 Published snapshot；此時不碰正式輸出 */
+    /* 1. 只抓 database snapshot，先驗證欄位與唯一 slug */
     const pages = await collectPublishedPages();
     const candidates = validatePages(pages);
+    const currentGeneratorHash = await generatorHash();
+    const manifestState = await loadManifest(currentGeneratorHash);
 
-    /* 2. 在 staging 建立完整新快照 */
-    await fs.mkdir(STAGING_DIR, { recursive: true });
-    await fs.writeFile(
-      path.join(STAGING_DIR, "_index.md"),
-      '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n'
-    );
+    const previousPages = manifestState.manifest.pages ?? {};
+    const currentIds = new Set(candidates.map(candidate => candidate.page.id));
+    const deleted = Object.entries(previousPages)
+      .filter(([pageId]) => !currentIds.has(pageId))
+      .map(([, entry]) => entry.slug)
+      .filter(Boolean)
+      .sort();
 
-    let written = 0;
+    const plans = [];
     for (const candidate of candidates) {
-      await buildArticle(candidate);
-      written += 1;
+      plans.push({
+        candidate,
+        decision: await reuseDecision(candidate, manifestState)
+      });
     }
 
+    const reused = plans.filter(plan => plan.decision.reuse).length;
+    const rebuilt = plans.length - reused;
+    const sectionCurrent = await fileTextEquals(path.join(OUT_DIR, "_index.md"), SECTION_INDEX);
+    const fastPath = rebuilt === 0 && deleted.length === 0 && sectionCurrent;
+
+    const nextPages = new Map();
+
+    if (fastPath) {
+      for (const plan of plans) {
+        const { candidate, decision } = plan;
+        nextPages.set(candidate.page.id, {
+          slug: candidate.slug,
+          lastEditedTime: candidate.lastEditedTime,
+          bundleHash: decision.bundleHash
+        });
+        console.log("♻️  沿用", `${candidate.slug}/index.md`);
+      }
+      console.log("⚡ 所有 Published 文章均未變更，略過 Markdown 與媒體重新下載");
+    } else {
+      /* 2. 需要變更時才建立 staging snapshot */
+      await fs.mkdir(STAGING_DIR, { recursive: true });
+      await fs.writeFile(path.join(STAGING_DIR, "_index.md"), SECTION_INDEX);
+
+      for (const plan of plans) {
+        const { candidate, decision } = plan;
+        let bundleHash;
+
+        if (decision.reuse) {
+          const source = path.join(OUT_DIR, candidate.slug);
+          const target = path.join(STAGING_DIR, candidate.slug);
+          await fs.cp(source, target, { recursive: true });
+          bundleHash = decision.bundleHash;
+          console.log("♻️  沿用", `${candidate.slug}/index.md`);
+        } else {
+          console.log(`🔄 需要重建 ${candidate.slug}：${decision.reason}`);
+          bundleHash = await buildArticle(candidate);
+        }
+
+        nextPages.set(candidate.page.id, {
+          slug: candidate.slug,
+          lastEditedTime: candidate.lastEditedTime,
+          bundleHash
+        });
+      }
+
+      /* 3. staging 完整成功後才替換正式輸出 */
+      await replaceOutput();
+    }
+
+    const written = reused + rebuilt;
     if (written !== candidates.length) {
       throw new Error(`同步數量不一致：Published=${candidates.length}, written=${written}`);
     }
 
-    /* 3. 全部成功後才替換正式輸出 */
-    await replaceOutput();
+    /* 4. manifest 必須 deterministic，無變更時 Git 不應產生差異 */
+    const nextManifest = {
+      version: MANIFEST_VERSION,
+      generatorHash: currentGeneratorHash,
+      pages: stablePagesObject(nextPages)
+    };
+    await fs.writeFile(MANIFEST_FILE, `${JSON.stringify(nextManifest, null, 2)}\n`);
 
-    /* 4. 寫入機器可讀報告，供 CI 驗證，不加入 Git */
+    /* 5. report 提供 CI 與 Actions Summary 使用，不加入 Git */
     const report = {
       status: "complete",
       published: candidates.length,
       written,
-      slugs: candidates.map(candidate => candidate.slug),
+      reused,
+      rebuilt,
+      deleted,
+      fastPath,
+      manifestReuse: manifestState.reuseAllowed,
+      manifestReason: manifestState.reason,
+      pages: plans.map(plan => ({
+        pageId: plan.candidate.page.id,
+        slug: plan.candidate.slug,
+        action: plan.decision.reuse ? "reused" : "rebuilt",
+        reason: plan.decision.reason,
+        lastEditedTime: plan.candidate.lastEditedTime
+      })),
       completedAt: new Date().toISOString()
     };
     await fs.writeFile(REPORT_FILE, `${JSON.stringify(report, null, 2)}\n`);
 
-    console.log(`✅ 同步完成：Published=${candidates.length}, written=${written}`);
+    if (deleted.length) {
+      console.log(`🗑️  移除未再 Published 的文章：${deleted.join(", ")}`);
+    }
+    console.log(
+      `✅ 同步完成：Published=${candidates.length}, reused=${reused}, rebuilt=${rebuilt}, deleted=${deleted.length}`
+    );
   } catch (error) {
     await fs.rm(STAGING_DIR, { recursive: true, force: true }).catch(() => {});
     if (!(await pathExists(OUT_DIR)) && await pathExists(BACKUP_DIR)) {
