@@ -3,3 +3,6 @@ resources/_gen/
 .hugo_build.lock
 node_modules/
 themes/
+.notion-sync-report.json
+content/.posts-staging-*/
+content/.posts-backup-*/
