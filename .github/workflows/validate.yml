@@ -107,6 +107,9 @@ jobs:
           require_match '庄辉恺的个人博客' "$home" "Homepage site description is missing"
           require_match 'property="?og:image"?' "$home" "Homepage Open Graph image metadata is missing"
           require_match 'name="?twitter:image"?' "$home" "Homepage Twitter image metadata is missing"
+          require_match 'HUIKAI' "$home" "Landing hero caption is missing"
+          require_match '思考 AI、学习、阅读与生活' "$home" "Landing hero positioning text is missing"
+          require_match 'href="?/posts/' "$home" "Landing posts CTA is missing"
 
           if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
             echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
