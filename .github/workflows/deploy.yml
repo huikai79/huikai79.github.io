@@ -166,7 +166,7 @@ jobs:
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 0.147.8
+          hugo-version: 0.165.0
           extended: true
 
       - name: Check Hugo and Blowfish versions
@@ -178,8 +178,18 @@ jobs:
           go version
           go mod download
           hugo mod graph | tee /tmp/hugo-mod-graph.txt
-          grep -q 'github.com/nunocoracao/blowfish/v2@v2.87.0' /tmp/hugo-mod-graph.txt
+          grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
           test ! -d themes/blowfish
+
+          if grep -R -q 'github.com/nunocoracao/blowfish/v2' go.mod go.sum config/_default; then
+            echo "::error::Blowfish v2 reference remains after the v3 upgrade"
+            exit 1
+          fi
+
+          if ! git diff --exit-code -- go.mod go.sum; then
+            echo "::error::Go module files are not fully committed; run go mod download/tidy and commit the resulting go.mod/go.sum"
+            exit 1
+          fi
 
       - name: Validate templates
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
@@ -201,9 +211,12 @@ jobs:
           test -s public/index.html
           test -s public/posts/how-to-be-an-expert/index.html
           grep -q 'class=scroll-to-top\|class="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
+          grep -q 'id=scroll-to-top\|id="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
           grep -q 'href=#the-top\|href="#the-top"' public/posts/how-to-be-an-expert/index.html
           grep -q 'lang=zh-CN\|lang="zh-CN"' public/index.html
           grep -q '庄辉恺的个人博客' public/index.html
+          grep -q 'property=og:image\|property="og:image"' public/index.html
+          grep -q 'name=twitter:image\|name="twitter:image"' public/index.html
 
           if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
             echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
