@@ -7,8 +7,7 @@ tags: ["Youtube"]
 cover: "cover.jpg"
 icon: "🗃️"
 images: ["cover.jpg"]
----
-{{< youtube lft-tgU94hc >}}
+---{{< youtube lft-tgU94hc >}}
 
 
 影片描述：

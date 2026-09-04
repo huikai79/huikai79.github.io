@@ -7,10 +7,8 @@ tags: ["技术学习", "测试"]
 cover: "cover.jpg"
 icon: "💜"
 images: ["cover.jpg"]
----
-摘要
+---摘要
 NGH 把 Notion 当作可视化写作／协作后端，借 GitHub 进行版控与自动化建置，再由 Hugo 输出纯静态网页；此组合让内容输入门槛更低、页面载入更快、成本趋近零，但也受限于 Notion API 速率、媒体处理与即时报稿需求。整体而言，它非常适合「重内容、轻功能」的小型部落格或个人／团队知识库，但若需要会员系统、实时互动或庞大流量，则须谨慎评估。
-
 
 
 运作流程速览
@@ -21,7 +19,6 @@ NGH 把 Notion 当作可视化写作／协作后端，借 GitHub 进行版控与
 3. Hugo 编译 Markdown 为静态档案。
 
 4. 成品推送至 GitHub Pages、Cloudflare Pages 等 CDN-式托管。
-
 
 
 ---
@@ -75,7 +72,6 @@ Notion API 速率	平均 3 req/s，超出即 429 错误。	大量页面或复杂
 6. 为图片加缓存／镜像：透过 Cloudflare Images、S3 或 Git LFS，避免 URL 失效。
 
 7. 监控建置日志：超过 API 速率时改用 cron 定时触发或分页拉取。
-
 
 
 ---

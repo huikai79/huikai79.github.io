@@ -7,8 +7,7 @@ tags: ["Youtube"]
 cover: "cover.jpg"
 icon: "✍🏻"
 images: ["cover.jpg"]
----
-[{{< youtube 2OZ94b3fJvo >}}
+---[{{< youtube 2OZ94b3fJvo >}}
 
 
 以下是关于Paul Graham写作理念和成功经验的重点整理：
