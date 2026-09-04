@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tomllib
@@ -228,12 +229,19 @@ if home:
         fail("Homepage section #home-recent is missing")
 
     config_path = ROOT / "data" / "homepage.toml"
+    manifest_path = ROOT / ".notion-sync-manifest.json"
     try:
         with config_path.open("rb") as handle:
             homepage_config = tomllib.load(handle)
     except Exception as error:
         homepage_config = {}
         fail(f"Unable to read {config_path}: {error}")
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as error:
+        manifest = {"pages": {}}
+        fail(f"Unable to read {manifest_path}: {error}")
 
     selected_limit = int(homepage_config.get("selectedLimit", 3))
     recent_limit = int(homepage_config.get("recentLimit", 5))
@@ -242,6 +250,36 @@ if home:
     if len(featured) != selected_limit:
         fail(f"Homepage featured config must contain exactly {selected_limit} entries; found {len(featured)}")
 
+    normalized_featured: list[dict[str, str]] = []
+    seen_page_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    for index, item in enumerate(featured, start=1):
+        if not isinstance(item, dict):
+            fail(f"Homepage featured entry #{index} must contain pageId and path")
+            continue
+        page_id = str(item.get("pageId", "")).strip()
+        path = str(item.get("path", "")).strip()
+        if not page_id or not path:
+            fail(f"Homepage featured entry #{index} is missing pageId or path")
+            continue
+        if page_id in seen_page_ids:
+            fail(f"Homepage featured pageId is duplicated: {page_id}")
+        if path.lower() in seen_paths:
+            fail(f"Homepage featured path is duplicated: {path}")
+        seen_page_ids.add(page_id)
+        seen_paths.add(path.lower())
+
+        manifest_entry = manifest.get("pages", {}).get(page_id)
+        expected_slug = path.strip("/").split("/")[-1]
+        if not manifest_entry:
+            fail(f"Homepage featured pageId is not present in Notion manifest: {page_id}")
+        elif manifest_entry.get("slug") != expected_slug:
+            fail(
+                f"Homepage stable identity mismatch for {page_id}: "
+                f"manifest slug={manifest_entry.get('slug')!r}, configured path={path!r}"
+            )
+        normalized_featured.append({"pageId": page_id, "path": path})
+
     selected_paths = home_parser.selected_paths
     recent_paths = home_parser.recent_paths
     if len(selected_paths) != selected_limit:
@@ -249,7 +287,7 @@ if home:
     if len(recent_paths) != recent_limit:
         fail(f"Homepage Recent must render exactly {recent_limit} items; found {len(recent_paths)}")
 
-    expected_selected = [normalize_config_path(path) for path in featured]
+    expected_selected = [normalize_config_path(item["path"]) for item in normalized_featured]
     actual_selected = [path.lower() for path in selected_paths]
     if actual_selected != expected_selected:
         fail(f"Homepage Selected order mismatch: expected={expected_selected}, actual={actual_selected}")
@@ -258,7 +296,8 @@ if home:
     if overlap:
         fail(f"Homepage Selected and Recent overlap: {overlap}")
 
-    for configured, rendered in zip(featured, selected_paths):
+    for item, rendered in zip(normalized_featured, selected_paths):
+        configured = item["path"]
         source_dir = ROOT / "content" / configured.strip("/")
         real_covers = [path for path in source_dir.glob("cover*") if path.is_file()]
         if not real_covers:
