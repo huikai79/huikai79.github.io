@@ -1,7 +1,7 @@
 ---
-title: "思考 AI、学习、阅读与生活。"
+title: "庄辉恺"
 heroCaption: "HUIKAI"
-heroLead: "记录那些值得长期保留的东西。"
+heroLead: "思考 AI、学习、阅读与生活，记录那些值得长期保留的东西。"
 heroButtons:
   - label: "查看文章"
     url: "/posts/"
