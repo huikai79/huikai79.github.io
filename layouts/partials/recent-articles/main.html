@@ -1,14 +1,14 @@
 {{ if .Site.Params.homepage.showRecent | default false }}
   {{ $homepage := hugo.Data.homepage }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
-  {{ $featuredPaths := $homepage.featured | default (slice) }}
+  {{ $featuredItems := $homepage.featured | default (slice) }}
   {{ $selectedLimit := $homepage.selectedLimit | default 3 }}
   {{ $recentLimit := $homepage.recentLimit | default 5 }}
   {{ $featuredPages := slice }}
   {{ $missingFeatured := slice }}
 
-  {{ range $featuredPaths }}
-    {{ $path := . }}
+  {{ range $featuredItems }}
+    {{ $path := .path }}
     {{ with site.GetPage $path }}
       {{ $featuredPages = $featuredPages | append . }}
     {{ else }}
