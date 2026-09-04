@@ -110,6 +110,11 @@ jobs:
           require_match 'HUIKAI' "$home" "Landing hero caption is missing"
           require_match '思考 AI、学习、阅读与生活' "$home" "Landing hero positioning text is missing"
           require_match 'href="?/posts/' "$home" "Landing posts CTA is missing"
+          require_match '>精选<' "$home" "Selected homepage section is missing"
+          require_match '>最近<' "$home" "Recent homepage section is missing"
+          require_match '你是怎么知道的' "$home" "Selected article: 你是怎么知道的 is missing"
+          require_match '网络文章的王者' "$home" "Selected article: 网络文章的王者 is missing"
+          require_match 'Notion\+Github\+Hugo 的好处' "$home" "Selected article: Notion+Github+Hugo 的好处 is missing"
 
           if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
             echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
