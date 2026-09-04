@@ -1,0 +1,60 @@
+{{ if .Site.Params.homepage.showRecent | default false }}
+  {{ $mainSections := .Site.Params.mainSections | default (slice "posts") }}
+  {{ $all := where .Site.RegularPages "Type" "in" $mainSections }}
+  {{ $featuredPaths := site.Data.homepage.featured | default (slice) }}
+  {{ $featuredPages := slice }}
+
+  {{ range $featuredPaths }}
+    {{ with site.GetPage . }}
+      {{ $featuredPages = $featuredPages | append . }}
+    {{ end }}
+  {{ end }}
+
+  {{ if gt (len $featuredPages) 0 }}
+    <section class="mt-8">
+      <h2 class="mb-10 text-2xl font-extrabold">精选</h2>
+      <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {{ range first 3 $featuredPages }}
+          {{ partial "article-link/card.html" . }}
+        {{ end }}
+      </div>
+    </section>
+  {{ end }}
+
+  {{ $recentCandidates := slice }}
+  {{ range $all.ByDate.Reverse }}
+    {{ $page := . }}
+    {{ $isFeatured := false }}
+    {{ range $featuredPages }}
+      {{ if eq .RelPermalink $page.RelPermalink }}
+        {{ $isFeatured = true }}
+      {{ end }}
+    {{ end }}
+    {{ if not $isFeatured }}
+      {{ $recentCandidates = $recentCandidates | append $page }}
+    {{ end }}
+  {{ end }}
+
+  {{ $recentLimit := site.Data.homepage.recentLimit | default 5 }}
+  {{ if gt (len $recentCandidates) 0 }}
+    <section class="mt-16">
+      <h2 class="mb-10 text-2xl font-extrabold">最近</h2>
+      <div class="w-full space-y-10">
+        {{ range first $recentLimit $recentCandidates }}
+          {{ partial "article-link/simple.html" . }}
+        {{ end }}
+      </div>
+    </section>
+  {{ end }}
+
+  {{ if .Site.Params.homepage.showMoreLink | default false }}
+    {{ $showMoreLinkDest := .Site.Params.homepage.showMoreLinkDest | default "/posts/" }}
+    <div class="mt-10 flex justify-center">
+      <a href="{{ $showMoreLinkDest | relLangURL }}">
+        <button class="bg-transparent hover:text-primary-500 prose dark:prose-invert font-semibold py-2 px-4 border border-primary-500 hover:border-transparent rounded">
+          {{ i18n "recent.show_more" | markdownify }}
+        </button>
+      </a>
+    </div>
+  {{ end }}
+{{ end }}
