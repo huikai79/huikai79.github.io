@@ -1,0 +1,89 @@
+name: "PR Hugo validation"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-hugo-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify committed Notion snapshot
+        run: |
+          test -s .notion-sync-manifest.json
+          test -s content/posts/_index.md
+
+          bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
+          manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
+
+          echo "Article bundles: $bundle_count"
+          echo "Manifest pages: $manifest_count"
+          test "$bundle_count" -eq "$manifest_count"
+
+          if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
+            echo "::error::Notion sync staging/backup directory is committed or leaked"
+            exit 1
+          fi
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 0.147.8
+          extended: true
+
+      - name: Check Hugo and Blowfish versions
+        run: |
+          hugo version
+          go version
+          go mod download
+          hugo mod graph | tee /tmp/hugo-mod-graph.txt
+          grep -q 'github.com/nunocoracao/blowfish/v2@v2.87.0' /tmp/hugo-mod-graph.txt
+          test ! -d themes/blowfish
+
+      - name: Validate templates
+        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
+
+      - name: Build site from a clean destination
+        run: |
+          rm -rf public
+          hugo --minify
+
+      - name: Verify site output
+        run: |
+          test -s public/index.html
+          test -s public/posts/how-to-be-an-expert/index.html
+          grep -q 'class=scroll-to-top\|class="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
+          grep -q 'href=#the-top\|href="#the-top"' public/posts/how-to-be-an-expert/index.html
+          grep -q 'lang=zh-CN\|lang="zh-CN"' public/index.html
+          grep -q '庄辉恺的个人博客' public/index.html
+
+          if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
+            echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
+            exit 1
+          fi
+
+          if grep -R -q '<svg \.\.\.' public; then
+            echo "::error::Placeholder SVG markup is still present in rendered site"
+            exit 1
+          fi
