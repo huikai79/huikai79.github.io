@@ -178,7 +178,7 @@ function normalizeMarkdownBody(markdown) {
     return [line];
   });
 
-  return normalized.join("\n").replace(/\n{4,}/g, "\n\n\n").trimStart();
+  return normalized.join("\n").replace(/\n{4,}/g, "\n\n\n").trim();
 }
 
 function plainTextSummary(markdown, maxLength = 150) {
@@ -344,7 +344,7 @@ async function buildArticle(candidate) {
   mdBody = await localizeMarkdownImages(mdBody, bundle);
   const description = plainTextSummary(mdBody);
 
-  /* Front matter */
+  /* Front matter. The closing delimiter must remain on its own line. */
   const front = [
     "---",
     `title: ${yamlString(title)}`,
@@ -355,11 +355,10 @@ async function buildArticle(candidate) {
     coverField && `cover: ${yamlString(coverField)}`,
     iconField && `icon: ${yamlString(iconField)}`,
     coverField && `images: [${yamlString(coverField)}]`,
-    "---",
-    ""
+    "---"
   ].filter(Boolean).join("\n");
 
-  await fs.writeFile(path.join(bundle, "index.md"), front + mdBody);
+  await fs.writeFile(path.join(bundle, "index.md"), `${front}\n\n${mdBody}\n`);
   console.log("📄  重建", `${slug}/index.md`);
   return directoryHash(bundle);
 }
