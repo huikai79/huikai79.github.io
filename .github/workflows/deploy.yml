@@ -1,239 +1,131 @@
-name: "Notion -> Hugo -> GitHub Pages + Cloudflare"
+name: "Deploy exact main commit to GitHub Pages"
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
-  schedule:
-    - cron: '*/20 * * * *'
+    inputs:
+      source_sha:
+        description: "Exact main commit SHA to deploy"
+        required: true
+        type: string
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
-  group: site-pipeline-main
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: github-pages-production
+  cancel-in-progress: false
 
 jobs:
-  build:
+  guard:
     runs-on: ubuntu-latest
     outputs:
-      deploy_needed: ${{ steps.deploy_gate.outputs.deploy_needed }}
+      source_sha: ${{ steps.source.outputs.source_sha }}
     steps:
-      - name: Checkout
+      - name: Reject non-main workflow dispatch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Production deployment is restricted to main. Current ref: $GITHUB_REF"
+            exit 1
+          fi
+
+      - name: Resolve immutable source SHA
+        id: source
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          if ! printf '%s' "$REQUESTED_SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::source_sha must be a full 40-character commit SHA"
+            exit 1
+          fi
+
+          if [ "$REQUESTED_SHA" != "$GITHUB_SHA" ]; then
+            echo "::error::Deployment lineage mismatch: requested $REQUESTED_SHA but workflow main SHA is $GITHUB_SHA"
+            exit 1
+          fi
+
+          echo "source_sha=$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
+          echo "Exact deployment source: $REQUESTED_SHA"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: guard
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source commit
         uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
         with:
-          node-version: 24
+          ref: ${{ needs.guard.outputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Install locked Notion sync dependencies
-        run: |
-          if [ ! -s package-lock.json ]; then
-            echo "::error::package-lock.json is required; production must not bootstrap its own dependency graph"
-            exit 1
-          fi
-
-          npm ci --ignore-scripts --no-audit --no-fund
-          node --version
-          npm --version
-          npm ls --depth=0 '@notionhq/client' notion-to-md p-limit node-fetch
-
-      - name: Check runtime and dependency fingerprint
-        run: |
-          node_major="$(node -p 'process.versions.node.split(".")[0]')"
-          current_hash="$({
-            printf 'node-major=%s\n' "$node_major"
-            sha256sum package-lock.json
-          } | sha256sum | awk '{print $1}')"
-          previous_hash="$(cat .notion-sync-deps.sha256 2>/dev/null || true)"
-          printf '%s\n' "$current_hash" > /tmp/notion-sync-deps.sha256
-
-          echo "Node major: $node_major"
-          echo "Current runtime/dependency fingerprint: $current_hash"
-          if [ "$current_hash" != "$previous_hash" ]; then
-            echo "Runtime or dependency graph changed; invalidating the previous Notion manifest."
-            rm -f .notion-sync-manifest.json
-          else
-            echo "Runtime/dependency graph unchanged; existing manifest may be reused."
-          fi
-
-      - name: Sync Notion -> verified Markdown snapshot
+      - name: Verify checkout lineage against main
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        run: node ./sync.mjs
-
-      - name: Verify sync report and article bundles
+          SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
         run: |
-          test -s .notion-sync-report.json
-          test -s .notion-sync-manifest.json
-          jq -e '
-            .status == "complete" and
-            (.published == .written) and
-            (.written == (.reused + .rebuilt)) and
-            (.deleted | type == "array") and
-            (.pages | type == "array")
-          ' .notion-sync-report.json > /dev/null
-
-          published="$(jq -r '.published' .notion-sync-report.json)"
-          written="$(jq -r '.written' .notion-sync-report.json)"
-          reused="$(jq -r '.reused' .notion-sync-report.json)"
-          rebuilt="$(jq -r '.rebuilt' .notion-sync-report.json)"
-          deleted="$(jq -r '.deleted | length' .notion-sync-report.json)"
-          fast_path="$(jq -r '.fastPath' .notion-sync-report.json)"
-          bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
-          manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
-
-          echo "Published: $published"
-          echo "Written: $written"
-          echo "Reused: $reused"
-          echo "Rebuilt: $rebuilt"
-          echo "Deleted: $deleted"
-          echo "Fast path: $fast_path"
-          echo "Article bundles: $bundle_count"
-          echo "Manifest pages: $manifest_count"
-
-          test "$published" -eq "$written"
-          test "$written" -eq "$bundle_count"
-          test "$published" -eq "$manifest_count"
-          test -s content/posts/_index.md
-
-          if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
-            echo "::error::Notion sync staging/backup directory leaked after completion"
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$SOURCE_SHA" || {
+            echo "::error::Checkout SHA mismatch: expected $SOURCE_SHA, got $actual"
             exit 1
-          fi
+          }
 
-          {
-            echo "## Notion sync"
-            echo ""
-            echo "| Metric | Count |"
-            echo "| --- | ---: |"
-            echo "| Published | $published |"
-            echo "| Reused | $reused |"
-            echo "| Rebuilt | $rebuilt |"
-            echo "| Deleted | $deleted |"
-            echo ""
-            echo "Fast path: **$fast_path**"
-            echo ""
-            echo "### Page decisions"
-            jq -r '.pages[] | "- `\(.slug)`: **\(.action)** (`\(.reason)`)"' .notion-sync-report.json
-          } >> "$GITHUB_STEP_SUMMARY"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/main || {
+            echo "::error::Requested source SHA is not contained in main"
+            exit 1
+          }
 
-      - name: Finalize runtime and dependency fingerprint
-        run: cp /tmp/notion-sync-deps.sha256 .notion-sync-deps.sha256
-
-      - name: Detect sync changes without committing
-        id: sync_state
-        run: |
-          git add content/posts .notion-sync-manifest.json .notion-sync-deps.sha256 package-lock.json
-          if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No synced-content changes are pending"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Synced-content changes are pending validation"
-            git diff --cached --stat
-          fi
-
-      - name: Decide whether deployment is needed
-        id: deploy_gate
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          CONTENT_CHANGED: ${{ steps.sync_state.outputs.changed }}
-        run: |
-          if [ "$EVENT_NAME" = "schedule" ] && [ "$CONTENT_CHANGED" != "true" ]; then
-            echo "deploy_needed=false" >> "$GITHUB_OUTPUT"
-            echo "Scheduled sync is unchanged; skipping Hugo build and deployment."
-          else
-            echo "deploy_needed=true" >> "$GITHUB_OUTPUT"
-            echo "Deployment required for event=$EVENT_NAME content_changed=$CONTENT_CHANGED"
+          if [ "$(git rev-parse origin/main)" != "$SOURCE_SHA" ]; then
+            echo "::error::main moved after deployment dispatch; refusing stale production deployment"
+            exit 1
           fi
 
       - name: Setup Go
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         uses: actions/setup-go@v7
         with:
           go-version: '1.24.4'
           cache: true
 
       - name: Setup Hugo
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 0.165.0
           extended: true
 
-      - name: Check Hugo and Blowfish versions
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
+      - name: Build and verify exact commit
+        env:
+          STRICT_CONTENT: '1'
+        run: bash scripts/build-and-verify.sh public
+
+      - name: Record artifact lineage
+        env:
+          SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
         run: |
-          hugo version
-          go version
-          go mod download
-          hugo mod graph | tee /tmp/hugo-mod-graph.txt
-          grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
-          test ! -d themes/blowfish
+          printf '%s\n' "$SOURCE_SHA" > public/.source-commit
+          {
+            echo "## Deployment lineage"
+            echo ""
+            echo "Source commit: \`$SOURCE_SHA\`"
+            echo "Workflow head: \`$GITHUB_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          if ! git diff --exit-code -- go.mod go.sum; then
-            echo "::error::Go module files are not fully committed"
-            exit 1
-          fi
-
-          if grep -R -q 'github.com/nunocoracao/blowfish/v2' go.mod go.sum config/_default; then
-            echo "::error::Blowfish v2 reference remains after the v3 upgrade"
-            exit 1
-          fi
-
-      - name: Validate templates
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        run: |
-          hugo --printPathWarnings --templateMetrics --templateMetricsHints 2>&1 | tee /tmp/hugo-template.log
-          if grep -Fq '.Site.Data was deprecated' /tmp/hugo-template.log; then
-            echo "::error::Deprecated .Site.Data API is still used"
-            exit 1
-          fi
-
-      - name: Build site from a clean destination
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        run: |
-          rm -rf public
-          hugo --minify
-
-      - name: Verify rendered site
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        run: python3 scripts/verify-rendered-site.py public
-
-      - name: Commit validated synced content
-        if: steps.deploy_gate.outputs.deploy_needed == 'true' && steps.sync_state.outputs.changed == 'true'
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
-          git push origin HEAD:main
-          echo "Validated Notion snapshot committed after Hugo build and rendered-site verification."
-
-      - name: Upload artifact
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
           path: ./public
 
   deploy:
-    if: needs.build.outputs.deploy_needed == 'true'
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - guard
+      - build
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
-
-      - name: Check Cloudflare cache configuration
+      - name: Check Cloudflare cache configuration before deployment
         id: cloudflare
         env:
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
@@ -241,17 +133,20 @@ jobs:
         run: |
           if [ -z "$CF_ZONE_ID" ] && [ -z "$CF_API_TOKEN" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "### Cloudflare cache" >> "$GITHUB_STEP_SUMMARY"
-            echo "Status: **NOT_CONFIGURED** — GitHub Pages deployed successfully; no cache purge was attempted." >> "$GITHUB_STEP_SUMMARY"
-            echo "Cloudflare purge is not configured for this environment."
+            echo "Cloudflare purge: NOT_CONFIGURED"
           elif [ -z "$CF_ZONE_ID" ] || [ -z "$CF_API_TOKEN" ]; then
-            echo "::error::Cloudflare cache purge is partially configured. CF_ZONE_ID and CF_API_TOKEN must either both be set or both be absent."
+            echo "::error::Cloudflare purge is partially configured. CF_ZONE_ID and CF_API_TOKEN must both be set or both be absent."
             exit 1
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare purge: CONFIGURED"
           fi
 
-      - name: Purge Cloudflare Cache
+      - name: Deploy exact artifact to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Purge Cloudflare cache
         if: steps.cloudflare.outputs.configured == 'true'
         env:
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
@@ -270,5 +165,20 @@ jobs:
           fi
 
           echo "Cloudflare cache purged successfully."
-          echo "### Cloudflare cache" >> "$GITHUB_STEP_SUMMARY"
-          echo "Status: **PURGED**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report production result
+        env:
+          SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
+          CF_CONFIGURED: ${{ steps.cloudflare.outputs.configured }}
+        run: |
+          {
+            echo "## Production deployment"
+            echo ""
+            echo "Source commit: \`$SOURCE_SHA\`"
+            echo "GitHub Pages: **DEPLOYED**"
+            if [ "$CF_CONFIGURED" = "true" ]; then
+              echo "Cloudflare cache: **PURGED**"
+            else
+              echo "Cloudflare cache: **NOT_CONFIGURED**"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
