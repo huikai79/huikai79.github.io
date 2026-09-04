@@ -1,7 +1,8 @@
+selectedLimit = 3
+recentLimit = 5
+
 featured = [
   "posts/How-you-know",
   "posts/King-of-Internet-Writing",
   "posts/ngh",
 ]
-
-recentLimit = 5
