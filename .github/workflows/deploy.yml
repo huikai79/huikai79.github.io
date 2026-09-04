@@ -14,8 +14,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: site-pipeline-main
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   build:
@@ -28,13 +28,14 @@ jobs:
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
-        with: { node-version: 24 }
+        with:
+          node-version: 24
 
       - name: Install locked Notion sync dependencies
         run: |
           if [ ! -s package-lock.json ]; then
-            echo "Bootstrapping package-lock.json from exact package.json dependencies"
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            echo "::error::package-lock.json is required; production must not bootstrap its own dependency graph"
+            exit 1
           fi
 
           npm ci --ignore-scripts --no-audit --no-fund
@@ -63,7 +64,7 @@ jobs:
 
       - name: Sync Notion -> verified Markdown snapshot
         env:
-          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node ./sync.mjs
 
@@ -126,30 +127,28 @@ jobs:
       - name: Finalize runtime and dependency fingerprint
         run: cp /tmp/notion-sync-deps.sha256 .notion-sync-deps.sha256
 
-      - name: Commit & push synced content
-        id: sync_commit
+      - name: Detect sync changes without committing
+        id: sync_state
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
           git add content/posts .notion-sync-manifest.json .notion-sync-deps.sha256 package-lock.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No synced-content changes to commit"
+            echo "No synced-content changes are pending"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
-            git push origin HEAD:main
+            echo "Synced-content changes are pending validation"
+            git diff --cached --stat
           fi
 
       - name: Decide whether deployment is needed
         id: deploy_gate
         env:
           EVENT_NAME: ${{ github.event_name }}
-          CONTENT_CHANGED: ${{ steps.sync_commit.outputs.changed }}
+          CONTENT_CHANGED: ${{ steps.sync_state.outputs.changed }}
         run: |
           if [ "$EVENT_NAME" = "schedule" ] && [ "$CONTENT_CHANGED" != "true" ]; then
             echo "deploy_needed=false" >> "$GITHUB_OUTPUT"
-            echo "Scheduled sync is unchanged; skipping Hugo build, Pages deploy, and Cloudflare purge."
+            echo "Scheduled sync is unchanged; skipping Hugo build and deployment."
           else
             echo "deploy_needed=true" >> "$GITHUB_OUTPUT"
             echo "Deployment required for event=$EVENT_NAME content_changed=$CONTENT_CHANGED"
@@ -172,9 +171,7 @@ jobs:
       - name: Check Hugo and Blowfish versions
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
         run: |
-          which hugo
           hugo version
-          hugo env
           go version
           go mod download
           hugo mod graph | tee /tmp/hugo-mod-graph.txt
@@ -182,7 +179,7 @@ jobs:
           test ! -d themes/blowfish
 
           if ! git diff --exit-code -- go.mod go.sum; then
-            echo "::error::Go module files are not fully committed; run go mod download/tidy and commit the resulting go.mod/go.sum"
+            echo "::error::Go module files are not fully committed"
             exit 1
           fi
 
@@ -193,7 +190,12 @@ jobs:
 
       - name: Validate templates
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
+        run: |
+          hugo --printPathWarnings --templateMetrics --templateMetricsHints 2>&1 | tee /tmp/hugo-template.log
+          if grep -Fq '.Site.Data was deprecated' /tmp/hugo-template.log; then
+            echo "::error::Deprecated .Site.Data API is still used"
+            exit 1
+          fi
 
       - name: Build site from a clean destination
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
@@ -201,49 +203,18 @@ jobs:
           rm -rf public
           hugo --minify
 
-      - name: List generated js/css
+      - name: Verify rendered site
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
-        run: ls -R public/js public/css || true
+        run: python3 scripts/verify-rendered-site.py public
 
-      - name: Verify site output
-        if: steps.deploy_gate.outputs.deploy_needed == 'true'
+      - name: Commit validated synced content
+        if: steps.deploy_gate.outputs.deploy_needed == 'true' && steps.sync_state.outputs.changed == 'true'
         run: |
-          require_file() {
-            if [ ! -s "$1" ]; then
-              echo "::error::$2"
-              exit 1
-            fi
-          }
-
-          require_match() {
-            if ! grep -Eq "$1" "$2"; then
-              echo "::error::$3"
-              exit 1
-            fi
-          }
-
-          article="public/posts/how-to-be-an-expert/index.html"
-          home="public/index.html"
-
-          require_file "$home" "Homepage output is missing"
-          require_file "$article" "Known article output is missing"
-          require_match 'class="[^"]*scroll-to-top[^"]*"|class=scroll-to-top' "$article" "Scroll-to-top class is missing from the known article"
-          require_match 'id="?scroll-to-top"?' "$article" "Blowfish v3 scroll-to-top DOM id is missing"
-          require_match 'href="?#the-top"?' "$article" "Scroll-to-top anchor target is missing"
-          require_match 'lang="?zh-CN"?' "$home" "Homepage language is not zh-CN"
-          require_match '庄辉恺的个人博客' "$home" "Homepage site description is missing"
-          require_match 'property="?og:image"?' "$home" "Homepage Open Graph image metadata is missing"
-          require_match 'name="?twitter:image"?' "$home" "Homepage Twitter image metadata is missing"
-
-          if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
-            echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
-            exit 1
-          fi
-
-          if grep -R -q '<svg \.\.\.' public; then
-            echo "::error::Placeholder SVG markup is still present in rendered site"
-            exit 1
-          fi
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
+          git push origin HEAD:main
+          echo "Validated Notion snapshot committed after Hugo build and rendered-site verification."
 
       - name: Upload artifact
         if: steps.deploy_gate.outputs.deploy_needed == 'true'
@@ -262,18 +233,42 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v5
 
-      - name: Purge Cloudflare Cache
-        if: ${{ success() }}
+      - name: Check Cloudflare cache configuration
+        id: cloudflare
+        env:
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
-          if response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
-            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}')"; then
-            if echo "$response" | jq -e '.success == true' > /dev/null; then
-              echo "Cloudflare cache purged"
-            else
-              echo "::warning::GitHub Pages deployed, but Cloudflare rejected the cache-purge response. Check CF_ZONE_ID and CF_API_TOKEN."
-            fi
+          if [ -z "$CF_ZONE_ID" ] && [ -z "$CF_API_TOKEN" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "### Cloudflare cache" >> "$GITHUB_STEP_SUMMARY"
+            echo "Status: **NOT_CONFIGURED** — GitHub Pages deployed successfully; no cache purge was attempted." >> "$GITHUB_STEP_SUMMARY"
+            echo "Cloudflare purge is not configured for this environment."
+          elif [ -z "$CF_ZONE_ID" ] || [ -z "$CF_API_TOKEN" ]; then
+            echo "::error::Cloudflare cache purge is partially configured. CF_ZONE_ID and CF_API_TOKEN must either both be set or both be absent."
+            exit 1
           else
-            echo "::warning::GitHub Pages deployed, but Cloudflare cache purge failed. Check CF_ZONE_ID and CF_API_TOKEN."
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Purge Cloudflare Cache
+        if: steps.cloudflare.outputs.configured == 'true'
+        env:
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+            -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}')"
+
+          if ! echo "$response" | jq -e '.success == true' > /dev/null; then
+            echo "::error::Cloudflare rejected the cache purge response."
+            echo "$response" | jq -c '{success, errors, messages}' || true
+            exit 1
+          fi
+
+          echo "Cloudflare cache purged successfully."
+          echo "### Cloudflare cache" >> "$GITHUB_STEP_SUMMARY"
+          echo "Status: **PURGED**" >> "$GITHUB_STEP_SUMMARY"
