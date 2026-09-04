@@ -1,8 +1,14 @@
 selectedLimit = 3
 recentLimit = 5
 
-featured = [
-  "posts/How-you-know",
-  "posts/King-of-Internet-Writing",
-  "posts/ngh",
-]
+[[featured]]
+pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
+path = "posts/How-you-know"
+
+[[featured]]
+pageId = "23c7a59e-0439-80c0-8f5a-e90c7beba72b"
+path = "posts/King-of-Internet-Writing"
+
+[[featured]]
+pageId = "2337a59e-0439-80e4-93a4-fff881cc3d18"
+path = "posts/ngh"
