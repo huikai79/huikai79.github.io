@@ -1,47 +1,71 @@
 {{ if .Site.Params.homepage.showRecent | default false }}
-  {{ $mainSections := .Site.Params.mainSections | default (slice "posts") }}
-  {{ $all := where .Site.RegularPages "Type" "in" $mainSections }}
-  {{ $featuredPaths := site.Data.homepage.featured | default (slice) }}
+  {{ $homepage := hugo.Data.homepage }}
+  {{ $all := where .Site.RegularPages "Type" "posts" }}
+  {{ $featuredPaths := $homepage.featured | default (slice) }}
+  {{ $selectedLimit := $homepage.selectedLimit | default 3 }}
+  {{ $recentLimit := $homepage.recentLimit | default 5 }}
   {{ $featuredPages := slice }}
+  {{ $missingFeatured := slice }}
 
   {{ range $featuredPaths }}
-    {{ with site.GetPage . }}
+    {{ $path := . }}
+    {{ with site.GetPage $path }}
       {{ $featuredPages = $featuredPages | append . }}
+    {{ else }}
+      {{ $missingFeatured = $missingFeatured | append $path }}
     {{ end }}
   {{ end }}
 
-  {{ if gt (len $featuredPages) 0 }}
-    <section class="mt-8">
-      <h2 class="mb-10 text-2xl font-extrabold">精选</h2>
-      <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {{ range first 3 $featuredPages }}
-          {{ partial "article-link/card.html" . }}
-        {{ end }}
-      </div>
-    </section>
+  {{ if gt (len $missingFeatured) 0 }}
+    {{ errorf "Homepage featured references are invalid: %s" (delimit $missingFeatured ", ") }}
   {{ end }}
+
+  {{ if ne (len $featuredPages) $selectedLimit }}
+    {{ errorf "Homepage Selected requires exactly %d valid pages; found %d" $selectedLimit (len $featuredPages) }}
+  {{ end }}
+
+  <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title">
+    <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精选</h2>
+    <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
+      {{ range first $selectedLimit $featuredPages }}
+        <div class="home-selected-item" data-home-path="{{ .RelPermalink }}">
+          {{ partial "article-link/card.html" . }}
+        </div>
+      {{ end }}
+    </div>
+  </section>
 
   {{ $recentCandidates := slice }}
   {{ range $all.ByDate.Reverse }}
     {{ $page := . }}
-    {{ $isFeatured := false }}
-    {{ range $featuredPages }}
+    {{ $isSelected := false }}
+    {{ range first $selectedLimit $featuredPages }}
       {{ if eq .RelPermalink $page.RelPermalink }}
-        {{ $isFeatured = true }}
+        {{ $isSelected = true }}
       {{ end }}
     {{ end }}
-    {{ if not $isFeatured }}
+    {{ if not $isSelected }}
       {{ $recentCandidates = $recentCandidates | append $page }}
     {{ end }}
   {{ end }}
 
-  {{ $recentLimit := site.Data.homepage.recentLimit | default 5 }}
   {{ if gt (len $recentCandidates) 0 }}
-    <section class="mt-16">
-      <h2 class="mb-10 text-2xl font-extrabold">最近</h2>
-      <div class="w-full space-y-10">
+    <section id="home-recent" class="mt-16" aria-labelledby="home-recent-title">
+      <h2 id="home-recent-title" class="mb-8 text-2xl font-extrabold">最近</h2>
+      <div class="w-full divide-y divide-neutral-200 dark:divide-neutral-700">
         {{ range first $recentLimit $recentCandidates }}
-          {{ partial "article-link/simple.html" . }}
+          <article class="home-recent-row relative py-5 first:pt-0" data-home-path="{{ .RelPermalink }}">
+            <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+              <h3 class="min-w-0 text-lg font-semibold text-neutral-800 dark:text-neutral-100">
+                <a class="before:absolute before:inset-0 hover:underline hover:underline-offset-4" href="{{ .RelPermalink }}">
+                  {{ .Title | emojify }}
+                </a>
+              </h3>
+              <time class="shrink-0 text-sm text-neutral-500 dark:text-neutral-400" datetime="{{ .Date.Format "2006-01-02" }}">
+                {{ .Date.Format "2006年1月2日" }}
+              </time>
+            </div>
+          </article>
         {{ end }}
       </div>
     </section>
@@ -50,10 +74,8 @@
   {{ if .Site.Params.homepage.showMoreLink | default false }}
     {{ $showMoreLinkDest := .Site.Params.homepage.showMoreLinkDest | default "/posts/" }}
     <div class="mt-10 flex justify-center">
-      <a href="{{ $showMoreLinkDest | relLangURL }}">
-        <button class="bg-transparent hover:text-primary-500 prose dark:prose-invert font-semibold py-2 px-4 border border-primary-500 hover:border-transparent rounded">
-          {{ i18n "recent.show_more" | markdownify }}
-        </button>
+      <a class="not-prose inline-flex items-center rounded-lg border border-primary-500 px-4 py-2 font-semibold hover:border-transparent hover:text-primary-500" href="{{ $showMoreLinkDest | relLangURL }}">
+        {{ i18n "recent.show_more" | markdownify }}
       </a>
     </div>
   {{ end }}
