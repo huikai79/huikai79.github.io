@@ -4,7 +4,9 @@ date: "2026-09-04"
 slug: "first-Hackathon"
 description: "參加 Nutrient Hackathon 後，我重新理解了「做作品」與「參加比賽」的差別 最近我參加了 DevNetwork [API + Cloud + AI] Hackathon 2026 裡的 Nutrient DWS Challenge 。 這不是我第一次做 AI 相關專案，但這次的經驗讓…"
 tags: ["技术学习"]
----## 參加 Nutrient Hackathon 後，我重新理解了「做作品」與「參加比賽」的差別
+---
+
+## 參加 Nutrient Hackathon 後，我重新理解了「做作品」與「參加比賽」的差別
 
 
 最近我參加了 DevNetwork [API + Cloud + AI] Hackathon 2026 裡的 **Nutrient DWS Challenge**。
@@ -560,4 +562,3 @@ Nutrient 這一輪對我最大的影響，就是讓我開始把「參加比賽�
 
 
 對我來說，這可能比單純多做一個 Demo 更有價值。
-

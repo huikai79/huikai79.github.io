@@ -7,7 +7,9 @@ tags: ["技术学习", "Youtube"]
 cover: "cover.jpg"
 icon: "📁"
 images: ["cover.jpg"]
----{{< youtube X5mMR9bmngM >}}
+---
+
+{{< youtube X5mMR9bmngM >}}
 
 
 免费资源自从大学时我就养成了收集资源的习惯，直到研究生，这八九年慢慢的也攒到不少好的计算机学习资源，现在把它们分享出来，造福后来者！
@@ -54,4 +56,3 @@ images: ["cover.jpg"]
 
 
 #12、《Pro Git 中文版》PDF，带你学会git的骚操作~地址：《Pro Git 中文版》PDF，带你学会git的骚操作~介绍：带你学会git的骚操作~
-
