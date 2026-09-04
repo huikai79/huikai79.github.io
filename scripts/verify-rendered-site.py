@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
+import os
 import sys
 import tomllib
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
-PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public")
+PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
 ROOT = Path(__file__).resolve().parents[1]
+STRICT_CONTENT = os.environ.get("STRICT_CONTENT") == "1"
 ERRORS: list[str] = []
+WARNINGS: list[str] = []
 
 
 def fail(message: str) -> None:
     ERRORS.append(message)
+
+
+def warn(message: str) -> None:
+    WARNINGS.append(message)
 
 
 def read_required(path: Path, label: str) -> str:
@@ -37,19 +46,34 @@ class SiteParser(HTMLParser):
         self.meta_properties: set[str] = set()
         self.meta_names: set[str] = set()
         self.hrefs: list[str] = []
+        self.srcs: list[str] = []
         self.ids: set[str] = set()
         self.classes: set[str] = set()
         self.section_stack: list[str] = []
         self.selected_paths: list[str] = []
         self.recent_paths: list[str] = []
-        self.selected_images = 0
         self.recent_images = 0
+        self.selected_image_counts: dict[str, int] = {}
+        self.div_depth = 0
+        self.selected_item_depth: int | None = None
+        self.selected_item_path = ""
+        self.anchors: list[dict[str, object]] = []
+        self.anchor_stack: list[dict[str, object]] = []
+        self.h1_count = 0
+        self.article_main_depth: int | None = None
+        self.tag_depth = 0
+        self.article_text: list[str] = []
+        self.article_has_undefined = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = attrs_dict(attrs)
         tag = tag.lower()
         classes = set(data.get("class", "").split())
         self.classes.update(classes)
+        self.tag_depth += 1
+
+        if tag == "div":
+            self.div_depth += 1
 
         element_id = data.get("id", "")
         if element_id:
@@ -64,27 +88,75 @@ class SiteParser(HTMLParser):
             if data.get("name"):
                 self.meta_names.add(data["name"].lower())
 
-        if tag == "a" and data.get("href"):
-            self.hrefs.append(data["href"])
+        if tag == "a":
+            href = data.get("href", "")
+            if href:
+                self.hrefs.append(href)
+            anchor: dict[str, object] = {"href": href, "text": []}
+            self.anchors.append(anchor)
+            self.anchor_stack.append(anchor)
+
+        if tag in {"img", "script", "source", "video", "audio", "iframe"} and data.get("src"):
+            self.srcs.append(data["src"])
+
+        if tag == "link" and data.get("href"):
+            self.srcs.append(data["href"])
 
         if tag == "section":
             self.section_stack.append(element_id)
 
         current_section = self.section_stack[-1] if self.section_stack else ""
         if current_section == "home-selected":
-            if "home-selected-item" in classes and data.get("data-home-path"):
-                self.selected_paths.append(data["data-home-path"])
-            if tag == "img":
-                self.selected_images += 1
+            if tag == "div" and "home-selected-item" in classes and data.get("data-home-path"):
+                path = data["data-home-path"]
+                self.selected_paths.append(path)
+                self.selected_item_path = path
+                self.selected_item_depth = self.div_depth
+                self.selected_image_counts.setdefault(path, 0)
+            if tag == "img" and self.selected_item_path:
+                self.selected_image_counts[self.selected_item_path] += 1
         elif current_section == "home-recent":
             if "home-recent-row" in classes and data.get("data-home-path"):
                 self.recent_paths.append(data["data-home-path"])
             if tag == "img":
                 self.recent_images += 1
 
+        if tag == "h1":
+            self.h1_count += 1
+
+        if tag == "article" and "article-main" in classes:
+            self.article_main_depth = self.tag_depth
+
+    def handle_data(self, data: str) -> None:
+        if self.anchor_stack:
+            self.anchor_stack[-1]["text"].append(data)
+
+        if self.article_main_depth is not None:
+            stripped = data.strip()
+            if stripped:
+                self.article_text.append(stripped)
+                if stripped == "undefined":
+                    self.article_has_undefined = True
+
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "section" and self.section_stack:
+        tag = tag.lower()
+
+        if tag == "a" and self.anchor_stack:
+            self.anchor_stack.pop()
+
+        if tag == "section" and self.section_stack:
             self.section_stack.pop()
+
+        if tag == "article" and self.article_main_depth == self.tag_depth:
+            self.article_main_depth = None
+
+        if tag == "div":
+            if self.selected_item_depth == self.div_depth:
+                self.selected_item_depth = None
+                self.selected_item_path = ""
+            self.div_depth = max(0, self.div_depth - 1)
+
+        self.tag_depth = max(0, self.tag_depth - 1)
 
 
 def parse_html(text: str) -> SiteParser:
@@ -94,12 +166,40 @@ def parse_html(text: str) -> SiteParser:
     return parser
 
 
-home = read_required(PUBLIC / "index.html", "Homepage output")
-article = read_required(
-    PUBLIC / "posts" / "how-to-be-an-expert" / "index.html",
-    "Known article output",
-)
+def anchor_text(anchor: dict[str, object]) -> str:
+    return " ".join("".join(anchor["text"]).split())
 
+
+def resolve_local_target(html_path: Path, raw: str) -> Path | None:
+    value = raw.strip()
+    if not value or value.startswith("#") or value.startswith("//"):
+        return None
+
+    parsed = urlsplit(value)
+    if parsed.scheme or parsed.netloc:
+        return None
+
+    clean = unquote(parsed.path)
+    if not clean:
+        return None
+
+    if clean.startswith("/"):
+        target = PUBLIC / clean.lstrip("/")
+    else:
+        target = html_path.parent / clean
+
+    candidates = [target]
+    if clean.endswith("/") or not target.suffix:
+        candidates.append(target / "index.html")
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return target
+
+
+home = read_required(PUBLIC / "index.html", "Homepage output")
 if home:
     home_parser = parse_html(home)
     if home_parser.html_lang != "zh-CN":
@@ -114,14 +214,22 @@ if home:
         fail("Landing hero caption is missing")
     if "思考 AI、学习、阅读与生活" not in home:
         fail("Landing hero positioning text is missing")
-    if not any(href.rstrip("/").endswith("/posts") for href in home_parser.hrefs):
-        fail("Landing posts CTA is missing")
+
+    hero_ctas = [
+        anchor for anchor in home_parser.anchors
+        if anchor_text(anchor) == "查看文章"
+        and str(anchor.get("href", "")).rstrip("/").endswith("/posts")
+    ]
+    if len(hero_ctas) != 1:
+        fail(f"Landing hero must contain exactly one 查看文章 CTA to /posts/; found {len(hero_ctas)}")
+
     if "home-selected" not in home_parser.ids:
         fail("Homepage section #home-selected is missing")
     if "home-recent" not in home_parser.ids:
         fail("Homepage section #home-recent is missing")
 
     config_path = ROOT / "data" / "homepage.toml"
+    manifest_path = ROOT / ".notion-sync-manifest.json"
     try:
         with config_path.open("rb") as handle:
             homepage_config = tomllib.load(handle)
@@ -129,60 +237,137 @@ if home:
         homepage_config = {}
         fail(f"Unable to read {config_path}: {error}")
 
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as error:
+        manifest = {"pages": {}}
+        fail(f"Unable to read {manifest_path}: {error}")
+
     selected_limit = int(homepage_config.get("selectedLimit", 3))
     recent_limit = int(homepage_config.get("recentLimit", 5))
     featured = homepage_config.get("featured", [])
 
     if len(featured) != selected_limit:
-        fail(
-            f"Homepage featured config must contain exactly {selected_limit} entries; "
-            f"found {len(featured)}"
-        )
+        fail(f"Homepage featured config must contain exactly {selected_limit} entries; found {len(featured)}")
+
+    normalized_featured: list[dict[str, str]] = []
+    seen_page_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    for index, item in enumerate(featured, start=1):
+        if not isinstance(item, dict):
+            fail(f"Homepage featured entry #{index} must contain pageId and path")
+            continue
+        page_id = str(item.get("pageId", "")).strip()
+        path = str(item.get("path", "")).strip()
+        if not page_id or not path:
+            fail(f"Homepage featured entry #{index} is missing pageId or path")
+            continue
+        if page_id in seen_page_ids:
+            fail(f"Homepage featured pageId is duplicated: {page_id}")
+        if path.lower() in seen_paths:
+            fail(f"Homepage featured path is duplicated: {path}")
+        seen_page_ids.add(page_id)
+        seen_paths.add(path.lower())
+
+        manifest_entry = manifest.get("pages", {}).get(page_id)
+        expected_slug = path.strip("/").split("/")[-1]
+        if not manifest_entry:
+            fail(f"Homepage featured pageId is not present in Notion manifest: {page_id}")
+        elif manifest_entry.get("slug") != expected_slug:
+            fail(
+                f"Homepage stable identity mismatch for {page_id}: "
+                f"manifest slug={manifest_entry.get('slug')!r}, configured path={path!r}"
+            )
+        normalized_featured.append({"pageId": page_id, "path": path})
 
     selected_paths = home_parser.selected_paths
     recent_paths = home_parser.recent_paths
-
     if len(selected_paths) != selected_limit:
         fail(f"Homepage Selected must render exactly {selected_limit} items; found {len(selected_paths)}")
     if len(recent_paths) != recent_limit:
         fail(f"Homepage Recent must render exactly {recent_limit} items; found {len(recent_paths)}")
 
-    expected_selected = [normalize_config_path(path) for path in featured]
+    expected_selected = [normalize_config_path(item["path"]) for item in normalized_featured]
     actual_selected = [path.lower() for path in selected_paths]
     if actual_selected != expected_selected:
-        fail(
-            "Homepage Selected order does not match data/homepage.toml: "
-            f"expected={expected_selected}, actual={actual_selected}"
-        )
+        fail(f"Homepage Selected order mismatch: expected={expected_selected}, actual={actual_selected}")
 
     overlap = sorted(set(actual_selected) & {path.lower() for path in recent_paths})
     if overlap:
         fail(f"Homepage Selected and Recent overlap: {overlap}")
 
-    if home_parser.selected_images < selected_limit:
-        fail("Every current Selected card must have a cover image before rotation is introduced")
+    for item, rendered in zip(normalized_featured, selected_paths):
+        configured = item["path"]
+        source_dir = ROOT / "content" / configured.strip("/")
+        real_covers = [path for path in source_dir.glob("cover*") if path.is_file()]
+        if not real_covers:
+            fail(f"Selected article has no real local cover resource: {configured}")
+        if home_parser.selected_image_counts.get(rendered, 0) < 1:
+            fail(f"Selected card rendered without an image: {rendered}")
+
     if home_parser.recent_images != 0:
-        fail(f"Homepage Recent must remain image-free editorial rows; found {home_parser.recent_images} image(s)")
+        fail(f"Homepage Recent must remain image-free; found {home_parser.recent_images} image(s)")
 
-if article:
-    article_parser = parse_html(article)
-    if "scroll-to-top" not in article_parser.classes:
-        fail("Scroll-to-top class is missing")
-    if "scroll-to-top" not in article_parser.ids:
-        fail("Scroll-to-top DOM id is missing")
-    if "#the-top" not in article_parser.hrefs:
-        fail("Scroll-to-top anchor target is missing")
+article_outputs = sorted((PUBLIC / "posts").glob("*/index.html")) if (PUBLIC / "posts").exists() else []
+source_articles = sorted((ROOT / "content" / "posts").glob("*/index.md"))
+if len(article_outputs) != len(source_articles):
+    fail(f"Rendered/source article count mismatch: rendered={len(article_outputs)}, source={len(source_articles)}")
 
+for article_path in article_outputs:
+    rendered = read_required(article_path, f"Article output {article_path.parent.name}")
+    if not rendered:
+        continue
+    parser = parse_html(rendered)
+    if parser.h1_count != 1:
+        fail(f"Article must render exactly one H1: {article_path} (found {parser.h1_count})")
+    if not parser.article_text:
+        fail(f"Article body is empty: {article_path}")
+    if parser.article_has_undefined:
+        message = f"Standalone converter sentinel 'undefined' rendered in article: {article_path}"
+        if STRICT_CONTENT:
+            fail(message)
+        else:
+            warn(message + " (legacy snapshot allowed only before closure sync)")
+    if "scroll-to-top" not in parser.classes or "scroll-to-top" not in parser.ids or "#the-top" not in parser.hrefs:
+        fail(f"Scroll-to-top contract is incomplete: {article_path}")
+
+missing_links: list[str] = []
+missing_assets: list[str] = []
 for html_path in PUBLIC.rglob("*.html") if PUBLIC.exists() else []:
     rendered = html_path.read_text(encoding="utf-8", errors="replace")
+    parser = parse_html(rendered)
+
     if "prod-files-secure.s3.us-west-2.amazonaws.com" in rendered:
         fail(f"Temporary Notion/S3 image URL remains in rendered site: {html_path}")
     if "<svg ..." in rendered:
         fail(f"Placeholder SVG markup remains in rendered site: {html_path}")
+
+    for href in parser.hrefs:
+        target = resolve_local_target(html_path, href)
+        if target is not None and not target.exists() and not (target / "index.html").exists():
+            missing_links.append(f"{html_path.relative_to(PUBLIC)} -> {href}")
+
+    for src in parser.srcs:
+        target = resolve_local_target(html_path, src)
+        if target is not None and not target.exists():
+            missing_assets.append(f"{html_path.relative_to(PUBLIC)} -> {src}")
+
+for item in sorted(set(missing_links))[:20]:
+    fail(f"Missing internal link target: {item}")
+if len(set(missing_links)) > 20:
+    fail(f"Additional missing internal links omitted: {len(set(missing_links)) - 20}")
+
+for item in sorted(set(missing_assets))[:20]:
+    fail(f"Missing internal asset: {item}")
+if len(set(missing_assets)) > 20:
+    fail(f"Additional missing internal assets omitted: {len(set(missing_assets)) - 20}")
+
+for warning in WARNINGS:
+    print(f"::warning::{warning}")
 
 if ERRORS:
     for error in ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Rendered-site verification: PASS")
+print(f"Rendered-site verification: PASS ({len(article_outputs)} articles checked)")

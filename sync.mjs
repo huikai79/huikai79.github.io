@@ -154,6 +154,33 @@ function fileExtensionFromUrl(url, fallback = ".jpg") {
   }
 }
 
+function normalizeMarkdownBody(markdown) {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  let inFence = false;
+
+  const normalized = lines.flatMap(line => {
+    const trimmed = line.trim();
+    if (/^(```|~~~)/.test(trimmed)) {
+      inFence = !inFence;
+      return [line];
+    }
+
+    if (!inFence && trimmed === "undefined") {
+      return [];
+    }
+
+    // The article page template owns the single document H1. Notion body H1s
+    // are content headings, so demote them to H2 instead of rendering a second H1.
+    if (!inFence && /^#\s+/.test(line)) {
+      return [line.replace(/^#\s+/, "## ")];
+    }
+
+    return [line];
+  });
+
+  return normalized.join("\n").replace(/\n{4,}/g, "\n\n\n").trimStart();
+}
+
 function plainTextSummary(markdown, maxLength = 150) {
   const plain = markdown
     .replace(/{{<[^>]+>}}/g, " ")
@@ -307,12 +334,13 @@ async function buildArticle(candidate) {
     }
   }
 
-  /* Notion → Markdown，並把內文圖片本地化 */
+  /* Notion → Markdown；文章 H1 由 Hugo template 擁有，再把內文圖片本地化 */
   const mdBlocks = await n2m.pageToMarkdown(page.id);
   let mdBody = n2m.toMarkdownString(mdBlocks).parent.replace(
     /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})\S*/g,
     (_m, id) => `{{< youtube ${id} >}}`
   );
+  mdBody = normalizeMarkdownBody(mdBody);
   mdBody = await localizeMarkdownImages(mdBody, bundle);
   const description = plainTextSummary(mdBody);
 

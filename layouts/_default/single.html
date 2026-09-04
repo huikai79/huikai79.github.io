@@ -24,7 +24,11 @@
     {{ .Date.Format "2006年1月2日" }} · 阅读约 {{ .ReadingTime }} 分钟
   </p>
 
-  {{ .Content }}
+  {{/* The page template owns the single document H1. This is a defensive
+       rendering boundary for legacy content; sync.mjs also demotes Notion
+       body H1 headings before writing Markdown. */}}
+  {{ $content := .Content | replaceRE `<h1([^>]*)>` `<h2$1>` | replaceRE `</h1>` `</h2>` }}
+  {{ $content | safeHTML }}
 </article>
 
 {{ partial "article/author.html" . }}
