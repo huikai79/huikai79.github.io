@@ -7,6 +7,8 @@ echo "Hugo / Go runtime"
 hugo version
 go version
 
+python3 scripts/verify-source-contract.py
+
 go mod download
 hugo mod graph | tee /tmp/hugo-mod-graph.txt
 grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
