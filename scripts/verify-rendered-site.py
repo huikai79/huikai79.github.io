@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import re
 import sys
 import tomllib
+from html.parser import HTMLParser
 from pathlib import Path
 
 PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public")
@@ -22,25 +22,76 @@ def read_required(path: Path, label: str) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
-def require(pattern: str, text: str, message: str, flags: int = 0) -> None:
-    if not re.search(pattern, text, flags):
-        fail(message)
-
-
-def extract_section(html: str, section_id: str) -> str:
-    match = re.search(
-        rf'<section\b[^>]*\bid=["\']{re.escape(section_id)}["\'][^>]*>(.*?)</section>',
-        html,
-        re.IGNORECASE | re.DOTALL,
-    )
-    if not match:
-        fail(f"Homepage section #{section_id} is missing")
-        return ""
-    return match.group(1)
+def attrs_dict(attrs: list[tuple[str, str | None]]) -> dict[str, str]:
+    return {key.lower(): value or "" for key, value in attrs}
 
 
 def normalize_config_path(value: str) -> str:
     return "/" + value.strip("/").lower() + "/"
+
+
+class SiteParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.html_lang = ""
+        self.meta_properties: set[str] = set()
+        self.meta_names: set[str] = set()
+        self.hrefs: list[str] = []
+        self.ids: set[str] = set()
+        self.classes: set[str] = set()
+        self.section_stack: list[str] = []
+        self.selected_paths: list[str] = []
+        self.recent_paths: list[str] = []
+        self.selected_images = 0
+        self.recent_images = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        data = attrs_dict(attrs)
+        tag = tag.lower()
+        classes = set(data.get("class", "").split())
+        self.classes.update(classes)
+
+        element_id = data.get("id", "")
+        if element_id:
+            self.ids.add(element_id)
+
+        if tag == "html":
+            self.html_lang = data.get("lang", "")
+
+        if tag == "meta":
+            if data.get("property"):
+                self.meta_properties.add(data["property"].lower())
+            if data.get("name"):
+                self.meta_names.add(data["name"].lower())
+
+        if tag == "a" and data.get("href"):
+            self.hrefs.append(data["href"])
+
+        if tag == "section":
+            self.section_stack.append(element_id)
+
+        current_section = self.section_stack[-1] if self.section_stack else ""
+        if current_section == "home-selected":
+            if "home-selected-item" in classes and data.get("data-home-path"):
+                self.selected_paths.append(data["data-home-path"])
+            if tag == "img":
+                self.selected_images += 1
+        elif current_section == "home-recent":
+            if "home-recent-row" in classes and data.get("data-home-path"):
+                self.recent_paths.append(data["data-home-path"])
+            if tag == "img":
+                self.recent_images += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "section" and self.section_stack:
+            self.section_stack.pop()
+
+
+def parse_html(text: str) -> SiteParser:
+    parser = SiteParser()
+    parser.feed(text)
+    parser.close()
+    return parser
 
 
 home = read_required(PUBLIC / "index.html", "Homepage output")
@@ -50,16 +101,25 @@ article = read_required(
 )
 
 if home:
-    require(r'<html\b[^>]*\blang=["\']zh-CN["\']', home, "Homepage language is not zh-CN", re.I)
-    require(r'庄辉恺的个人博客', home, "Homepage site description is missing")
-    require(r'property=["\']og:image["\']', home, "Homepage Open Graph image metadata is missing", re.I)
-    require(r'name=["\']twitter:image["\']', home, "Homepage Twitter image metadata is missing", re.I)
-    require(r'HUIKAI', home, "Landing hero caption is missing")
-    require(r'思考 AI、学习、阅读与生活', home, "Landing hero positioning text is missing")
-    require(r'href=["\'][^"\']*/posts/["\']', home, "Landing posts CTA is missing", re.I)
-
-    selected = extract_section(home, "home-selected")
-    recent = extract_section(home, "home-recent")
+    home_parser = parse_html(home)
+    if home_parser.html_lang != "zh-CN":
+        fail(f"Homepage language is not zh-CN: {home_parser.html_lang!r}")
+    if "庄辉恺的个人博客" not in home:
+        fail("Homepage site description is missing")
+    if "og:image" not in home_parser.meta_properties:
+        fail("Homepage Open Graph image metadata is missing")
+    if "twitter:image" not in home_parser.meta_names:
+        fail("Homepage Twitter image metadata is missing")
+    if "HUIKAI" not in home:
+        fail("Landing hero caption is missing")
+    if "思考 AI、学习、阅读与生活" not in home:
+        fail("Landing hero positioning text is missing")
+    if not any(href.rstrip("/").endswith("/posts") for href in home_parser.hrefs):
+        fail("Landing posts CTA is missing")
+    if "home-selected" not in home_parser.ids:
+        fail("Homepage section #home-selected is missing")
+    if "home-recent" not in home_parser.ids:
+        fail("Homepage section #home-recent is missing")
 
     config_path = ROOT / "data" / "homepage.toml"
     try:
@@ -79,16 +139,8 @@ if home:
             f"found {len(featured)}"
         )
 
-    selected_paths = re.findall(
-        r'class=["\'][^"\']*\bhome-selected-item\b[^"\']*["\'][^>]*\bdata-home-path=["\']([^"\']+)["\']',
-        selected,
-        re.I,
-    )
-    recent_paths = re.findall(
-        r'class=["\'][^"\']*\bhome-recent-row\b[^"\']*["\'][^>]*\bdata-home-path=["\']([^"\']+)["\']',
-        recent,
-        re.I,
-    )
+    selected_paths = home_parser.selected_paths
+    recent_paths = home_parser.recent_paths
 
     if len(selected_paths) != selected_limit:
         fail(f"Homepage Selected must render exactly {selected_limit} items; found {len(selected_paths)}")
@@ -107,15 +159,19 @@ if home:
     if overlap:
         fail(f"Homepage Selected and Recent overlap: {overlap}")
 
-    if selected and len(re.findall(r'<img\b', selected, re.I)) < selected_limit:
+    if home_parser.selected_images < selected_limit:
         fail("Every current Selected card must have a cover image before rotation is introduced")
-    if recent and re.search(r'<img\b', recent, re.I):
-        fail("Homepage Recent must remain image-free editorial rows")
+    if home_parser.recent_images != 0:
+        fail(f"Homepage Recent must remain image-free editorial rows; found {home_parser.recent_images} image(s)")
 
 if article:
-    require(r'class=["\'][^"\']*\bscroll-to-top\b', article, "Scroll-to-top class is missing", re.I)
-    require(r'id=["\']scroll-to-top["\']', article, "Scroll-to-top DOM id is missing", re.I)
-    require(r'href=["\']#the-top["\']', article, "Scroll-to-top anchor target is missing", re.I)
+    article_parser = parse_html(article)
+    if "scroll-to-top" not in article_parser.classes:
+        fail("Scroll-to-top class is missing")
+    if "scroll-to-top" not in article_parser.ids:
+        fail("Scroll-to-top DOM id is missing")
+    if "#the-top" not in article_parser.hrefs:
+        fail("Scroll-to-top anchor target is missing")
 
 for html_path in PUBLIC.rglob("*.html") if PUBLIC.exists() else []:
     rendered = html_path.read_text(encoding="utf-8", errors="replace")
