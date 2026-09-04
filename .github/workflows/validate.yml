@@ -27,6 +27,7 @@ jobs:
         run: |
           test -s .notion-sync-manifest.json
           test -s content/posts/_index.md
+          test -s package-lock.json
 
           bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
           manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
@@ -62,7 +63,7 @@ jobs:
           test ! -d themes/blowfish
 
           if ! git diff --exit-code -- go.mod go.sum; then
-            echo "::error::Go module files are not fully committed; run go mod download/tidy and commit the resulting go.mod/go.sum"
+            echo "::error::Go module files are not fully committed"
             exit 1
           fi
 
@@ -72,56 +73,17 @@ jobs:
           fi
 
       - name: Validate templates
-        run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
+        run: |
+          hugo --printPathWarnings --templateMetrics --templateMetricsHints 2>&1 | tee /tmp/hugo-template.log
+          if grep -Fq '.Site.Data was deprecated' /tmp/hugo-template.log; then
+            echo "::error::Deprecated .Site.Data API is still used"
+            exit 1
+          fi
 
       - name: Build site from a clean destination
         run: |
           rm -rf public
           hugo --minify
 
-      - name: Verify site output
-        run: |
-          require_file() {
-            if [ ! -s "$1" ]; then
-              echo "::error::$2"
-              exit 1
-            fi
-          }
-
-          require_match() {
-            if ! grep -Eq "$1" "$2"; then
-              echo "::error::$3"
-              exit 1
-            fi
-          }
-
-          article="public/posts/how-to-be-an-expert/index.html"
-          home="public/index.html"
-
-          require_file "$home" "Homepage output is missing"
-          require_file "$article" "Known article output is missing"
-          require_match 'class="[^"]*scroll-to-top[^"]*"|class=scroll-to-top' "$article" "Scroll-to-top class is missing from the known article"
-          require_match 'id="?scroll-to-top"?' "$article" "Blowfish v3 scroll-to-top DOM id is missing"
-          require_match 'href="?#the-top"?' "$article" "Scroll-to-top anchor target is missing"
-          require_match 'lang="?zh-CN"?' "$home" "Homepage language is not zh-CN"
-          require_match '庄辉恺的个人博客' "$home" "Homepage site description is missing"
-          require_match 'property="?og:image"?' "$home" "Homepage Open Graph image metadata is missing"
-          require_match 'name="?twitter:image"?' "$home" "Homepage Twitter image metadata is missing"
-          require_match 'HUIKAI' "$home" "Landing hero caption is missing"
-          require_match '思考 AI、学习、阅读与生活' "$home" "Landing hero positioning text is missing"
-          require_match 'href="?/posts/' "$home" "Landing posts CTA is missing"
-          require_match '>精选<' "$home" "Selected homepage section is missing"
-          require_match '>最近<' "$home" "Recent homepage section is missing"
-          require_match '你是怎么知道的' "$home" "Selected article: 你是怎么知道的 is missing"
-          require_match '网络文章的王者' "$home" "Selected article: 网络文章的王者 is missing"
-          require_match 'Notion\+Github\+Hugo 的好处' "$home" "Selected article: Notion+Github+Hugo 的好处 is missing"
-
-          if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
-            echo "::error::Temporary Notion/S3 image URL is still present in rendered site"
-            exit 1
-          fi
-
-          if grep -R -q '<svg \.\.\.' public; then
-            echo "::error::Placeholder SVG markup is still present in rendered site"
-            exit 1
-          fi
+      - name: Verify rendered site
+        run: python3 scripts/verify-rendered-site.py public
