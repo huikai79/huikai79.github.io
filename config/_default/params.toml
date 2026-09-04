@@ -49,13 +49,15 @@ customCSS = ["css/custom.css"]
   showScrollToTop = true
 
 [homepage]
-  layout = "profile" # valid options: page, profile, hero, card, background, custom
+  layout = "landing" # Blowfish v3 native personal landing layout
   showRecent = true
   showRecentItems = 6
   recentLimit = 6
   showHomeTitle = false
   showHero = true
   showAllPosts = false
+  showMoreLink = true
+  showMoreLinkDest = "/posts/"
   cardView = true
   layoutBackgroundBlur = true
   disableHeroImageFilter = false
