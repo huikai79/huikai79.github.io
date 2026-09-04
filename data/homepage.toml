@@ -1,0 +1,7 @@
+featured = [
+  "posts/How-you-know",
+  "posts/King-of-Internet-Writing",
+  "posts/ngh",
+]
+
+recentLimit = 5
