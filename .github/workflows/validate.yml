@@ -61,13 +61,13 @@ jobs:
           grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
           test ! -d themes/blowfish
 
-          if grep -R -q 'github.com/nunocoracao/blowfish/v2' go.mod go.sum config/_default; then
-            echo "::error::Blowfish v2 reference remains after the v3 upgrade"
+          if ! git diff --exit-code -- go.mod go.sum; then
+            echo "::error::Go module files are not fully committed; run go mod download/tidy and commit the resulting go.mod/go.sum"
             exit 1
           fi
 
-          if ! git diff --exit-code -- go.mod go.sum; then
-            echo "::error::Go module files are not fully committed; run go mod download/tidy and commit the resulting go.mod/go.sum"
+          if grep -R -q 'github.com/nunocoracao/blowfish/v2' go.mod go.sum config/_default; then
+            echo "::error::Blowfish v2 reference remains after the v3 upgrade"
             exit 1
           fi
 
