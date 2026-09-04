@@ -52,16 +52,14 @@
   {{ if gt (len $recentCandidates) 0 }}
     <section id="home-recent" class="mt-16" aria-labelledby="home-recent-title">
       <h2 id="home-recent-title" class="mb-8 text-2xl font-extrabold">最近</h2>
-      <div class="w-full divide-y divide-neutral-200 dark:divide-neutral-700">
+      <div class="home-recent-list">
         {{ range first $recentLimit $recentCandidates }}
-          <article class="home-recent-row relative py-5 first:pt-0" data-home-path="{{ .RelPermalink }}">
-            <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
-              <h3 class="min-w-0 text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                <a class="before:absolute before:inset-0 hover:underline hover:underline-offset-4" href="{{ .RelPermalink }}">
-                  {{ .Title | emojify }}
-                </a>
+          <article class="home-recent-row" data-home-path="{{ .RelPermalink }}">
+            <div class="home-recent-row-inner">
+              <h3 class="home-recent-title">
+                <a href="{{ .RelPermalink }}">{{ .Title | emojify }}</a>
               </h3>
-              <time class="shrink-0 text-sm text-neutral-500 dark:text-neutral-400" datetime="{{ .Date.Format "2006-01-02" }}">
+              <time class="home-recent-date" datetime="{{ .Date.Format "2006-01-02" }}">
                 {{ .Date.Format "2006年1月2日" }}
               </time>
             </div>
