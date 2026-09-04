@@ -49,7 +49,7 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 0.147.8
+          hugo-version: 0.165.0
           extended: true
 
       - name: Check Hugo and Blowfish versions
@@ -58,8 +58,18 @@ jobs:
           go version
           go mod download
           hugo mod graph | tee /tmp/hugo-mod-graph.txt
-          grep -q 'github.com/nunocoracao/blowfish/v2@v2.87.0' /tmp/hugo-mod-graph.txt
+          grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
           test ! -d themes/blowfish
+
+          if ! git diff --exit-code -- go.mod go.sum; then
+            echo "::error::Go module files are not fully committed; run go mod download/tidy and commit the resulting go.mod/go.sum"
+            exit 1
+          fi
+
+          if grep -R -q 'github.com/nunocoracao/blowfish/v2' go.mod go.sum config/_default; then
+            echo "::error::Blowfish v2 reference remains after the v3 upgrade"
+            exit 1
+          fi
 
       - name: Validate templates
         run: hugo --printPathWarnings --templateMetrics --templateMetricsHints
@@ -71,12 +81,32 @@ jobs:
 
       - name: Verify site output
         run: |
-          test -s public/index.html
-          test -s public/posts/how-to-be-an-expert/index.html
-          grep -q 'class=scroll-to-top\|class="scroll-to-top"' public/posts/how-to-be-an-expert/index.html
-          grep -q 'href=#the-top\|href="#the-top"' public/posts/how-to-be-an-expert/index.html
-          grep -q 'lang=zh-CN\|lang="zh-CN"' public/index.html
-          grep -q '庄辉恺的个人博客' public/index.html
+          require_file() {
+            if [ ! -s "$1" ]; then
+              echo "::error::$2"
+              exit 1
+            fi
+          }
+
+          require_match() {
+            if ! grep -Eq "$1" "$2"; then
+              echo "::error::$3"
+              exit 1
+            fi
+          }
+
+          article="public/posts/how-to-be-an-expert/index.html"
+          home="public/index.html"
+
+          require_file "$home" "Homepage output is missing"
+          require_file "$article" "Known article output is missing"
+          require_match 'class="[^"]*scroll-to-top[^"]*"|class=scroll-to-top' "$article" "Scroll-to-top class is missing from the known article"
+          require_match 'id="?scroll-to-top"?' "$article" "Blowfish v3 scroll-to-top DOM id is missing"
+          require_match 'href="?#the-top"?' "$article" "Scroll-to-top anchor target is missing"
+          require_match 'lang="?zh-CN"?' "$home" "Homepage language is not zh-CN"
+          require_match '庄辉恺的个人博客' "$home" "Homepage site description is missing"
+          require_match 'property="?og:image"?' "$home" "Homepage Open Graph image metadata is missing"
+          require_match 'name="?twitter:image"?' "$home" "Homepage Twitter image metadata is missing"
 
           if grep -R -q 'prod-files-secure.s3.us-west-2.amazonaws.com' public; then
             echo "::error::Temporary Notion/S3 image URL is still present in rendered site"

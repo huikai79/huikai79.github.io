@@ -24,7 +24,7 @@ disableTextInHeader = false
 
 disableThemePreloader = true
 
-defaultSocialImage = "/android-chrome-512x512.png"
+defaultSocialImage = "https://avatars.githubusercontent.com/u/185808855?v=4&size=512"
 
 highlightCurrentMenuArea = true
 # smartTOC = true

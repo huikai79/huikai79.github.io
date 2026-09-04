@@ -1,8 +1,8 @@
 [hugoVersion]
   extended = true
-  min = "0.137.0"
-  max = "0.147.8"
+  min = "0.162.0"
+  max = "0.165.0"
 
 [[imports]]
   disable = false
-  path = "github.com/nunocoracao/blowfish/v2"
+  path = "github.com/nunocoracao/blowfish/v3"
