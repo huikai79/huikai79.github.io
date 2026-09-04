@@ -16,9 +16,8 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout without persisted credentials
         uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -31,9 +30,6 @@ jobs:
 
           bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
           manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
-
-          echo "Article bundles: $bundle_count"
-          echo "Manifest pages: $manifest_count"
           test "$bundle_count" -eq "$manifest_count"
 
           if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
@@ -47,43 +43,28 @@ jobs:
           go-version: '1.24.4'
           cache: true
 
+      - name: Lint GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 .github/workflows/*.yml
+
+      - name: Verify production workflow safety contracts
+        run: |
+          grep -Fq 'Production deployment is restricted to main' .github/workflows/deploy.yml
+          grep -Fq 'Deployment lineage mismatch' .github/workflows/deploy.yml
+          grep -Fq 'main moved after deployment dispatch' .github/workflows/deploy.yml
+          grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
+          grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
+          grep -Fq 'persist-credentials: false' .github/workflows/sync.yml
+
+          if grep -Eq '^  (push|schedule):' .github/workflows/deploy.yml; then
+            echo "::error::Production deploy workflow must only be entered through an explicit exact-SHA dispatch"
+            exit 1
+          fi
+
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 0.165.0
           extended: true
 
-      - name: Check Hugo and Blowfish versions
-        run: |
-          hugo version
-          go version
-          go mod download
-          hugo mod graph | tee /tmp/hugo-mod-graph.txt
-          grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
-          test ! -d themes/blowfish
-
-          if ! git diff --exit-code -- go.mod go.sum; then
-            echo "::error::Go module files are not fully committed"
-            exit 1
-          fi
-
-          if grep -R -q 'github.com/nunocoracao/blowfish/v2' go.mod go.sum config/_default; then
-            echo "::error::Blowfish v2 reference remains after the v3 upgrade"
-            exit 1
-          fi
-
-      - name: Validate templates
-        run: |
-          hugo --printPathWarnings --templateMetrics --templateMetricsHints 2>&1 | tee /tmp/hugo-template.log
-          if grep -Fq '.Site.Data was deprecated' /tmp/hugo-template.log; then
-            echo "::error::Deprecated .Site.Data API is still used"
-            exit 1
-          fi
-
-      - name: Build site from a clean destination
-        run: |
-          rm -rf public
-          hugo --minify
-
-      - name: Verify rendered site
-        run: python3 scripts/verify-rendered-site.py public
+      - name: Build and verify committed snapshot
+        run: bash scripts/build-and-verify.sh public
