@@ -13,7 +13,7 @@ images: ["cover-fallback.png"]
 ## 參加 Nutrient Hackathon 後，我重新理解了「做作品」與「參加比賽」的差別
 
 
-[image](attachment-03eae12d03dc67fc.mp4)
+{{< video src="attachment-03eae12d03dc67fc.mp4" >}}
 
 
 最近我參加了 DevNetwork [API + Cloud + AI] Hackathon 2026 裡的 **Nutrient DWS Challenge**。
