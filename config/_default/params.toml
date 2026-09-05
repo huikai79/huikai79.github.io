@@ -126,38 +126,6 @@ customCSS = ["css/custom.css"]
   showViews = false
   showLikes = false
   showTableOfContents = false
-  showCategoryOnly = false
-  showAuthorsBadges = false
-  showWordCount = false
-  showComments = false
-  showZenMode = false
-
-[list]
-  showHero = true
-  layoutBackgroundBlur = true
-  layoutBackgroundHeaderSpace = true
-  showBreadcrumbs = false
-  showSummary = false
-  showViews = false
-  showLikes = false
-  showTableOfContents = true
-  showCards = true
-  orderByWeight = false
-  groupByYear = true
-  cardView = true
-  cardViewScreenWidth = true
-  constrainItemsWidth = true
-
-[sitemap]
-  excludedKinds = ["taxonomy", "term"]
-
-[taxonomy]
-  showTermCount = true
-  showHero = false
-  showBreadcrumbs = false
-  showViews = false
-  showLikes = false
-  showTableOfContents = false
   cardView = false
 
 [term]
