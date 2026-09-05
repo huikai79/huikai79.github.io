@@ -7,6 +7,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '*/20 * * * *'
+    - cron: '5 0 * * 1'
+      timezone: 'Asia/Kuala_Lumpur'
 
 permissions:
   contents: write
@@ -113,6 +115,19 @@ jobs:
       - name: Finalize runtime and dependency fingerprint
         run: cp /tmp/notion-sync-deps.sha256 .notion-sync-deps.sha256
 
+      - name: Decide homepage presentation refresh
+        id: presentation
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          refresh=0
+          if [ "$EVENT_NAME" != "schedule" ] || [ "$EVENT_SCHEDULE" = "5 0 * * 1" ]; then
+            refresh=1
+          fi
+          echo "refresh=$refresh" >> "$GITHUB_OUTPUT"
+          echo "Homepage presentation refresh: $refresh"
+
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
@@ -128,6 +143,7 @@ jobs:
       - name: Validate candidate snapshot before commit
         env:
           STRICT_CONTENT: '1'
+          REFRESH_HOMEPAGE_ROTATION: ${{ steps.presentation.outputs.refresh }}
         run: bash scripts/build-and-verify.sh public
 
       - name: Commit only the validated synchronized snapshot
@@ -135,25 +151,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git add content/posts .notion-sync-manifest.json .notion-sync-deps.sha256 package-lock.json
+          git add content/posts data/homepage_runtime.toml .notion-sync-manifest.json .notion-sync-deps.sha256 package-lock.json
 
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-            echo "No synchronized-content commit required."
+            echo "No synchronized-content or presentation-state commit required."
             exit 0
           fi
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "🔄 Sync from Notion ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
+          git commit -m "🔄 Sync site state ($(date -u +"%Y-%m-%dT%H:%M:%SZ"))"
           source_sha="$(git rev-parse HEAD)"
 
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
 
           echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
-          echo "Validated synchronized snapshot committed: $source_sha"
+          echo "Validated site state committed: $source_sha"
 
       - name: Dispatch exact-main deployment when required
         env:
@@ -161,15 +177,16 @@ jobs:
           SOURCE_SHA: ${{ steps.sync_commit.outputs.source_sha }}
           CHANGED: ${{ steps.sync_commit.outputs.changed }}
           EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           should_deploy=false
-          if [ "$EVENT_NAME" != "schedule" ] || [ "$CHANGED" = "true" ] || [ "$RUN_ATTEMPT" -gt 1 ]; then
+          if [ "$EVENT_NAME" != "schedule" ] || [ "$CHANGED" = "true" ] || [ "$RUN_ATTEMPT" -gt 1 ] || [ "$EVENT_SCHEDULE" = "5 0 * * 1" ]; then
             should_deploy=true
           fi
 
           if [ "$should_deploy" != "true" ]; then
-            echo "Scheduled sync is unchanged; no deployment dispatch required."
+            echo "Scheduled Notion sync is unchanged; no deployment dispatch required."
             exit 0
           fi
 
