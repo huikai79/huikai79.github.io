@@ -52,6 +52,11 @@ jobs:
           grep -Fq 'Production deployment is restricted to main' .github/workflows/deploy.yml
           grep -Fq 'Deployment lineage mismatch' .github/workflows/deploy.yml
           grep -Fq 'main moved after deployment dispatch' .github/workflows/deploy.yml
+          grep -Fq 'public/source-commit.txt' .github/workflows/deploy.yml
+          if grep -Fq 'public/.source-commit' .github/workflows/deploy.yml; then
+            echo "::error::Pages lineage marker must not be hidden because upload-pages-artifact excludes hidden files"
+            exit 1
+          fi
           grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
           grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           grep -Fq 'persist-credentials: false' .github/workflows/sync.yml
