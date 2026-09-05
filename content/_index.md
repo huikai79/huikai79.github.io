@@ -5,6 +5,8 @@ heroLead: "思考 AI、学习、阅读与生活，记录那些值得长期保留
 heroButtons:
   - label: "查看文章"
     url: "/posts/"
+  - label: "浏览项目"
+    url: "/projects/"
   - label: "关于我"
     url: "/about/"
 ---

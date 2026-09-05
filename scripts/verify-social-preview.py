@@ -142,8 +142,12 @@ def verify_page(path: Path, label: str) -> None:
 verify_page(PUBLIC / "index.html", "homepage")
 verify_page(PUBLIC / "about" / "index.html", "about")
 verify_page(PUBLIC / "posts" / "index.html", "posts index")
+verify_page(PUBLIC / "projects" / "index.html", "projects index")
+verify_page(PUBLIC / "explore" / "index.html", "explore")
 for article in sorted((PUBLIC / "posts").glob("*/index.html")):
     verify_page(article, f"article:{article.parent.name}")
+for project in sorted((PUBLIC / "projects").glob("*/index.html")):
+    verify_page(project, f"project:{project.parent.name}")
 
 if ERRORS:
     for error in ERRORS:
@@ -151,4 +155,7 @@ if ERRORS:
     raise SystemExit(1)
 
 article_count = len(list((PUBLIC / "posts").glob("*/index.html")))
-print(f"Social preview verification: PASS ({article_count} articles + homepage/about/posts index)")
+project_count = len(list((PUBLIC / "projects").glob("*/index.html")))
+print(
+    f"Social preview verification: PASS ({article_count} articles, {project_count} projects + homepage/about/posts/projects/explore indexes)"
+)
