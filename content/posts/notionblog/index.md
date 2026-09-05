@@ -6,6 +6,8 @@ description: "前言 你好，未来的博主！ 这份指南将带你从零开�
 tags: ["技术学习", "测试"]
 showComments: true
 commentKey: "notion:2327a59e-0439-8187-b531-ef3671cf6b44"
+cover: "cover-fallback.png"
+images: ["cover-fallback.png"]
 ---
 
 ### **前言**
