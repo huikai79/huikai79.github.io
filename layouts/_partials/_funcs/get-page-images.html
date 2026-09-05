@@ -1,0 +1,51 @@
+{{- $imgs := slice -}}
+{{- $imgParams := .Params.images -}}
+{{- $resources := .Resources.ByType "image" -}}
+
+{{- if not $imgParams -}}
+  {{- $featured := $resources.GetMatch "*feature*" -}}
+  {{- if not $featured -}}
+    {{- $featured = $resources.GetMatch "{*cover*,*thumbnail*}" -}}
+  {{- end -}}
+  {{- with $featured -}}
+    {{- $processed := .Fill "1200x630 center q85 jpg" -}}
+    {{- $imgs = $imgs | append (dict
+      "Image" $processed
+      "RelPermalink" $processed.RelPermalink
+      "Permalink" $processed.Permalink
+    ) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if and (not $imgParams) (not $imgs) -}}
+  {{- with site.Params.images -}}
+    {{- $imgParams = first 1 . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- range $imgParams -}}
+  {{- $img := . -}}
+  {{- $url := urls.Parse $img -}}
+  {{- if eq $url.Scheme "" -}}
+    {{- with or ($resources.GetMatch $img) (resources.GetMatch $img) -}}
+      {{- $processed := .Fill "1200x630 center q85 jpg" -}}
+      {{- $imgs = $imgs | append (dict
+        "Image" $processed
+        "RelPermalink" $processed.RelPermalink
+        "Permalink" $processed.Permalink
+      ) -}}
+    {{- else -}}
+      {{- $imgs = $imgs | append (dict
+        "RelPermalink" (relURL $img)
+        "Permalink" (absURL $img)
+      ) -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $imgs = $imgs | append (dict
+      "RelPermalink" $img
+      "Permalink" $img
+    ) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- return $imgs -}}

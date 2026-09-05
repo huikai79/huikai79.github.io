@@ -24,7 +24,11 @@ disableTextInHeader = false
 
 disableThemePreloader = true
 
-defaultSocialImage = "https://avatars.githubusercontent.com/u/185808855?v=4&size=512"
+# Gate 4B: Hugo's native Open Graph/Twitter templates use site.Params.images
+# as the fallback when a page has no article image. Article pages continue to
+# inherit Gate 4A `images` front matter and are processed to 1200x630 by the
+# local get-page-images helper.
+images = ["social-default.png"]
 
 highlightCurrentMenuArea = true
 # smartTOC = true
