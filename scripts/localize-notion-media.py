@@ -20,6 +20,7 @@ MARKDOWN_LINK_RE = re.compile(
     r'(?<!!)\[([^\]]*)\]\((https?://[^)\s]+)(\s+"[^"]*")?\)'
 )
 SAFE_EXTENSION_RE = re.compile(r"^\.[A-Za-z0-9]{1,10}$")
+VIDEO_EXTENSIONS = {".mp4"}
 
 
 def directory_hash(directory: Path) -> str:
@@ -56,6 +57,12 @@ def stable_attachment_name(url: str) -> str:
         suffix = ".bin"
     stable_key = hashlib.sha256(parsed.path.encode("utf-8")).hexdigest()[:16]
     return f"attachment-{stable_key}{suffix}"
+
+
+def localized_markdown(filename: str, label: str, title: str = "") -> str:
+    if Path(filename).suffix.lower() in VIDEO_EXTENSIONS:
+        return f'{{{{< video src="{filename}" >}}}}'
+    return f"[{label}]({filename}{title})"
 
 
 def download_file(url: str, destination: Path, attempts: int = 3, timeout: int = 30) -> None:
@@ -106,7 +113,7 @@ def localize_markdown_links(
             fetcher(url, destination)
             downloaded.add(filename)
 
-        replacements.append((original, f"[{label}]({filename}{title})"))
+        replacements.append((original, localized_markdown(filename, label, title)))
         localized.append({"host": TEMP_NOTION_MEDIA_HOST, "file": filename})
 
     result = markdown

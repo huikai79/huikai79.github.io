@@ -1,0 +1,12 @@
+{{- $src := .Get "src" -}}
+{{- if not $src -}}
+  {{- errorf "video shortcode requires src on %s" .Page.RelPermalink -}}
+{{- end -}}
+{{- with .Page.Resources.GetMatch $src -}}
+<video class="notion-video" controls preload="metadata" playsinline>
+  <source src="{{ .RelPermalink }}" type="video/mp4">
+  您的浏览器不支持 HTML5 视频播放。
+</video>
+{{- else -}}
+  {{- errorf "video shortcode resource %q not found on %s" $src .Page.RelPermalink -}}
+{{- end -}}

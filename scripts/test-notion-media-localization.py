@@ -18,26 +18,32 @@ def fail(message: str) -> None:
 
 
 def main() -> None:
-    temporary_url = (
+    temporary_pdf = (
         "https://prod-files-secure.s3.us-west-2.amazonaws.com/"
         "workspace/page/evidence.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc"
     )
-    same_file_new_signature = (
+    same_pdf_new_signature = (
         "https://prod-files-secure.s3.us-west-2.amazonaws.com/"
         "workspace/page/evidence.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=def"
     )
+    temporary_video = (
+        "https://prod-files-secure.s3.us-west-2.amazonaws.com/"
+        "workspace/page/demo.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=video"
+    )
     external_url = "https://example.com/reference.pdf"
+    external_video = "https://example.com/demo.mp4"
 
-    if not module.is_temporary_notion_media_url(temporary_url):
+    if not module.is_temporary_notion_media_url(temporary_pdf):
         fail("Expected Notion temporary media URL to be recognized")
     if module.is_temporary_notion_media_url(external_url):
         fail("Ordinary external URL must not be treated as temporary Notion media")
 
-    name_a = module.stable_attachment_name(temporary_url)
-    name_b = module.stable_attachment_name(same_file_new_signature)
-    if name_a != name_b:
+    pdf_name_a = module.stable_attachment_name(temporary_pdf)
+    pdf_name_b = module.stable_attachment_name(same_pdf_new_signature)
+    video_name = module.stable_attachment_name(temporary_video)
+    if pdf_name_a != pdf_name_b:
         fail("Attachment filename must ignore expiring signed query parameters")
-    if not name_a.endswith(".pdf"):
+    if not pdf_name_a.endswith(".pdf") or not video_name.endswith(".mp4"):
         fail("Attachment filename must preserve a safe extension")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -49,28 +55,33 @@ def main() -> None:
             downloads.append((url, destination.name))
 
         markdown = (
-            f"[image]({temporary_url})\n\n"
+            f"[image]({temporary_pdf})\n\n"
+            f"[video]({temporary_video})\n\n"
             f"[ordinary external]({external_url})\n\n"
-            f"![already-an-image]({temporary_url})\n"
+            f"[external video]({external_video})\n\n"
+            f"![already-an-image]({temporary_pdf})\n"
         )
         updated, localized = module.localize_markdown_links(markdown, bundle, fake_fetcher)
 
-        expected_local = f"[image]({name_a})"
-        if expected_local not in updated:
-            fail("Temporary Notion attachment link was not localized")
+        if f"[image]({pdf_name_a})" not in updated:
+            fail("Temporary Notion non-video attachment link was not localized")
+        if f'{{{{< video src="{video_name}" >}}}}' not in updated:
+            fail("Temporary Notion MP4 was not converted to the native video shortcode")
         if f"[ordinary external]({external_url})" not in updated:
             fail("Ordinary external link was unexpectedly changed")
-        if f"![already-an-image]({temporary_url})" not in updated:
+        if f"[external video]({external_video})" not in updated:
+            fail("External MP4 link must remain an ordinary external link")
+        if f"![already-an-image]({temporary_pdf})" not in updated:
             fail("Image syntax must remain owned by the existing image localizer")
-        if len(localized) != 1 or len(downloads) != 1:
-            fail("Expected exactly one temporary attachment localization")
-        if not (bundle / name_a).is_file():
-            fail("Localized attachment file was not written")
+        if len(localized) != 2 or len(downloads) != 2:
+            fail("Expected exactly two temporary attachment localizations")
+        if not (bundle / pdf_name_a).is_file() or not (bundle / video_name).is_file():
+            fail("Localized attachment files were not written")
 
         second, second_localized = module.localize_markdown_links(updated, bundle, fake_fetcher)
         if second != updated or second_localized:
             fail("Second run must be byte-stable and perform no further localization")
-        if len(downloads) != 1:
+        if len(downloads) != 2:
             fail("Second run must not redownload already-localized Markdown")
 
     print("Notion media localization fixture verification: PASS")
