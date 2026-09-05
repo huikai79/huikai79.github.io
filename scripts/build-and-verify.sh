@@ -7,6 +7,7 @@ echo "Hugo / Go runtime"
 hugo version
 go version
 
+python3 scripts/test-cover-resolution.py
 python3 scripts/resolve-article-covers.py
 python3 scripts/verify-source-contract.py
 
