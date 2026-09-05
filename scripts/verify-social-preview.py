@@ -3,17 +3,34 @@ from __future__ import annotations
 
 import struct
 import sys
+import tomllib
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
+ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = (1200, 630)
 ERRORS: list[str] = []
 
 
 def fail(message: str) -> None:
     ERRORS.append(message)
+
+
+def site_hostname() -> str:
+    try:
+        with (ROOT / "config" / "_default" / "hugo.toml").open("rb") as handle:
+            config = tomllib.load(handle)
+        hostname = urlsplit(str(config.get("baseURL", ""))).hostname
+        if not hostname:
+            raise ValueError("baseURL has no hostname")
+        return hostname.lower()
+    except Exception as error:
+        raise RuntimeError(f"Unable to resolve production hostname from Hugo baseURL: {error}") from error
+
+
+SITE_HOSTNAME = site_hostname()
 
 
 class MetaParser(HTMLParser):
@@ -47,7 +64,9 @@ def parse_meta(path: Path) -> MetaParser:
 
 def local_asset(url: str) -> Path | None:
     parsed = urlsplit(url)
-    if parsed.netloc and parsed.netloc != "huikai79.github.io":
+    # Hugo emits absolute production URLs for social metadata. Treat only the
+    # configured site host as local; a different host remains an external URL.
+    if parsed.hostname and parsed.hostname.lower() != SITE_HOSTNAME:
         return None
     clean = unquote(parsed.path)
     if not clean:
