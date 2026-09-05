@@ -38,6 +38,16 @@ jobs:
             exit 1
           fi
 
+      - name: Apply technical-only comments policy
+        run: |
+          python3 scripts/apply-comments-policy.py
+          cp .notion-sync-manifest.json /tmp/comments-manifest-a.json
+          find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' -print0 | sort -z | xargs -0 sha256sum > /tmp/comments-source-a.sha256
+          python3 scripts/apply-comments-policy.py
+          cmp /tmp/comments-manifest-a.json .notion-sync-manifest.json
+          find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' -print0 | sort -z | xargs -0 sha256sum > /tmp/comments-source-b.sha256
+          cmp /tmp/comments-source-a.sha256 /tmp/comments-source-b.sha256
+
       - name: Setup Go for actionlint
         uses: actions/setup-go@v7
         with:
@@ -58,6 +68,7 @@ jobs:
             exit 1
           fi
           grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
+          grep -Fq 'Apply technical-only comments policy' .github/workflows/sync.yml
           grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           grep -Fq 'persist-credentials: false' .github/workflows/sync.yml
           grep -Fq "cron: '5 0 * * 1'" .github/workflows/sync.yml

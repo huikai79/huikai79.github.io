@@ -75,6 +75,9 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node ./sync.mjs
 
+      - name: Apply technical-only comments policy
+        run: python3 scripts/apply-comments-policy.py
+
       - name: Verify sync report and article bundles
         run: |
           test -s .notion-sync-report.json

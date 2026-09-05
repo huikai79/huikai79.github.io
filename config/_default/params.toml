@@ -91,6 +91,15 @@ customCSS = ["css/custom.css"]
   showComments = false
   showZenMode = false
 
+# Gate 3E: comments remain globally opt-in. The Notion sync policy enables
+# comments only for posts tagged `技术学习`; all other posts stay comment-free.
+[giscus]
+  enabled = true
+  repo = "huikai79/huikai79.github.io"
+  repoId = "R_kgDOPHLqDw"
+  category = "技术讨论"
+  categoryId = "DIC_kwDOPHLqD84DE7jm"
+
 [list]
   showHero = true
   layoutBackgroundBlur = true
