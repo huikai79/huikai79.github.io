@@ -91,6 +91,16 @@ customCSS = ["css/custom.css"]
   showComments = false
   showZenMode = false
 
+# Gate 3E: giscus stays globally disabled until GitHub Discussions is enabled
+# and the final discussion category ID is bound. Individual technical posts are
+# opted in by the Notion tag policy; non-technical posts remain disabled.
+[giscus]
+  enabled = false
+  repo = "huikai79/huikai79.github.io"
+  repoId = "R_kgDOPHLqDw"
+  category = "技术讨论"
+  categoryId = ""
+
 [list]
   showHero = true
   layoutBackgroundBlur = true
