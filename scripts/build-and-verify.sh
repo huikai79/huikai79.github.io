@@ -46,5 +46,6 @@ fi
 rm -rf "$PUBLIC_DIR"
 hugo --minify --destination "$PUBLIC_DIR"
 python3 scripts/verify-rendered-site.py "$PUBLIC_DIR"
+python3 scripts/verify-social-preview.py "$PUBLIC_DIR"
 python3 scripts/verify-site-identity.py "$PUBLIC_DIR"
 python3 scripts/verify-comments-policy.py "$PUBLIC_DIR"
