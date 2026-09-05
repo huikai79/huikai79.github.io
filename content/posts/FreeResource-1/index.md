@@ -4,6 +4,8 @@ date: "2025-07-22"
 slug: "FreeResource-1"
 description: "免费资源自从大学时我就养成了收集资源的习惯，直到研究生，这八九年慢慢的也攒到不少好的计算机学习资源，现在把它们分享出来，造福后来者！ 其中免费的有不少（见下），但不可否认也有部分收费资料很是不错，这里也一并推荐一下阿秀个人学习过程中使用过的认为花钱花的比较值的专栏和不值得花钱买的专栏。 对于其中自己…"
 tags: ["技术学习", "Youtube"]
+showComments: true
+commentKey: "notion:2347a59e-0439-8034-933b-c7d224735498"
 cover: "cover.jpg"
 icon: "📁"
 images: ["cover.jpg"]

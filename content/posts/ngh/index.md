@@ -4,6 +4,8 @@ date: "2025-07-17"
 slug: "ngh"
 description: "摘要 NGH 把 Notion 当作可视化写作／协作后端，借 GitHub 进行版控与自动化建置，再由 Hugo 输出纯静态网页；此组合让内容输入门槛更低、页面载入更快、成本趋近零，但也受限于 Notion API 速率、媒体处理与即时报稿需求。整体而言，它非常适合「重内容、轻功能」的小型部落格或个…"
 tags: ["技术学习", "测试"]
+showComments: true
+commentKey: "notion:2337a59e-0439-80e4-93a4-fff881cc3d18"
 cover: "cover.jpg"
 icon: "💜"
 images: ["cover.jpg"]
