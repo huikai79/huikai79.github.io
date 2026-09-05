@@ -10,7 +10,12 @@
   weight = 20
 
 [[main]]
+  name = "关于"
+  pageRef = "about"
+  weight = 30
+
+[[main]]
   name = "标签"
   pre = "tag"
   pageRef = "tags"
-  weight = 30
+  weight = 40
