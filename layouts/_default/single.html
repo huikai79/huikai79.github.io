@@ -1,6 +1,13 @@
 {{ define "main" }}
 
-{{ with .Resources.GetMatch "cover*" }}
+{{ $cover := false }}
+{{ with .Params.cover }}
+  {{ $cover = $.Resources.GetMatch . }}
+{{ end }}
+{{ if not $cover }}
+  {{ $cover = .Resources.GetMatch "cover*" }}
+{{ end }}
+{{ with $cover }}
   {{ $src := .Fill "1920x1080 center" }}
   <div class="post-hero">
     <img src="{{ $src.RelPermalink }}" alt="{{ $.Title }}" class="post-cover" loading="eager">
