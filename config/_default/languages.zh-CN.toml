@@ -11,7 +11,7 @@ title = "庄辉恺"
   rtl = false
   dateFormat = "2006年1月2日"
   logo = "https://avatars.githubusercontent.com/u/185808855?v=4&size=16"
-  description = "庄辉恺的个人博客，记录生活分享、AI 学习、读书笔记与影视心得。"
+  description = "庄辉恺的个人网站，记录 AI、学习、阅读、视觉设计、教育与数字工具相关的文章、作品、实验与思考。"
   copyright = "© 2026 庄辉恺。保留所有权利。"
 
 [params.author]
@@ -19,8 +19,8 @@ title = "庄辉恺"
   email = "huikai79@gmail.com"
   image = "https://avatars.githubusercontent.com/u/185808855?v=4&size=128"
   imageQuality = 94
-  headline = "生活分享｜AI 学习｜读书笔记｜影视心得"
-  bio = "关于我"
+  headline = "AI｜学习｜阅读｜视觉设计｜教育｜数字工具"
+  bio = "记录值得长期保留的文章、作品、实验与思考。"
   links = [
     { facebook = "https://facebook.com/huikai" },
     { github = "https://github.com/huikai79" },
