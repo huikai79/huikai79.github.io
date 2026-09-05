@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 import tomllib
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +13,7 @@ POSTS = ROOT / "content" / "posts"
 MANIFEST = ROOT / ".notion-sync-manifest.json"
 PARAMS = ROOT / "config" / "_default" / "params.toml"
 COMMENTS_TAG = "技术学习"
+GISCUS_CLIENT = "https://giscus.app/client.js"
 
 ERRORS: list[str] = []
 
@@ -49,6 +50,32 @@ def parse_tags(front: list[str]) -> list[str]:
     return [str(item) for item in parsed]
 
 
+def attrs_dict(attrs: list[tuple[str, str | None]]) -> dict[str, str]:
+    return {key.lower(): value or "" for key, value in attrs}
+
+
+class CommentsParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.giscus_scripts: list[dict[str, str]] = []
+        self.comment_containers: list[dict[str, str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        data = attrs_dict(attrs)
+        tag = tag.lower()
+        if tag == "script" and data.get("src") == GISCUS_CLIENT:
+            self.giscus_scripts.append(data)
+        if tag == "div" and "giscus-comments" in set(data.get("class", "").split()):
+            self.comment_containers.append(data)
+
+
+def parse_comments_html(text: str) -> CommentsParser:
+    parser = CommentsParser()
+    parser.feed(text)
+    parser.close()
+    return parser
+
+
 manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
 pages = manifest.get("pages", {}) if isinstance(manifest, dict) else {}
 slug_to_page_id = {
@@ -61,6 +88,29 @@ with PARAMS.open("rb") as handle:
     params = tomllib.load(handle)
 giscus = params.get("giscus", {}) if isinstance(params, dict) else {}
 giscus_enabled = bool(giscus.get("enabled", False)) if isinstance(giscus, dict) else False
+
+if giscus_enabled:
+    required = ["repo", "repoId", "category", "categoryId"]
+    for key in required:
+        if not str(giscus.get(key, "")).strip():
+            fail(f"giscus enabled but {key} is empty")
+
+rendered_by_slug: dict[str, Path] = {}
+posts_output = PUBLIC / "posts"
+if posts_output.is_dir():
+    for rendered in sorted(posts_output.glob("*/index.html")):
+        normalized = rendered.parent.name.lower()
+        if normalized in rendered_by_slug:
+            fail(f"Rendered article slug collision after URL normalization: {normalized}")
+        rendered_by_slug[normalized] = rendered
+
+source_slug_keys: dict[str, str] = {}
+for index_file in sorted(POSTS.glob("*/index.md")):
+    slug = index_file.parent.name
+    normalized = slug.lower()
+    if normalized in source_slug_keys and source_slug_keys[normalized] != slug:
+        fail(f"Source slug collision after Hugo URL normalization: {source_slug_keys[normalized]} / {slug}")
+    source_slug_keys[normalized] = slug
 
 technical_slugs: list[str] = []
 nontechnical_slugs: list[str] = []
@@ -82,8 +132,9 @@ for index_file in sorted(POSTS.glob("*/index.md")):
     show_comments = value_for(front, "showComments")
     comment_key_raw = value_for(front, "commentKey")
     expected_key = f"notion:{page_id}"
+    technical = COMMENTS_TAG in tags
 
-    if COMMENTS_TAG in tags:
+    if technical:
         technical_slugs.append(slug)
         if show_comments != "true":
             fail(f"Technical article must have showComments: true: {slug}")
@@ -101,35 +152,52 @@ for index_file in sorted(POSTS.glob("*/index.md")):
         if show_comments is not None or comment_key_raw is not None:
             fail(f"Non-technical article must not retain comments fields: {slug}")
 
-for slug in technical_slugs + nontechnical_slugs:
-    rendered = PUBLIC / "posts" / slug / "index.html"
-    if not rendered.is_file():
+    rendered = rendered_by_slug.get(slug.lower())
+    if rendered is None:
         fail(f"Rendered article missing for comments verification: {slug}")
         continue
+
     html = rendered.read_text(encoding="utf-8", errors="replace")
-    has_giscus = "https://giscus.app/client.js" in html
+    parsed = parse_comments_html(html)
 
-    if slug in technical_slugs and giscus_enabled:
-        if not has_giscus:
-            fail(f"Enabled technical article did not render giscus: {slug}")
-        page_id = slug_to_page_id[slug]
-        expected = f'data-term="notion:{page_id}"'
-        if expected not in html:
-            fail(f"Rendered giscus term does not use stable Notion page ID: {slug}")
-        if 'data-mapping="specific"' not in html or 'data-strict="1"' not in html:
-            fail(f"Rendered giscus mapping contract is incomplete: {slug}")
+    if technical and giscus_enabled:
+        if len(parsed.giscus_scripts) != 1:
+            fail(f"Technical article must render exactly one giscus client script: {slug} (found {len(parsed.giscus_scripts)})")
+            continue
+        if len(parsed.comment_containers) != 1:
+            fail(f"Technical article must render exactly one giscus comments container: {slug} (found {len(parsed.comment_containers)})")
+
+        script = parsed.giscus_scripts[0]
+        container = parsed.comment_containers[0]
+        expected_attrs = {
+            "data-repo": str(giscus.get("repo", "")),
+            "data-repo-id": str(giscus.get("repoId", "")),
+            "data-category": str(giscus.get("category", "")),
+            "data-category-id": str(giscus.get("categoryId", "")),
+            "data-mapping": "specific",
+            "data-term": expected_key,
+            "data-strict": "1",
+            "data-reactions-enabled": "1",
+            "data-emit-metadata": "0",
+        }
+        for key, expected in expected_attrs.items():
+            actual = script.get(key, "")
+            if actual != expected:
+                fail(f"Rendered giscus attribute mismatch for {slug}: {key}={actual!r}, expected {expected!r}")
+        if container.get("data-comment-key", "") != expected_key:
+            fail(f"Rendered giscus container key mismatch for {slug}")
     else:
-        if has_giscus:
+        if parsed.giscus_scripts or parsed.comment_containers:
             fail(f"giscus leaked into a disabled/non-technical article: {slug}")
-
-if giscus_enabled:
-    required = ["repo", "repoId", "category", "categoryId"]
-    for key in required:
-        if not str(giscus.get(key, "")).strip():
-            fail(f"giscus enabled but {key} is empty")
 
 if not technical_slugs:
     fail(f"No articles currently carry the required comments tag {COMMENTS_TAG!r}")
+
+if len(rendered_by_slug) != len(source_slug_keys):
+    fail(
+        f"Rendered/source article count mismatch for comments verification: "
+        f"rendered={len(rendered_by_slug)}, source={len(source_slug_keys)}"
+    )
 
 if ERRORS:
     for error in ERRORS:
