@@ -4,5 +4,6 @@ resources/_gen/
 node_modules/
 themes/
 .notion-sync-report.json
+data/homepage_runtime.toml
 content/.posts-staging-*/
 content/.posts-backup-*/
