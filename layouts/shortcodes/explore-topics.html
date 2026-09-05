@@ -1,0 +1,13 @@
+{{- $terms := .Site.Taxonomies.tags.ByCount -}}
+{{- if $terms -}}
+<div class="explore-grid not-prose">
+  {{- range $terms -}}
+  <a class="explore-topic" href="{{ .Page.RelPermalink }}">
+    <span class="explore-topic-name">{{ .Page.LinkTitle }}</span>
+    <span class="explore-topic-count">{{ .Count }} 篇</span>
+  </a>
+  {{- end -}}
+</div>
+{{- else -}}
+<p>目前还没有可探索的主题。</p>
+{{- end -}}
