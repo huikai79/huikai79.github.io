@@ -1,0 +1,25 @@
+{{- $giscus := site.Params.giscus -}}
+{{- if and $giscus.enabled .Params.commentKey -}}
+  {{- if or (not $giscus.repo) (not $giscus.repoId) (not $giscus.category) (not $giscus.categoryId) -}}
+    {{- errorf "giscus is enabled but repository/category configuration is incomplete" -}}
+  {{- end -}}
+  <div class="giscus-comments" data-comment-key="{{ .Params.commentKey }}">
+    <script src="https://giscus.app/client.js"
+            data-repo="{{ $giscus.repo }}"
+            data-repo-id="{{ $giscus.repoId }}"
+            data-category="{{ $giscus.category }}"
+            data-category-id="{{ $giscus.categoryId }}"
+            data-mapping="specific"
+            data-term="{{ .Params.commentKey }}"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="top"
+            data-theme="{{ if eq site.Params.defaultAppearance "dark" }}dark{{ else }}light{{ end }}"
+            data-lang="zh-CN"
+            data-loading="lazy"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </div>
+{{- end -}}
