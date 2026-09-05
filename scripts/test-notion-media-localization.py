@@ -32,6 +32,7 @@ def main() -> None:
     )
     external_url = "https://example.com/reference.pdf"
     external_video = "https://example.com/demo.mp4"
+    legacy_local_video = "attachment-0123456789abcdef.mp4"
 
     if not module.is_temporary_notion_media_url(temporary_pdf):
         fail("Expected Notion temporary media URL to be recognized")
@@ -57,16 +58,22 @@ def main() -> None:
         markdown = (
             f"[image]({temporary_pdf})\n\n"
             f"[video]({temporary_video})\n\n"
+            f"[legacy video]({legacy_local_video})\n\n"
             f"[ordinary external]({external_url})\n\n"
             f"[external video]({external_video})\n\n"
             f"![already-an-image]({temporary_pdf})\n"
         )
         updated, localized = module.localize_markdown_links(markdown, bundle, fake_fetcher)
+        updated, converted = module.normalize_local_video_links(updated)
 
         if f"[image]({pdf_name_a})" not in updated:
             fail("Temporary Notion non-video attachment link was not localized")
         if f'{{{{< video src="{video_name}" >}}}}' not in updated:
             fail("Temporary Notion MP4 was not converted to the native video shortcode")
+        if f'{{{{< video src="{legacy_local_video}" >}}}}' not in updated:
+            fail("Previously localized MP4 link was not migrated to the video shortcode")
+        if converted != [legacy_local_video]:
+            fail(f"Expected exactly one legacy local video migration, got {converted}")
         if f"[ordinary external]({external_url})" not in updated:
             fail("Ordinary external link was unexpectedly changed")
         if f"[external video]({external_video})" not in updated:
@@ -79,7 +86,8 @@ def main() -> None:
             fail("Localized attachment files were not written")
 
         second, second_localized = module.localize_markdown_links(updated, bundle, fake_fetcher)
-        if second != updated or second_localized:
+        second, second_converted = module.normalize_local_video_links(second)
+        if second != updated or second_localized or second_converted:
             fail("Second run must be byte-stable and perform no further localization")
         if len(downloads) != 2:
             fail("Second run must not redownload already-localized Markdown")

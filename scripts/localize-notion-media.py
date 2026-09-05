@@ -19,6 +19,10 @@ TEMP_NOTION_MEDIA_HOST = "prod-files-secure.s3.us-west-2.amazonaws.com"
 MARKDOWN_LINK_RE = re.compile(
     r'(?<!!)\[([^\]]*)\]\((https?://[^)\s]+)(\s+"[^"]*")?\)'
 )
+LOCAL_VIDEO_LINK_RE = re.compile(
+    r'(?<!!)\[([^\]]*)\]\((attachment-[^)\s]+\.mp4)(\s+"[^"]*")?\)',
+    re.IGNORECASE,
+)
 SAFE_EXTENSION_RE = re.compile(r"^\.[A-Za-z0-9]{1,10}$")
 VIDEO_EXTENSIONS = {".mp4"}
 
@@ -63,6 +67,21 @@ def localized_markdown(filename: str, label: str, title: str = "") -> str:
     if Path(filename).suffix.lower() in VIDEO_EXTENSIONS:
         return f'{{{{< video src="{filename}" >}}}}'
     return f"[{label}]({filename}{title})"
+
+
+def normalize_local_video_links(markdown: str) -> tuple[str, list[str]]:
+    matches = list(LOCAL_VIDEO_LINK_RE.finditer(markdown))
+    if not matches:
+        return markdown, []
+
+    result = markdown
+    converted: list[str] = []
+    for match in matches:
+        original, label, filename, title = match.group(0), match.group(1), match.group(2), match.group(3) or ""
+        replacement = localized_markdown(filename, label, title)
+        result = result.replace(original, replacement, 1)
+        converted.append(filename)
+    return result, converted
 
 
 def download_file(url: str, destination: Path, attempts: int = 3, timeout: int = 30) -> None:
@@ -150,6 +169,7 @@ def main() -> None:
         by_slug[slug] = (page_id, entry)
 
     resolved: list[dict[str, str]] = []
+    converted_videos: list[dict[str, str]] = []
     manifest_changed = False
 
     for index_path in sorted(POSTS_DIR.glob("*/index.md")):
@@ -157,7 +177,8 @@ def main() -> None:
         slug = bundle.name
         source = index_path.read_text(encoding="utf-8", errors="strict").replace("\r\n", "\n")
         updated, localized = localize_markdown_links(source, bundle)
-        if not localized:
+        updated, converted = normalize_local_video_links(updated)
+        if not localized and not converted:
             continue
 
         manifest_entry = by_slug.get(slug)
@@ -172,6 +193,9 @@ def main() -> None:
         for item in localized:
             resolved.append({"pageId": page_id, "slug": slug, **item})
             print(f"📎  Notion 附件本地化 {slug}: {item['file']}")
+        for filename in converted:
+            converted_videos.append({"pageId": page_id, "slug": slug, "file": filename})
+            print(f"🎬  Notion 视频播放器 {slug}: {filename}")
 
     if manifest_changed:
         MANIFEST_PATH.write_text(
@@ -184,6 +208,7 @@ def main() -> None:
         "status": "complete",
         "strategy": "temporary-notion-media-links",
         "resolved": resolved,
+        "videoShortcodes": converted_videos,
     }
     REPORT_PATH.write_text(
         f"{json.dumps(report, ensure_ascii=False, indent=2)}\n",
@@ -191,7 +216,10 @@ def main() -> None:
         newline="\n",
     )
 
-    print(f"Notion media localization: PASS ({len(resolved)} link(s) localized)")
+    print(
+        "Notion media localization: PASS "
+        f"({len(resolved)} link(s) localized, {len(converted_videos)} existing video link(s) normalized)"
+    )
 
 
 if __name__ == "__main__":
