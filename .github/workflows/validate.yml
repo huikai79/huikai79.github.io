@@ -27,6 +27,7 @@ jobs:
           test -s .notion-sync-manifest.json
           test -s content/posts/_index.md
           test -s package-lock.json
+          test -s data/homepage_runtime.toml
 
           bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
           manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
@@ -54,11 +55,42 @@ jobs:
           grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
           grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           grep -Fq 'persist-credentials: false' .github/workflows/sync.yml
+          grep -Fq "cron: '5 0 * * 1'" .github/workflows/sync.yml
+          grep -Fq "timezone: 'Asia/Kuala_Lumpur'" .github/workflows/sync.yml
+          grep -Fq 'EVENT_SCHEDULE' .github/workflows/sync.yml
+          grep -Fq 'data/homepage_runtime.toml' .github/workflows/sync.yml
 
           if grep -Eq '^  (push|schedule):' .github/workflows/deploy.yml; then
             echo "::error::Production deploy workflow must only be entered through an explicit exact-SHA dispatch"
             exit 1
           fi
+
+      - name: Verify homepage weekly rotation determinism
+        run: |
+          cp data/homepage_runtime.toml /tmp/homepage_runtime.original.toml
+
+          HOMEPAGE_ROTATION_KEY=2026-W36 python3 scripts/prepare-homepage-rotation.py
+          cp data/homepage_runtime.toml /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'rotationKey = "2026-W36"' /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"' /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'path = "posts/King-of-Internet-Writing"' /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'path = "posts/ngh"' /tmp/homepage_runtime.w36-a.toml
+
+          HOMEPAGE_ROTATION_KEY=2026-W36 python3 scripts/prepare-homepage-rotation.py
+          cmp /tmp/homepage_runtime.w36-a.toml data/homepage_runtime.toml
+
+          HOMEPAGE_ROTATION_KEY=2026-W37 python3 scripts/prepare-homepage-rotation.py
+          cp data/homepage_runtime.toml /tmp/homepage_runtime.w37.toml
+          grep -Fq 'rotationKey = "2026-W37"' /tmp/homepage_runtime.w37.toml
+          grep -Fq 'pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"' /tmp/homepage_runtime.w37.toml
+          grep -Fq 'path = "posts/FreeResource-1"' /tmp/homepage_runtime.w37.toml
+          grep -Fq 'path = "posts/be-alife"' /tmp/homepage_runtime.w37.toml
+          if cmp -s /tmp/homepage_runtime.w36-a.toml /tmp/homepage_runtime.w37.toml; then
+            echo "::error::Adjacent rotation weeks must not resolve to the same runtime state"
+            exit 1
+          fi
+
+          cp /tmp/homepage_runtime.original.toml data/homepage_runtime.toml
 
       - name: Setup site Go runtime
         uses: actions/setup-go@v7

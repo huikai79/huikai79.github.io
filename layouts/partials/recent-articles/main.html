@@ -1,35 +1,41 @@
 {{ if .Site.Params.homepage.showRecent | default false }}
   {{ $homepage := hugo.Data.homepage }}
+  {{ $runtime := hugo.Data.homepage_runtime }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
-  {{ $featuredItems := $homepage.featured | default (slice) }}
   {{ $selectedLimit := $homepage.selectedLimit | default 3 }}
   {{ $recentLimit := $homepage.recentLimit | default 5 }}
-  {{ $featuredPages := slice }}
-  {{ $missingFeatured := slice }}
+  {{ $selectedItems := $runtime.selected | default (slice) }}
+  {{ $selectedPages := slice }}
+  {{ $missingSelected := slice }}
 
-  {{ range $featuredItems }}
+  {{ if ne (len $selectedItems) $selectedLimit }}
+    {{ errorf "Homepage runtime Selected requires exactly %d items; found %d" $selectedLimit (len $selectedItems) }}
+  {{ end }}
+
+  {{ range $selectedItems }}
     {{ $path := .path }}
     {{ with site.GetPage $path }}
-      {{ $featuredPages = $featuredPages | append . }}
+      {{ $selectedPages = $selectedPages | append . }}
     {{ else }}
-      {{ $missingFeatured = $missingFeatured | append $path }}
+      {{ $missingSelected = $missingSelected | append $path }}
     {{ end }}
   {{ end }}
 
-  {{ if gt (len $missingFeatured) 0 }}
-    {{ errorf "Homepage featured references are invalid: %s" (delimit $missingFeatured ", ") }}
+  {{ if gt (len $missingSelected) 0 }}
+    {{ errorf "Homepage runtime Selected references are invalid: %s" (delimit $missingSelected ", ") }}
   {{ end }}
 
-  {{ if ne (len $featuredPages) $selectedLimit }}
-    {{ errorf "Homepage Selected requires exactly %d valid pages; found %d" $selectedLimit (len $featuredPages) }}
+  {{ if ne (len $selectedPages) $selectedLimit }}
+    {{ errorf "Homepage Selected requires exactly %d valid pages; found %d" $selectedLimit (len $selectedPages) }}
   {{ end }}
 
-  <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title">
+  <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title" data-rotation-key="{{ $runtime.rotationKey }}" data-rotation-index="{{ $runtime.rotationIndex }}">
     <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精选</h2>
     <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
-      {{ range first $selectedLimit $featuredPages }}
-        <div class="home-selected-item" data-home-path="{{ .RelPermalink }}">
-          {{ partial "article-link/card.html" . }}
+      {{ range $index, $page := $selectedPages }}
+        {{ $item := index $selectedItems $index }}
+        <div class="home-selected-item" data-home-path="{{ $page.RelPermalink }}" data-page-id="{{ $item.pageId }}" data-selection-source="{{ $item.source }}">
+          {{ partial "article-link/card.html" $page }}
         </div>
       {{ end }}
     </div>
@@ -39,7 +45,7 @@
   {{ range $all.ByDate.Reverse }}
     {{ $page := . }}
     {{ $isSelected := false }}
-    {{ range first $selectedLimit $featuredPages }}
+    {{ range $selectedPages }}
       {{ if eq .RelPermalink $page.RelPermalink }}
         {{ $isSelected = true }}
       {{ end }}

@@ -1,0 +1,24 @@
+rotationKey = "2026-W36"
+rotationIndex = 0
+rotationEpoch = "2026-W36"
+rotationTimezone = "Asia/Kuala_Lumpur"
+selectedLimit = 3
+recentLimit = 5
+rotationSlots = 2
+poolSize = 9
+poolOffset = 0
+
+[[selected]]
+pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
+path = "posts/How-you-know"
+source = "pinned"
+
+[[selected]]
+pageId = "23c7a59e-0439-80c0-8f5a-e90c7beba72b"
+path = "posts/King-of-Internet-Writing"
+source = "rotationPool"
+
+[[selected]]
+pageId = "2337a59e-0439-80e4-93a4-fff881cc3d18"
+path = "posts/ngh"
+source = "rotationPool"

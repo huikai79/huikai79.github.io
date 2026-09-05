@@ -1,14 +1,44 @@
 selectedLimit = 3
 recentLimit = 5
+rotationTimezone = "Asia/Kuala_Lumpur"
+rotationEpoch = "2026-W36"
 
-[[featured]]
+[[pinned]]
 pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
-path = "posts/How-you-know"
+pathHint = "posts/How-you-know"
 
-[[featured]]
+[[rotationPool]]
 pageId = "23c7a59e-0439-80c0-8f5a-e90c7beba72b"
-path = "posts/King-of-Internet-Writing"
+pathHint = "posts/King-of-Internet-Writing"
 
-[[featured]]
+[[rotationPool]]
 pageId = "2337a59e-0439-80e4-93a4-fff881cc3d18"
-path = "posts/ngh"
+pathHint = "posts/ngh"
+
+[[rotationPool]]
+pageId = "2347a59e-0439-8034-933b-c7d224735498"
+pathHint = "posts/FreeResource-1"
+
+[[rotationPool]]
+pageId = "2367a59e-0439-807a-8de1-c7050f44183e"
+pathHint = "posts/be-alife"
+
+[[rotationPool]]
+pageId = "23d7a59e-0439-808e-8ba2-f1a2142a1e84"
+pathHint = "posts/how-to-be-an-expert"
+
+[[rotationPool]]
+pageId = "23b7a59e-0439-81d2-b926-cb11c044d7e9"
+pathHint = "posts/how-to-make-wealth"
+
+[[rotationPool]]
+pageId = "23e7a59e-0439-8036-a6f6-e1ff88003126"
+pathHint = "posts/notion-kapianhe"
+
+[[rotationPool]]
+pageId = "23c7a59e-0439-8054-a78d-c8e89090963e"
+pathHint = "posts/Writes-and-Write-Nots"
+
+[[rotationPool]]
+pageId = "23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
+pathHint = "posts/Writing-and-speaking"

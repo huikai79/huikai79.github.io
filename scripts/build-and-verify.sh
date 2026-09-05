@@ -9,6 +9,15 @@ go version
 
 python3 scripts/verify-source-contract.py
 
+if [ "${REFRESH_HOMEPAGE_ROTATION:-0}" = "1" ]; then
+  python3 scripts/prepare-homepage-rotation.py
+else
+  test -s data/homepage_runtime.toml || {
+    echo "::error::Committed homepage rotation state is missing"
+    exit 1
+  }
+fi
+
 go mod download
 hugo mod graph | tee /tmp/hugo-mod-graph.txt
 grep -q 'github.com/nunocoracao/blowfish/v3@v3.6.0' /tmp/hugo-mod-graph.txt
