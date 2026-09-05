@@ -101,7 +101,7 @@ jobs:
         env:
           SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
         run: |
-          printf '%s\n' "$SOURCE_SHA" > public/.source-commit
+          printf '%s\n' "$SOURCE_SHA" > public/source-commit.txt
           {
             echo "## Deployment lineage"
             echo ""
