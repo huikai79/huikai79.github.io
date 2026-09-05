@@ -208,8 +208,6 @@ if home:
     parser = parse_html(home)
     if parser.html_lang != "zh-CN":
         fail(f"Homepage language is not zh-CN: {parser.html_lang!r}")
-    if "庄辉恺的个人博客" not in home:
-        fail("Homepage site description is missing")
     if "og:image" not in parser.meta_properties:
         fail("Homepage Open Graph image metadata is missing")
     if "twitter:image" not in parser.meta_names:
