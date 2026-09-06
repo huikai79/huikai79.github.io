@@ -75,6 +75,14 @@ function validArticlePath(value) {
   return /^\/posts\/[A-Za-z0-9_-]+\/$/.test(value || "");
 }
 
+function htmlContainsVideoBlock(html, blockId) {
+  const marker = new RegExp(
+    `data-notion-video-block\\s*=\\s*(?:"${blockId}"|'${blockId}'|${blockId}(?=[\\s>]))`,
+    "i"
+  );
+  return marker.test(html);
+}
+
 async function publishedPageContainsVideo(pagePath, blockId) {
   const response = await fetch(`${SITE_ORIGIN}${pagePath}`, {
     headers: { "User-Agent": "huikai-media-gateway/1" },
@@ -82,7 +90,7 @@ async function publishedPageContainsVideo(pagePath, blockId) {
   });
   if (!response.ok) return false;
   const html = await response.text();
-  return html.includes(`data-notion-video-block="${blockId}"`);
+  return htmlContainsVideoBlock(html, blockId);
 }
 
 async function notionVideoUrl(blockId, env, force = false) {

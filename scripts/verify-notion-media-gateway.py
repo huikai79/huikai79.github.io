@@ -13,6 +13,8 @@ required_worker = [
     'env.MEDIA_SESSION_SECRET',
     'HttpOnly; Secure; SameSite=Strict',
     'publishedPageContainsVideo',
+    'htmlContainsVideoBlock',
+    'data-notion-video-block\\\\s*=\\\\s*',
     'Content-Disposition", "inline"',
     'Cache-Control", "private, no-store"',
 ]
@@ -34,6 +36,9 @@ for needle in required_shortcode:
         errors.append(f"shortcode contract missing: {needle}")
 if 'pattern = "huikai.com.kg/media/*"' not in wrangler:
     errors.append("worker route is not limited to huikai.com.kg/media/*")
+
+if 'html.includes(`data-notion-video-block="${blockId}"`)' in worker:
+    errors.append("worker must not require quoted video marker attributes after Hugo minification")
 
 for forbidden in ["secret =", "NOTION_TOKEN =", "MEDIA_SESSION_SECRET ="]:
     if forbidden in worker or forbidden in wrangler:
