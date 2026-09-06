@@ -2,7 +2,7 @@
 title: "怡保馬房"
 date: "2026-09-05"
 slug: "mafang"
-tags: ["生活"]
+tags: ["生活", "照片"]
 icon: "🐴"
 cover: "image-01.jpg"
 images: ["image-01.jpg"]
