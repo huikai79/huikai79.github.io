@@ -6,10 +6,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import fetch from "node-fetch";
 import pLimit from "p-limit";
+import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
 
 /* ---------- 基本設定 ---------- */
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const n2m = new NotionToMarkdown({ notionClient: notion });
+n2m.setCustomTransformer("video", notionVideoMarkdown);
 
 const DB_ID = process.env.NOTION_DATABASE_ID;
 const OUT_DIR = "content/posts";
@@ -46,8 +48,15 @@ async function fileTextEquals(file, expected) {
 }
 
 async function generatorHash() {
-  const source = await fs.readFile(new URL(import.meta.url));
-  return createHash("sha256").update(source).digest("hex");
+  const hash = createHash("sha256");
+  for (const source of [
+    new URL(import.meta.url),
+    new URL("./scripts/notion-video-transformer.mjs", import.meta.url)
+  ]) {
+    hash.update(await fs.readFile(source));
+    hash.update("\0");
+  }
+  return hash.digest("hex");
 }
 
 async function directoryHash(dir) {
