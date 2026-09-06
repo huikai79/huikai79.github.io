@@ -22,6 +22,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify Notion content contract helpers
+        run: node scripts/verify-notion-content-contract.mjs
+
       - name: Verify committed Notion snapshot
         run: |
           test -s .notion-sync-manifest.json
