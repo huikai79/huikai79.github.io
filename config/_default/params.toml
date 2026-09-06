@@ -146,7 +146,14 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
 
 [fathomAnalytics]
 
+# Analytics phase: Umami is the single selected provider. Tracking remains
+# deliberately inactive until a real Umami website ID is supplied. These
+# defaults constrain collection to the production domain, honor browser DNT,
+# and keep custom event tracking off for the initial minimal-data rollout.
 [umamiAnalytics]
+  dataDomains = "huikai.com.kg"
+  enableTrackEvent = false
+  doNotTrack = true
 
 [selineAnalytics]
 
