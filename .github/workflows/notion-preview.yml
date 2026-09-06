@@ -46,6 +46,8 @@ jobs:
             echo ""
             echo "Published preview rows: **$(jq -r '.count' /tmp/notion-preview-contract.json)**"
             echo "Published Public rows: **$(jq -r '.productionCount' /tmp/notion-preview-contract.json)**"
+            echo "Cover-ready Public rows: **$(jq -r '.coverReadyCount' /tmp/notion-preview-contract.json)**"
+            echo "Semantic cover needed: **$(jq -r '.semanticCoverNeededCount' /tmp/notion-preview-contract.json)**"
             echo ""
             echo "This workflow is read-only: it does not write content/posts, the production manifest, main, or deployment state."
           } >> "$GITHUB_STEP_SUMMARY"
@@ -59,7 +61,6 @@ jobs:
         run: |
           node scripts/check-notion-staged-page.mjs "$STAGED_PAGE_ID" /tmp/notion-staged-page-contract.json
           test -s /tmp/notion-staged-page-contract.json
-          jq -e '.status == "pass" and .contentVisibility == null' /tmp/notion-staged-page-contract.json > /dev/null || true
           jq -e '.status == "pass" and .visibility == "Public" and .notionStatus != "Published"' /tmp/notion-staged-page-contract.json > /dev/null
 
           {
@@ -72,7 +73,13 @@ jobs:
             echo "Category: **$(jq -r '.category' /tmp/notion-staged-page-contract.json)**"
             echo "Entry type: **$(jq -r '.entryType' /tmp/notion-staged-page-contract.json)**"
             echo "Notion status: **$(jq -r '.notionStatus' /tmp/notion-staged-page-contract.json)**"
+            echo "Cover strategy: **$(jq -r '.coverPlan.strategy // "unavailable"' /tmp/notion-staged-page-contract.json)**"
+            echo "Publication ready: **$(jq -r '.publicationReady' /tmp/notion-staged-page-contract.json)**"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          if ! jq -e '.publicationReady == true' /tmp/notion-staged-page-contract.json > /dev/null; then
+            echo "::warning::Staged page metadata is valid, but a semantic cover should be selected or generated before publication."
+          fi
 
       - name: Prove production files remained untouched
         run: |
