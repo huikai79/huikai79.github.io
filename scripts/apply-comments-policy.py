@@ -5,9 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-POSTS = ROOT / "content" / "posts"
-MANIFEST = ROOT / ".notion-sync-manifest.json"
+from article_routing import MANIFEST, routes
 
 
 def directory_hash(directory: Path) -> str:
@@ -27,12 +25,10 @@ def split_front_matter(text: str) -> tuple[list[str], str]:
     lines = normalized.split("\n")
     if not lines or lines[0].strip() != "---":
         raise ValueError("missing opening front matter delimiter")
-
     try:
         closing = next(index for index in range(1, len(lines)) if lines[index].strip() == "---")
     except StopIteration as error:
         raise ValueError("missing closing front matter delimiter") from error
-
     return lines[1:closing], "\n".join(lines[closing + 1 :])
 
 
@@ -66,24 +62,19 @@ def apply_policy(index_file: Path, page_id: str) -> tuple[bool, bool, str]:
     original = index_file.read_text(encoding="utf-8")
     front, body = split_front_matter(original)
     comments_enabled, policy_source = comments_policy(front)
-
     cleaned = [
-        line
-        for line in front
+        line for line in front
         if not line.startswith("showComments:") and not line.startswith("commentKey:")
     ]
-
     if comments_enabled:
         insertion = next((i + 1 for i, line in enumerate(cleaned) if line.startswith("tags:")), len(cleaned))
         cleaned[insertion:insertion] = [
             "showComments: true",
             f"commentKey: {json.dumps(f'notion:{page_id}', ensure_ascii=False)}",
         ]
-
     rewritten = "---\n" + "\n".join(cleaned) + "\n---\n" + body
     if not rewritten.endswith("\n"):
         rewritten += "\n"
-
     changed = rewritten != original.replace("\r\n", "\n")
     if changed:
         index_file.write_text(rewritten, encoding="utf-8")
@@ -95,45 +86,25 @@ def main() -> None:
     pages = manifest.get("pages")
     if not isinstance(pages, dict):
         raise SystemExit("Notion manifest is missing pages")
-
-    slug_to_page_id: dict[str, str] = {}
-    for page_id, entry in pages.items():
-        if not isinstance(entry, dict):
-            raise SystemExit(f"Invalid manifest entry for {page_id}")
-        slug = str(entry.get("slug", "")).strip()
-        if not slug:
-            raise SystemExit(f"Manifest page {page_id} has no slug")
-        if slug in slug_to_page_id:
-            raise SystemExit(f"Duplicate slug in manifest: {slug}")
-        slug_to_page_id[slug] = page_id
-
-    source_slugs = sorted(path.parent.name for path in POSTS.glob("*/index.md"))
-    manifest_slugs = sorted(slug_to_page_id)
-    if source_slugs != manifest_slugs:
-        raise SystemExit(
-            f"Comments policy source/manifest mismatch: source={source_slugs}, manifest={manifest_slugs}"
-        )
+    article_routes = routes(manifest)
+    missing = [str(route.source) for route in article_routes if not route.source.is_file()]
+    if missing:
+        raise SystemExit(f"Comments policy routed source missing: {missing}")
 
     changed = 0
     enabled = 0
     policy_sources: dict[str, int] = {}
-
-    for slug in source_slugs:
-        index_file = POSTS / slug / "index.md"
-        page_id = slug_to_page_id[slug]
-        did_change, is_enabled, policy_source = apply_policy(index_file, page_id)
+    for route in article_routes:
+        did_change, is_enabled, policy_source = apply_policy(route.source, route.page_id)
         changed += int(did_change)
         enabled += int(is_enabled)
         policy_sources[policy_source] = policy_sources.get(policy_source, 0) + 1
-        pages[page_id]["bundleHash"] = directory_hash(index_file.parent)
+        pages[route.page_id]["bundleHash"] = directory_hash(route.source.parent)
 
-    MANIFEST.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
         "Comments policy: "
-        f"enabled={enabled}, changed={changed}, total={len(source_slugs)}, sources={policy_sources}"
+        f"enabled={enabled}, changed={changed}, total={len(article_routes)}, sources={policy_sources}"
     )
 
 

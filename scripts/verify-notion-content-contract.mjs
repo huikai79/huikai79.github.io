@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import {
   buildNotionFilter,
+  contentFilename,
   editorialFrontMatter,
   extractEditorialFields,
   normalizeSyncMode,
@@ -49,14 +50,18 @@ const fields = extractEditorialFields({
   Category: { select: { name: "AI 與數位工具" } },
   Type: { select: { name: "實驗紀錄" } },
   Summary: { rich_text: [{ plain_text: "摘要" }] },
-  Home: { select: { name: "Rotation" } }
+  Home: { select: { name: "Rotation" } },
+  Language: { select: { name: "zh-TW" } },
+  "Translation Group": { rich_text: [{ plain_text: "example-article" }] }
 });
 assert.deepEqual(fields, {
   visibility: "Public",
   category: "AI 與數位工具",
   entryType: "實驗紀錄",
   summary: "摘要",
-  homePlacement: "Rotation"
+  homePlacement: "Rotation",
+  language: "zh-TW",
+  translationGroup: "example-article"
 });
 
 assert.deepEqual(
@@ -64,7 +69,9 @@ assert.deepEqual(
     visibility: "Public",
     summary: "摘要",
     category: "教育",
-    entryType: "文章"
+    entryType: "文章",
+    language: "zh-CN",
+    translationGroup: "article-key"
   }),
   []
 );
@@ -73,9 +80,22 @@ assert.deepEqual(
     visibility: "Test",
     summary: "",
     category: "",
-    entryType: ""
+    entryType: "",
+    language: "",
+    translationGroup: ""
   }),
-  ["Visibility=Public", "Summary", "Category", "Type"]
+  ["Visibility=Public", "Summary", "Category", "Type", "Language", "Translation Group"]
+);
+assert.deepEqual(
+  productionMetadataMissing({
+    visibility: "Public",
+    summary: "摘要",
+    category: "教育",
+    entryType: "文章",
+    language: "xx",
+    translationGroup: "article-key"
+  }),
+  ["Language=xx"]
 );
 
 const publicationCandidate = {
@@ -86,7 +106,9 @@ const publicationCandidate = {
   summary: "摘要",
   category: "教育",
   entryType: "推薦／整理",
-  homePlacement: "None"
+  homePlacement: "None",
+  language: "zh-TW",
+  translationGroup: "daxuepeiyangchuangyezhe"
 };
 assert.deepEqual(publicationRecordMissing(publicationCandidate), []);
 assert.deepEqual(publicationRecordMissing({ ...publicationCandidate, date: "" }), ["date"]);
@@ -95,12 +117,18 @@ assert.deepEqual(editorialFrontMatter(publicationCandidate), {
   categories: ["教育"],
   entryType: "推薦／整理",
   contentVisibility: "Public",
-  homePlacement: "None"
+  homePlacement: "None",
+  contentLanguage: "zh-TW",
+  translationKey: "daxuepeiyangchuangyezhe"
 });
 assert.throws(
   () => editorialFrontMatter({ ...publicationCandidate, summary: "" }),
   /Summary/
 );
+assert.equal(contentFilename("zh-TW"), "index.md");
+assert.equal(contentFilename("zh-CN"), "index.zh-cn.md");
+assert.equal(contentFilename("en"), "index.en.md");
+assert.throws(() => contentFilename("fr"), /Unsupported content language/);
 
 assert.equal(
   shouldQuarantineDeletion({ previousCount: 80, deletedCount: 15 }),

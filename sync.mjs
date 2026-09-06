@@ -9,6 +9,7 @@ import pLimit from "p-limit";
 import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
 import {
   buildNotionFilter,
+  contentFilename,
   editorialFrontMatter,
   extractEditorialFields,
   normalizeSyncMode,
@@ -31,12 +32,17 @@ const ALLOW_EMPTY = process.env.ALLOW_EMPTY_NOTION_SYNC === "true";
 const SYNC_MODE = normalizeSyncMode(process.env.NOTION_SYNC_MODE || "legacy");
 const filter = buildNotionFilter(SYNC_MODE);
 const dl = pLimit(5);
-const SECTION_INDEX = '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n';
+const SECTION_INDEXES = new Map([
+  ["_index.md", '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n'],
+  ["_index.zh-cn.md", '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n']
+]);
 
 /* ---------- 工具函式 ---------- */
 const safeSlug = s => (s ?? "").replace(/[^a-zA-Z0-9-_]/g, "-");
 const yamlString = value => JSON.stringify(String(value));
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const candidateLanguage = candidate => candidate.editorial.language || "zh-TW";
+const candidateContentFile = candidate => contentFilename(candidateLanguage(candidate));
 
 async function pathExists(target) {
   try {
@@ -52,6 +58,19 @@ async function fileTextEquals(file, expected) {
     return await fs.readFile(file, "utf8") === expected;
   } catch {
     return false;
+  }
+}
+
+async function sectionIndexesCurrent(root) {
+  for (const [file, expected] of SECTION_INDEXES) {
+    if (!(await fileTextEquals(path.join(root, file), expected))) return false;
+  }
+  return true;
+}
+
+async function writeSectionIndexes(root) {
+  for (const [file, content] of SECTION_INDEXES) {
+    await fs.writeFile(path.join(root, file), content);
   }
 }
 
@@ -309,10 +328,13 @@ async function reuseDecision(candidate, manifestState) {
   if (previous.lastEditedTime !== candidate.lastEditedTime) {
     return { reuse: false, reason: "notion-edited" };
   }
+  if (previous.language && previous.language !== candidateLanguage(candidate)) {
+    return { reuse: false, reason: "language-changed" };
+  }
   if (!previous.bundleHash) return { reuse: false, reason: "missing-bundle-hash" };
 
   const oldBundle = path.join(OUT_DIR, candidate.slug);
-  if (!(await pathExists(path.join(oldBundle, "index.md")))) {
+  if (!(await pathExists(path.join(oldBundle, candidateContentFile(candidate))))) {
     return { reuse: false, reason: "bundle-missing" };
   }
 
@@ -382,14 +404,17 @@ async function buildArticle(candidate) {
     productionFields && `entryType: ${yamlString(productionFields.entryType)}`,
     productionFields && `contentVisibility: ${yamlString(productionFields.contentVisibility)}`,
     productionFields && `homePlacement: ${yamlString(productionFields.homePlacement)}`,
+    productionFields && `contentLanguage: ${yamlString(productionFields.contentLanguage)}`,
+    productionFields && `translationKey: ${yamlString(productionFields.translationKey)}`,
     coverField && `cover: ${yamlString(coverField)}`,
     iconField && `icon: ${yamlString(iconField)}`,
     coverField && `images: [${yamlString(coverField)}]`,
     "---"
   ].filter(Boolean).join("\n");
 
-  await fs.writeFile(path.join(bundle, "index.md"), `${front}\n\n${mdBody}\n`);
-  console.log("📄  重建", `${slug}/index.md`);
+  const contentFile = candidateContentFile(candidate);
+  await fs.writeFile(path.join(bundle, contentFile), `${front}\n\n${mdBody}\n`);
+  console.log("📄  重建", `${slug}/${contentFile}`);
   return directoryHash(bundle);
 }
 
@@ -419,6 +444,17 @@ function stablePagesObject(entries) {
   return Object.fromEntries(
     [...entries.entries()].sort(([a], [b]) => a.localeCompare(b))
   );
+}
+
+function manifestEntry(candidate, bundleHash) {
+  return {
+    slug: candidate.slug,
+    language: candidateLanguage(candidate),
+    translationGroup: candidate.editorial.translationGroup || "",
+    contentFile: candidateContentFile(candidate),
+    lastEditedTime: candidate.lastEditedTime,
+    bundleHash
+  };
 }
 
 /* ---------- 主流程 ---------- */
@@ -455,7 +491,7 @@ async function sync() {
 
     const reused = plans.filter(plan => plan.decision.reuse).length;
     const rebuilt = plans.length - reused;
-    const sectionCurrent = await fileTextEquals(path.join(OUT_DIR, "_index.md"), SECTION_INDEX);
+    const sectionCurrent = await sectionIndexesCurrent(OUT_DIR);
     const fastPath = rebuilt === 0 && deleted.length === 0 && sectionCurrent;
 
     const nextPages = new Map();
@@ -463,18 +499,14 @@ async function sync() {
     if (fastPath) {
       for (const plan of plans) {
         const { candidate, decision } = plan;
-        nextPages.set(candidate.page.id, {
-          slug: candidate.slug,
-          lastEditedTime: candidate.lastEditedTime,
-          bundleHash: decision.bundleHash
-        });
-        console.log("♻️  沿用", `${candidate.slug}/index.md`);
+        nextPages.set(candidate.page.id, manifestEntry(candidate, decision.bundleHash));
+        console.log("♻️  沿用", `${candidate.slug}/${candidateContentFile(candidate)}`);
       }
       console.log(`⚡ 所有 ${SYNC_MODE} 模式文章均未變更，略過 Markdown 與媒體重新下載`);
     } else {
       /* 2. 需要變更時才建立 staging snapshot */
       await fs.mkdir(STAGING_DIR, { recursive: true });
-      await fs.writeFile(path.join(STAGING_DIR, "_index.md"), SECTION_INDEX);
+      await writeSectionIndexes(STAGING_DIR);
 
       for (const plan of plans) {
         const { candidate, decision } = plan;
@@ -485,17 +517,13 @@ async function sync() {
           const target = path.join(STAGING_DIR, candidate.slug);
           await fs.cp(source, target, { recursive: true });
           bundleHash = decision.bundleHash;
-          console.log("♻️  沿用", `${candidate.slug}/index.md`);
+          console.log("♻️  沿用", `${candidate.slug}/${candidateContentFile(candidate)}`);
         } else {
           console.log(`🔄 需要重建 ${candidate.slug}：${decision.reason}`);
           bundleHash = await buildArticle(candidate);
         }
 
-        nextPages.set(candidate.page.id, {
-          slug: candidate.slug,
-          lastEditedTime: candidate.lastEditedTime,
-          bundleHash
-        });
+        nextPages.set(candidate.page.id, manifestEntry(candidate, bundleHash));
       }
 
       /* 3. staging 完整成功後才替換正式輸出 */
@@ -530,6 +558,9 @@ async function sync() {
       pages: plans.map(plan => ({
         pageId: plan.candidate.page.id,
         slug: plan.candidate.slug,
+        language: candidateLanguage(plan.candidate),
+        translationGroup: plan.candidate.editorial.translationGroup || "",
+        contentFile: candidateContentFile(plan.candidate),
         action: plan.decision.reuse ? "reused" : "rebuilt",
         reason: plan.decision.reason,
         lastEditedTime: plan.candidate.lastEditedTime
