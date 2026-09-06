@@ -91,9 +91,10 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showWordCount = false
   showComments = false
   showZenMode = false
+  sharingLinks = ["facebook", "line", "whatsapp", "telegram", "email"]
 
-# Gate 3E: comments remain globally opt-in. The Notion sync policy enables
-# comments only for posts tagged `技术学习`; all other posts stay comment-free.
+# Comments remain globally opt-in at the theme level. Generated Public Notion
+# articles receive showComments/commentKey from the visibility-based sync policy.
 [giscus]
   enabled = true
   repo = "huikai79/huikai79.github.io"
