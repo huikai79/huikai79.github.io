@@ -1,4 +1,4 @@
-{{ if and (.Site.Params.homepage.showRecent | default false) (ne .Site.Language.Params.contentRole "interface-only") }}
+{{ if and (.Site.Params.homepage.showRecent | default false) (eq .Site.Language.Params.contentRole "primary") }}
   {{ $homepage := hugo.Data.homepage }}
   {{ $runtime := hugo.Data.homepage_runtime }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
