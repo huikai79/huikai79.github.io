@@ -27,9 +27,24 @@
     <span>{{ .Title }}</span>
   </h1>
 
-  <p class="text-sm opacity-70 mb-8">
-    {{ .Date.Format "2006年1月2日" }} · 阅读约 {{ .ReadingTime }} 分钟
+  <p class="text-sm opacity-70 article-date-line">
+    {{ .Date.Format "2006年1月2日" }} · 閱讀約 {{ .ReadingTime }} 分鐘
   </p>
+
+  {{ $category := "" }}
+  {{ with .Params.categories }}
+    {{ $category = index . 0 }}
+  {{ end }}
+  {{ if or $category .Params.entryType }}
+    <div class="article-context" aria-label="文章資訊">
+      {{ with $category }}<span class="article-context-chip">{{ . }}</span>{{ end }}
+      {{ with .Params.entryType }}<span class="article-context-chip">{{ . }}</span>{{ end }}
+    </div>
+  {{ end }}
+
+  {{ with .Description }}
+    <p class="article-summary">{{ . }}</p>
+  {{ end }}
 
   {{/* The page template owns the single document H1. This is a defensive
        rendering boundary for legacy content; sync.mjs also demotes Notion
