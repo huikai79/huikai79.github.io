@@ -11,6 +11,7 @@ import {
   pageHasExplicitCover,
   resolveCoverReadiness
 } from "./notion-cover-contract.mjs";
+import { notionPresentationFingerprint } from "./notion-presentation-fingerprint.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -58,6 +59,7 @@ for (const page of pages) {
   const slug = rawSlug.replace(/[^a-zA-Z0-9-_]/g, "-");
   const editorial = extractEditorialFields(props);
   let coverPlan = null;
+  let presentationFingerprint = null;
 
   if (!title) failures.push(`${page.id}: missing Title`);
   if (!slug) failures.push(`${page.id}: missing slug`);
@@ -83,6 +85,8 @@ for (const page of pages) {
     }
 
     const fullPage = await notion.pages.retrieve({ page_id: page.id });
+    presentationFingerprint = notionPresentationFingerprint(fullPage);
+
     let markdown = "";
     if (!pageHasExplicitCover(fullPage)) {
       const mdBlocks = await n2m.pageToMarkdown(page.id);
@@ -109,7 +113,8 @@ for (const page of pages) {
     slug,
     lastEditedTime: page.last_edited_time ?? "",
     ...editorial,
-    coverPlan
+    coverPlan,
+    presentationFingerprint
   });
 }
 
