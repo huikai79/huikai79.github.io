@@ -10,6 +10,8 @@ categories: ["學習與閱讀"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "Pinned"
+contentLanguage: "zh-CN"
+translationKey: "How-you-know"
 cover: "cover.jpg"
 icon: "🤔"
 images: ["cover.jpg"]

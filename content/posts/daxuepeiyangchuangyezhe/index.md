@@ -10,6 +10,8 @@ categories: ["教育"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "None"
+contentLanguage: "zh-TW"
+translationKey: "daxuepeiyangchuangyezhe"
 cover: "cover.jpg"
 icon: "🧑🏻‍🎓"
 images: ["cover.jpg"]

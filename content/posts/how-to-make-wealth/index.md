@@ -10,6 +10,8 @@ categories: ["創作與實驗"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "Rotation"
+contentLanguage: "zh-TW"
+translationKey: "how-to-make-wealth"
 cover: "cover.jpg"
 icon: "💬"
 images: ["cover.jpg"]

@@ -10,6 +10,8 @@ categories: ["AI 與數位工具"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "Rotation"
+contentLanguage: "zh-CN"
+translationKey: "Writes-and-Write-Nots"
 cover: "cover.jpg"
 icon: "📝"
 images: ["cover.jpg"]

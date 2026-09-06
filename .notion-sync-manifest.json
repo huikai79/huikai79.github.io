@@ -1,41 +1,59 @@
 {
   "version": 1,
-  "generatorHash": "7c5d0b7dc74a6659800186166074e75310111f3307932ae81f14060f4a55011c",
+  "generatorHash": "a8676e263dcbf9d3ed74dcf6aa16c9adcf1b1f21d452142f992a32bef1f83eb0",
   "pages": {
     "2367a59e-0439-807a-8de1-c7050f44183e": {
       "slug": "be-alife",
+      "language": "zh-CN",
+      "translationGroup": "be-alife",
+      "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-06T22:41:00.000Z",
-      "bundleHash": "9aa0a3109a95214ca8bbc6447267f1c5a8dbd0e1aa50bf3c3615c05d668b5fb2",
+      "bundleHash": "b40fc068b20d962e6b5cbdc9b2dd09680528a659dee07232bc2888a071858074",
       "presentationFingerprint": "4a3f0e444c1b240def225fbac5ab5f607970d71d3ff53f57ead2eba129fe3b7d"
     },
     "23b7a59e-0439-80a6-9852-c373b03994f5": {
       "slug": "How-you-know",
+      "language": "zh-CN",
+      "translationGroup": "How-you-know",
+      "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-06T22:41:00.000Z",
-      "bundleHash": "e5381f1cacd58385d34ae6a310fb72b18c07d62d149fa213df728e7439a25ef2",
+      "bundleHash": "18dc2af78c5d66eaad5f7c2d34cb78b59b756fd1a65d8e60b89d5768f93c5e9a",
       "presentationFingerprint": "33737300e2c9d15454ca752d28bee5119bb13331e8cd58e8bf4880fc445b2c3a"
     },
     "23b7a59e-0439-80b4-a5d8-e495f79d0ec7": {
       "slug": "Writing-and-speaking",
+      "language": "zh-CN",
+      "translationGroup": "Writing-and-speaking",
+      "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-06T22:41:00.000Z",
-      "bundleHash": "2b3cb0ea81ca23f5e29331f039263e71ed9cb96abb0729ed0777325db5c079a2",
+      "bundleHash": "8be92539b129db99fb0a3a4c377398e6d800e563f8faea489fbe7a37e9ea67ae",
       "presentationFingerprint": "fa5d69b688de04244026be7ce8d750478cc2ad79dca5c80dd06ceab48fd7ffa1"
     },
     "23b7a59e-0439-81d2-b926-cb11c044d7e9": {
       "slug": "how-to-make-wealth",
+      "language": "zh-TW",
+      "translationGroup": "how-to-make-wealth",
+      "contentFile": "index.md",
       "lastEditedTime": "2026-09-06T22:42:00.000Z",
-      "bundleHash": "03087ba9a230ceb4ff518002dabde9b7e6bb0d519872aec8b2cfc94094711ab1",
+      "bundleHash": "cf08dfe7b3834ca42445496fdbd0b760afb97868a3ae2a7c3c9e53b1c67b2361",
       "presentationFingerprint": "d1b702e85b3c37d205110df08fcf6bef4a7e54c78790c71802a2c8e818203116"
     },
     "23c7a59e-0439-8054-a78d-c8e89090963e": {
       "slug": "Writes-and-Write-Nots",
+      "language": "zh-CN",
+      "translationGroup": "Writes-and-Write-Nots",
+      "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-06T22:41:00.000Z",
-      "bundleHash": "443145b9d0f70b5563761401b4d4d3b1e8f7d43db78b35e6e94207e675153200",
+      "bundleHash": "23fad7120f75c943697a9c0ff96a7f43e679922cc88215ec4bd8f02e8b423d27",
       "presentationFingerprint": "48bc466de7cab159311eb82176b0ccabd5b188132ff01eaa0eb698469c80e53a"
     },
     "3d37a59e-0439-80d0-86d7-fc494a529fca": {
       "slug": "daxuepeiyangchuangyezhe",
+      "language": "zh-TW",
+      "translationGroup": "daxuepeiyangchuangyezhe",
+      "contentFile": "index.md",
       "lastEditedTime": "2026-09-06T22:42:00.000Z",
-      "bundleHash": "635737778bdf40930a89d80f5a98c9fb99dc979508905d906a85211c24fdedb5",
+      "bundleHash": "bc27d56342283221705da2a3ca8891b7ec4ca9dc3f913bd72840451faa408294",
       "presentationFingerprint": "76b7f6714c4c3a3640eb1ad4aa7f866603f6436e562d3fdef448d33054a62267"
     }
   }

@@ -10,6 +10,8 @@ categories: ["學習與閱讀"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "Rotation"
+contentLanguage: "zh-CN"
+translationKey: "Writing-and-speaking"
 cover: "cover.jpg"
 icon: "🗣️"
 images: ["cover.jpg"]

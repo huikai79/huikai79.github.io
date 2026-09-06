@@ -10,6 +10,8 @@ categories: ["創作與實驗"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "Rotation"
+contentLanguage: "zh-CN"
+translationKey: "be-alife"
 cover: "cover.jpg"
 icon: "☀️"
 images: ["cover.jpg"]
