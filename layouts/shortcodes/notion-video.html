@@ -1,0 +1,55 @@
+{{- $block := .Get "block" -}}
+{{- if not $block -}}
+  {{- errorf "notion-video shortcode requires block on %s" .Page.RelPermalink -}}
+{{- end -}}
+<div
+  class="notion-video-shell"
+  data-notion-video-block="{{ $block }}"
+  data-notion-video-page="{{ .Page.RelPermalink }}">
+  <video
+    class="notion-video"
+    controls
+    controlslist="nodownload noremoteplayback"
+    disablepictureinpicture
+    disableremoteplayback
+    preload="metadata"
+    playsinline
+    data-media-endpoint="/media/video/{{ $block }}?page={{ .Page.RelPermalink | urlquery }}">
+    您的瀏覽器不支援 HTML5 影片播放。
+  </video>
+  <noscript>此影片需要 JavaScript 才能建立短效播放工作階段。</noscript>
+</div>
+<script>
+(() => {
+  const shell = document.currentScript.previousElementSibling;
+  if (!shell || shell.dataset.mediaBooted === "1") return;
+  shell.dataset.mediaBooted = "1";
+  const video = shell.querySelector("video[data-media-endpoint]");
+  if (!video) return;
+
+  const refreshSession = async () => {
+    const response = await fetch("/media/session", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "X-Media-Session": "1" }
+    });
+    if (!response.ok) throw new Error(`media session ${response.status}`);
+  };
+
+  const start = async () => {
+    try {
+      await refreshSession();
+      video.src = video.dataset.mediaEndpoint;
+      video.load();
+      window.setInterval(() => {
+        if (!document.hidden) refreshSession().catch(() => {});
+      }, 5 * 60 * 1000);
+    } catch {
+      shell.dataset.mediaError = "1";
+    }
+  };
+
+  video.addEventListener("contextmenu", event => event.preventDefault());
+  start();
+})();
+</script>
