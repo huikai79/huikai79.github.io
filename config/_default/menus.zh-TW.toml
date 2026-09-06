@@ -1,0 +1,25 @@
+[[main]]
+  name = "首頁"
+  pageRef = "/"
+  weight = 10
+
+[[main]]
+  name = "文章"
+  pre = "blogger"
+  pageRef = "posts"
+  weight = 20
+
+[[main]]
+  name = "專案"
+  pageRef = "projects"
+  weight = 30
+
+[[main]]
+  name = "探索"
+  pageRef = "explore"
+  weight = 40
+
+[[main]]
+  name = "關於"
+  pageRef = "about"
+  weight = 50
