@@ -79,6 +79,7 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_SYNC_MODE: production
         run: node ./sync.mjs
 
       - name: Enforce deletion quarantine
