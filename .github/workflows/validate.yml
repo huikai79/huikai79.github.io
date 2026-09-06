@@ -106,20 +106,26 @@ jobs:
             exit 1
           fi
 
-      - name: Verify homepage zero-selection determinism
+      - name: Verify homepage selection determinism
         run: |
           cp data/homepage_runtime.toml /tmp/homepage_runtime.original.toml
 
           HOMEPAGE_ROTATION_KEY=2026-W36 python3 scripts/prepare-homepage-rotation.py
           cp data/homepage_runtime.toml /tmp/homepage_runtime.w36-a.toml
           grep -Fq 'rotationKey = "2026-W36"' /tmp/homepage_runtime.w36-a.toml
-          grep -Fq 'selectedLimit = 0' /tmp/homepage_runtime.w36-a.toml
-          grep -Fq 'rotationSlots = 0' /tmp/homepage_runtime.w36-a.toml
-          grep -Fq 'poolSize = 0' /tmp/homepage_runtime.w36-a.toml
-          if grep -Fq '[[selected]]' /tmp/homepage_runtime.w36-a.toml; then
-            echo "::error::No homepage selected articles should exist while all Public content has Home=None"
-            exit 1
-          fi
+
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          runtime = tomllib.loads(Path('/tmp/homepage_runtime.w36-a.toml').read_text(encoding='utf-8'))
+          selected = runtime.get('selected', [])
+          expected = int(runtime.get('selectedLimit', 0))
+          if not isinstance(selected, list) or len(selected) != expected:
+              raise SystemExit(f"homepage selected/runtime mismatch: selected={len(selected) if isinstance(selected, list) else 'invalid'}, expected={expected}")
+          if int(runtime.get('rotationSlots', 0)) > int(runtime.get('poolSize', 0)):
+              raise SystemExit('homepage rotationSlots cannot exceed poolSize')
+          PY
 
           HOMEPAGE_ROTATION_KEY=2026-W36 python3 scripts/prepare-homepage-rotation.py
           cmp /tmp/homepage_runtime.w36-a.toml data/homepage_runtime.toml
@@ -127,9 +133,8 @@ jobs:
           HOMEPAGE_ROTATION_KEY=2026-W37 python3 scripts/prepare-homepage-rotation.py
           cp data/homepage_runtime.toml /tmp/homepage_runtime.w37.toml
           grep -Fq 'rotationKey = "2026-W37"' /tmp/homepage_runtime.w37.toml
-          grep -Fq 'selectedLimit = 0' /tmp/homepage_runtime.w37.toml
           if cmp -s /tmp/homepage_runtime.w36-a.toml /tmp/homepage_runtime.w37.toml; then
-            echo "::error::Adjacent rotation weeks must still produce distinct rotation metadata"
+            echo "::error::Adjacent rotation weeks must produce distinct rotation metadata"
             exit 1
           fi
 
