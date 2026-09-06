@@ -69,13 +69,22 @@ jobs:
             echo "Runtime/dependency graph unchanged; manifest reuse is allowed."
           fi
 
+      - name: Verify publication contract without writing production content
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: node scripts/check-notion-publication-contract.mjs production /tmp/notion-publication-contract.json
+
       - name: Sync Notion into candidate snapshot
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node ./sync.mjs
 
-      - name: Apply technical-only comments policy
+      - name: Enforce deletion quarantine
+        run: node scripts/check-sync-deletion-quarantine.mjs .notion-sync-report.json
+
+      - name: Apply comments policy
         run: python3 scripts/apply-comments-policy.py
 
       - name: Verify sync report and article bundles
@@ -149,6 +158,17 @@ jobs:
           REFRESH_HOMEPAGE_ROTATION: ${{ steps.presentation.outputs.refresh }}
         run: bash scripts/build-and-verify.sh public
 
+      - name: Classify material site change
+        id: site_change
+        run: |
+          if git diff --quiet -- content/posts data/homepage_runtime.toml; then
+            material_changed=false
+          else
+            material_changed=true
+          fi
+          echo "material_changed=$material_changed" >> "$GITHUB_OUTPUT"
+          echo "Material site change: $material_changed"
+
       - name: Commit only the validated synchronized snapshot
         id: sync_commit
         env:
@@ -179,17 +199,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ steps.sync_commit.outputs.source_sha }}
           CHANGED: ${{ steps.sync_commit.outputs.changed }}
+          MATERIAL_CHANGED: ${{ steps.site_change.outputs.material_changed }}
           EVENT_NAME: ${{ github.event_name }}
-          EVENT_SCHEDULE: ${{ github.event.schedule }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           should_deploy=false
-          if [ "$EVENT_NAME" != "schedule" ] || [ "$CHANGED" = "true" ] || [ "$RUN_ATTEMPT" -gt 1 ] || [ "$EVENT_SCHEDULE" = "5 0 * * 1" ]; then
+          if [ "$EVENT_NAME" != "schedule" ] || [ "$MATERIAL_CHANGED" = "true" ]; then
             should_deploy=true
           fi
 
           if [ "$should_deploy" != "true" ]; then
-            echo "Scheduled Notion sync is unchanged; no deployment dispatch required."
+            if [ "$CHANGED" = "true" ]; then
+              echo "Scheduled sync changed bookkeeping state only; commit retained, deployment intentionally skipped."
+            else
+              echo "Scheduled Notion sync is unchanged; no deployment dispatch required."
+            fi
             exit 0
           fi
 
