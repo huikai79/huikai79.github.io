@@ -40,6 +40,13 @@ def normalized_target(href: str) -> str:
     return f"{parsed.netloc}{parsed.path}".lower()
 
 
+def normalized_slug(slug: str) -> str:
+    # Hugo canonicalizes generated URL paths to lowercase on this site, while
+    # legacy Notion slugs may contain uppercase characters. Compare route
+    # identity case-insensitively without rewriting the source slug itself.
+    return slug.casefold()
+
+
 def matches_provider(href: str, provider: str) -> bool:
     expected = EXPECTED[provider].lower()
     if provider == "email":
@@ -59,9 +66,12 @@ if sharing != list(EXPECTED):
 
 source_slugs = sorted(path.parent.name for path in POSTS.glob("*/index.md"))
 rendered_slugs = sorted(path.parent.name for path in (PUBLIC / "posts").glob("*/index.html"))
-if source_slugs != rendered_slugs:
+source_routes = sorted(normalized_slug(slug) for slug in source_slugs)
+rendered_routes = sorted(normalized_slug(slug) for slug in rendered_slugs)
+if source_routes != rendered_routes:
     raise SystemExit(
-        f"Article sharing source/render mismatch: source={source_slugs}, rendered={rendered_slugs}"
+        "Article sharing source/render mismatch after route normalization: "
+        f"source={source_slugs}, rendered={rendered_slugs}"
     )
 
 for slug in rendered_slugs:
