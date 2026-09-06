@@ -1,4 +1,4 @@
-{{ if .Site.Params.homepage.showRecent | default false }}
+{{ if and (.Site.Params.homepage.showRecent | default false) (ne .Site.Language.Params.contentRole "interface-only") }}
   {{ $homepage := hugo.Data.homepage }}
   {{ $runtime := hugo.Data.homepage_runtime }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
@@ -34,7 +34,7 @@
 
   {{ if gt $selectedLimit 0 }}
     <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title" data-rotation-key="{{ $runtime.rotationKey }}" data-rotation-index="{{ $runtime.rotationIndex }}">
-      <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精選</h2>
+      <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">{{ i18n "huikai.home_selected" }}</h2>
       <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
         {{ range $index, $page := $selectedPages }}
           {{ $item := index $selectedItems $index }}
@@ -62,7 +62,7 @@
 
   {{ if gt (len $recentCandidates) 0 }}
     <section id="home-recent" class="mt-16" aria-labelledby="home-recent-title">
-      <h2 id="home-recent-title" class="mb-8 text-2xl font-extrabold">最近</h2>
+      <h2 id="home-recent-title" class="mb-8 text-2xl font-extrabold">{{ i18n "huikai.home_recent" }}</h2>
       <div class="home-recent-list">
         {{ range first $recentLimit $recentCandidates }}
           <article class="home-recent-row" data-home-path="{{ .RelPermalink }}">
