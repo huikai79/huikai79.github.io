@@ -117,8 +117,8 @@ def main() -> None:
     pool_config = config.get("rotationPool", [])
     if not isinstance(pinned_config, list) or not isinstance(pool_config, list):
         fail("pinned and rotationPool must be TOML table arrays")
-    if selected_limit < 1:
-        fail("selectedLimit must be at least 1")
+    if selected_limit < 0:
+        fail("selectedLimit must be zero or greater")
     if recent_limit < 1:
         fail("recentLimit must be at least 1")
     if len(pinned_config) > selected_limit:
