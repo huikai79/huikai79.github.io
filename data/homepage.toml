@@ -1,5 +1,5 @@
-# First Public article released 2026-09-06
-selectedLimit = 0
+# Homepage presentation limits. Article membership is controlled by Notion Home.
+selectedLimit = 3
 recentLimit = 5
 rotationTimezone = "Asia/Kuala_Lumpur"
 rotationEpoch = "2026-W36"

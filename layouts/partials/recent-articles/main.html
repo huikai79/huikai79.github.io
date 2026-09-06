@@ -2,9 +2,9 @@
   {{ $homepage := hugo.Data.homepage }}
   {{ $runtime := hugo.Data.homepage_runtime }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
-  {{ $selectedLimit := 3 }}
-  {{ if isset $homepage "selectedLimit" }}
-    {{ $selectedLimit = int $homepage.selectedLimit }}
+  {{ $selectedLimit := 0 }}
+  {{ if isset $runtime "selectedLimit" }}
+    {{ $selectedLimit = int $runtime.selectedLimit }}
   {{ end }}
   {{ $recentLimit := $homepage.recentLimit | default 5 }}
   {{ $selectedItems := $runtime.selected | default (slice) }}
