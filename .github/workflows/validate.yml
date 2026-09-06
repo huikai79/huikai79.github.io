@@ -23,7 +23,19 @@ jobs:
           persist-credentials: false
 
       - name: Verify Notion content contract helpers
-        run: node scripts/verify-notion-content-contract.mjs
+        run: |
+          node scripts/verify-notion-content-contract.mjs
+          node --check scripts/check-notion-publication-contract.mjs
+          node --check scripts/check-sync-deletion-quarantine.mjs
+
+          printf '%s\n' '{"status":"complete","published":14,"deleted":["one"]}' > /tmp/deletion-safe.json
+          node scripts/check-sync-deletion-quarantine.mjs /tmp/deletion-safe.json
+
+          printf '%s\n' '{"status":"complete","published":11,"deleted":["a","b","c"]}' > /tmp/deletion-blocked.json
+          if node scripts/check-sync-deletion-quarantine.mjs /tmp/deletion-blocked.json; then
+            echo "::error::Deletion quarantine regression: 3/14 deletion must be blocked"
+            exit 1
+          fi
 
       - name: Verify committed Notion snapshot
         run: |
@@ -41,7 +53,7 @@ jobs:
             exit 1
           fi
 
-      - name: Apply technical-only comments policy
+      - name: Apply comments policy idempotently
         run: |
           python3 scripts/apply-comments-policy.py
           cp .notion-sync-manifest.json /tmp/comments-manifest-a.json
@@ -71,7 +83,11 @@ jobs:
             exit 1
           fi
           grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
-          grep -Fq 'Apply technical-only comments policy' .github/workflows/sync.yml
+          grep -Fq 'Verify publication contract without writing production content' .github/workflows/sync.yml
+          grep -Fq 'Enforce deletion quarantine' .github/workflows/sync.yml
+          grep -Fq 'Apply comments policy' .github/workflows/sync.yml
+          grep -Fq 'Classify material site change' .github/workflows/sync.yml
+          grep -Fq 'bookkeeping state only' .github/workflows/sync.yml
           grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           grep -Fq 'persist-credentials: false' .github/workflows/sync.yml
           grep -Fq "cron: '5 0 * * 1'" .github/workflows/sync.yml
