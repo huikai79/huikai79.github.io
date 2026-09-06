@@ -31,7 +31,7 @@ const ALLOW_EMPTY = process.env.ALLOW_EMPTY_NOTION_SYNC === "true";
 const SYNC_MODE = normalizeSyncMode(process.env.NOTION_SYNC_MODE || "legacy");
 const filter = buildNotionFilter(SYNC_MODE);
 const dl = pLimit(5);
-const SECTION_INDEX = '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n';
+const SECTION_INDEX = '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n';
 
 /* ---------- 工具函式 ---------- */
 const safeSlug = s => (s ?? "").replace(/[^a-zA-Z0-9-_]/g, "-");
