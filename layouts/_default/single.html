@@ -39,8 +39,10 @@
 </article>
 
 {{ partial "article/author.html" . }}
-{{ partial "article/pagination.html" . }}
-{{ partial "article/related.html" . }}
+<div class="article-footer mx-auto w-full max-w-3xl px-4">
+  {{ partial "article-pagination.html" . }}
+  {{ partial "related.html" . }}
+</div>
 {{ partial "article-comments.html" . }}
 
 {{ end }}
