@@ -85,6 +85,7 @@ jobs:
           fi
           grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
           grep -Fq 'Verify publication contract without writing production content' .github/workflows/sync.yml
+          grep -Fq 'NOTION_SYNC_MODE: production' .github/workflows/sync.yml
           grep -Fq 'Enforce deletion quarantine' .github/workflows/sync.yml
           grep -Fq 'Apply comments policy' .github/workflows/sync.yml
           grep -Fq 'Classify material site change' .github/workflows/sync.yml
@@ -101,16 +102,20 @@ jobs:
             exit 1
           fi
 
-      - name: Verify homepage weekly rotation determinism
+      - name: Verify homepage zero-selection determinism
         run: |
           cp data/homepage_runtime.toml /tmp/homepage_runtime.original.toml
 
           HOMEPAGE_ROTATION_KEY=2026-W36 python3 scripts/prepare-homepage-rotation.py
           cp data/homepage_runtime.toml /tmp/homepage_runtime.w36-a.toml
           grep -Fq 'rotationKey = "2026-W36"' /tmp/homepage_runtime.w36-a.toml
-          grep -Fq 'pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"' /tmp/homepage_runtime.w36-a.toml
-          grep -Fq 'path = "posts/King-of-Internet-Writing"' /tmp/homepage_runtime.w36-a.toml
-          grep -Fq 'path = "posts/ngh"' /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'selectedLimit = 0' /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'rotationSlots = 0' /tmp/homepage_runtime.w36-a.toml
+          grep -Fq 'poolSize = 0' /tmp/homepage_runtime.w36-a.toml
+          if grep -Fq '[[selected]]' /tmp/homepage_runtime.w36-a.toml; then
+            echo "::error::No homepage selected articles should exist while all Public content has Home=None"
+            exit 1
+          fi
 
           HOMEPAGE_ROTATION_KEY=2026-W36 python3 scripts/prepare-homepage-rotation.py
           cmp /tmp/homepage_runtime.w36-a.toml data/homepage_runtime.toml
@@ -118,11 +123,9 @@ jobs:
           HOMEPAGE_ROTATION_KEY=2026-W37 python3 scripts/prepare-homepage-rotation.py
           cp data/homepage_runtime.toml /tmp/homepage_runtime.w37.toml
           grep -Fq 'rotationKey = "2026-W37"' /tmp/homepage_runtime.w37.toml
-          grep -Fq 'pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"' /tmp/homepage_runtime.w37.toml
-          grep -Fq 'path = "posts/FreeResource-1"' /tmp/homepage_runtime.w37.toml
-          grep -Fq 'path = "posts/be-alife"' /tmp/homepage_runtime.w37.toml
+          grep -Fq 'selectedLimit = 0' /tmp/homepage_runtime.w37.toml
           if cmp -s /tmp/homepage_runtime.w36-a.toml /tmp/homepage_runtime.w37.toml; then
-            echo "::error::Adjacent rotation weeks must not resolve to the same runtime state"
+            echo "::error::Adjacent rotation weeks must still produce distinct rotation metadata"
             exit 1
           fi
 
