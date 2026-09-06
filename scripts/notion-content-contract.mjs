@@ -65,6 +65,29 @@ export function productionMetadataMissing(candidate) {
   return missing;
 }
 
+export function publicationRecordMissing(candidate = {}) {
+  const missing = productionMetadataMissing(candidate);
+  if (!candidate.title) missing.push("Title");
+  if (!candidate.slug) missing.push("slug");
+  if (!candidate.date) missing.push("date");
+  return missing;
+}
+
+export function editorialFrontMatter(candidate = {}) {
+  const missing = publicationRecordMissing(candidate);
+  if (missing.length) {
+    throw new Error(`Publication front matter missing: ${missing.join(", ")}`);
+  }
+
+  return {
+    description: candidate.summary,
+    categories: [candidate.category],
+    entryType: candidate.entryType,
+    contentVisibility: candidate.visibility,
+    homePlacement: candidate.homePlacement || "None"
+  };
+}
+
 export function shouldQuarantineDeletion({
   previousCount,
   deletedCount,
