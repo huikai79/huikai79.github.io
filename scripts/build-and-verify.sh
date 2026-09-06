@@ -7,6 +7,7 @@ echo "Hugo / Go runtime"
 hugo version
 go version
 
+node scripts/test-notion-video-transformer.mjs
 python3 scripts/test-notion-media-localization.py
 python3 scripts/localize-notion-media.py
 python3 scripts/test-cover-resolution.py

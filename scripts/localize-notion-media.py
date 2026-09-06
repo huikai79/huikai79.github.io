@@ -64,12 +64,11 @@ def stable_attachment_name(url: str) -> str:
 
 
 def localized_markdown(filename: str, label: str, title: str = "") -> str:
-    if Path(filename).suffix.lower() in VIDEO_EXTENSIONS:
-        return f'{{{{< video src="{filename}" >}}}}'
     return f"[{label}]({filename}{title})"
 
 
 def normalize_local_video_links(markdown: str) -> tuple[str, list[str]]:
+    # Legacy migration only. New sync output must never create local MP4 links.
     matches = list(LOCAL_VIDEO_LINK_RE.finditer(markdown))
     if not matches:
         return markdown, []
@@ -77,8 +76,8 @@ def normalize_local_video_links(markdown: str) -> tuple[str, list[str]]:
     result = markdown
     converted: list[str] = []
     for match in matches:
-        original, label, filename, title = match.group(0), match.group(1), match.group(2), match.group(3) or ""
-        replacement = localized_markdown(filename, label, title)
+        original, _label, filename, _title = match.group(0), match.group(1), match.group(2), match.group(3) or ""
+        replacement = f'{{{{< video src="{filename}" >}}}}'
         result = result.replace(original, replacement, 1)
         converted.append(filename)
     return result, converted
@@ -96,7 +95,7 @@ def download_file(url: str, destination: Path, attempts: int = 3, timeout: int =
                 temporary.write_bytes(response.read())
             temporary.replace(destination)
             return
-        except Exception as error:  # noqa: BLE001 - retry boundary intentionally broad
+        except Exception as error:  # noqa: BLE001
             last_error = error
             temporary.unlink(missing_ok=True)
             if attempt < attempts:
@@ -126,8 +125,15 @@ def localize_markdown_links(
     for match in matches:
         original, label, url, title = match.group(0), match.group(1), match.group(2), match.group(3) or ""
         filename = stable_attachment_name(url)
-        destination = bundle / filename
+        suffix = Path(filename).suffix.lower()
 
+        if suffix in VIDEO_EXTENSIONS:
+            raise RuntimeError(
+                "Temporary Notion MP4 reached the attachment localizer. "
+                "The video transformer must emit a notion-video shortcode before this stage; refusing to write MP4 into Git."
+            )
+
+        destination = bundle / filename
         if filename not in downloaded:
             fetcher(url, destination)
             downloaded.add(filename)
@@ -143,9 +149,6 @@ def localize_markdown_links(
 
 
 def main() -> None:
-    # The report is intentionally ignored by Git and exists only immediately
-    # after sync.mjs has produced a candidate snapshot. PR/deploy verification
-    # therefore stays read-only and skips this post-sync normalizer.
     if not REPORT_PATH.is_file():
         print("Notion media localization: SKIP (no fresh Notion sync report)")
         return
@@ -195,7 +198,7 @@ def main() -> None:
             print(f"📎  Notion 附件本地化 {slug}: {item['file']}")
         for filename in converted:
             converted_videos.append({"pageId": page_id, "slug": slug, "file": filename})
-            print(f"🎬  Notion 视频播放器 {slug}: {filename}")
+            print(f"🎬  舊版本地影片連結正規化 {slug}: {filename}")
 
     if manifest_changed:
         MANIFEST_PATH.write_text(
@@ -206,9 +209,9 @@ def main() -> None:
 
     report["mediaLocalization"] = {
         "status": "complete",
-        "strategy": "temporary-notion-media-links",
+        "strategy": "temporary-notion-nonvideo-links",
         "resolved": resolved,
-        "videoShortcodes": converted_videos,
+        "legacyVideoShortcodes": converted_videos,
     }
     REPORT_PATH.write_text(
         f"{json.dumps(report, ensure_ascii=False, indent=2)}\n",
@@ -218,7 +221,7 @@ def main() -> None:
 
     print(
         "Notion media localization: PASS "
-        f"({len(resolved)} link(s) localized, {len(converted_videos)} existing video link(s) normalized)"
+        f"({len(resolved)} non-video link(s) localized, {len(converted_videos)} legacy video link(s) normalized)"
     )
 
 
