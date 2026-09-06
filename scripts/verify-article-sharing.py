@@ -35,13 +35,16 @@ class LinkParser(HTMLParser):
             self.hrefs.append(href)
 
 
-def matches_provider(href: str, provider: str) -> bool:
-    expected = EXPECTED[provider]
-    if provider == "email":
-        return href.startswith(expected)
+def normalized_target(href: str) -> str:
     parsed = urlsplit(href)
-    combined = f"{parsed.netloc}{parsed.path}"
-    return expected in combined
+    return f"{parsed.netloc}{parsed.path}".lower()
+
+
+def matches_provider(href: str, provider: str) -> bool:
+    expected = EXPECTED[provider].lower()
+    if provider == "email":
+        return href.lower().startswith(expected)
+    return expected in normalized_target(href)
 
 
 with PARAMS.open("rb") as handle:
@@ -70,9 +73,13 @@ for slug in rendered_slugs:
     for provider in sharing:
         matches = [href for href in parser.hrefs if matches_provider(href, provider)]
         if len(matches) != 1:
+            external = [
+                href for href in parser.hrefs
+                if href.startswith(("http://", "https://", "mailto:"))
+            ]
             raise SystemExit(
                 f"Article sharing link must render exactly once for {slug}: "
-                f"provider={provider}, found={len(matches)}"
+                f"provider={provider}, found={len(matches)}, external_hrefs={external}"
             )
         href = matches[0]
         if provider != "email" and "huikai.com.kg" not in href:
