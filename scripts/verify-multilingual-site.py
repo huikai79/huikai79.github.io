@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import re
+import json
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -40,13 +40,26 @@ def read_html(path: Path, label: str) -> tuple[str, Parser]:
     return text, parser
 
 
+def rendered_article_path(language: str, slug: str) -> Path:
+    base = PUBLIC if language == "zh-TW" else PUBLIC / language.lower()
+    return base / "posts" / slug.lower() / "index.html"
+
+
+def expected_content_file(language: str) -> str:
+    return {
+        "zh-TW": "index.md",
+        "zh-CN": "index.zh-cn.md",
+        "en": "index.en.md",
+    }.get(language, "")
+
+
 hugo_config = (ROOT / "config" / "_default" / "hugo.toml").read_text(encoding="utf-8")
 if 'defaultContentLanguage = "zh-TW"' not in hugo_config:
     fail("Traditional Chinese must remain the default content language")
 
 for config_name, expected in (
     ("languages.zh-TW.toml", ('displayName = "繁體中文"', 'htmlCode = "zh-TW"', 'contentRole = "primary"')),
-    ("languages.zh-CN.toml", ('displayName = "简体中文"', 'htmlCode = "zh-CN"', 'contentRole = "interface-only"')),
+    ("languages.zh-CN.toml", ('displayName = "简体中文"', 'htmlCode = "zh-CN"', 'contentRole = "secondary"')),
 ):
     path = ROOT / "config" / "_default" / config_name
     if not path.is_file():
@@ -97,20 +110,6 @@ for href in ("/zh-cn/posts/", "/zh-cn/projects/", "/zh-cn/about/"):
     if href not in simplified_parser.hrefs:
         fail(f"Simplified homepage is missing language-scoped CTA: {href}")
 
-article_pages = sorted(
-    path for path in (PUBLIC / "posts").glob("*/index.html")
-    if path.parent.name
-)
-if len(article_pages) != 6:
-    fail(f"Primary-language article count must remain 6 during foundation phase; found {len(article_pages)}")
-
-simplified_article_pages = sorted((PUBLIC / "zh-cn" / "posts").glob("*/index.html")) if (PUBLIC / "zh-cn" / "posts").exists() else []
-if simplified_article_pages:
-    fail(
-        "Simplified article routes must not be fabricated before Notion language mapping exists: "
-        + ", ".join(str(path.relative_to(PUBLIC)) for path in simplified_article_pages)
-    )
-
 # Translated static pages should be recognized as translation pairs by Hugo/Blowfish.
 for left, right in (
     (PUBLIC / "about" / "index.html", "/zh-cn/about/"),
@@ -121,19 +120,117 @@ for left, right in (
     if right not in parser.hrefs:
         fail(f"Translated page does not expose its Simplified counterpart: {left} -> {right}")
 
-# Keep the interface-only language honest: no Notion article module until article language metadata exists.
+# The secondary-language homepage intentionally remains editorially quiet until
+# it gets an independent Notion Home-selection policy. Articles are still
+# discoverable through /zh-cn/posts/.
 if 'id="home-selected"' in simplified or 'id="home-recent"' in simplified:
-    fail("Simplified homepage must not mirror primary-language article selections before article translations exist")
+    fail("Simplified homepage must not reuse the zh-TW Selected/Recent rotation")
 
-# The generated Simplified posts section must survive every Notion sync rebuild.
-expected_index = '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n'
-source_index = ROOT / "content" / "posts" / "_index.zh-cn.md"
-if not source_index.is_file() or source_index.read_text(encoding="utf-8") != expected_index:
-    fail("Simplified posts section index is missing or nondeterministic")
+expected_indexes = {
+    "_index.md": '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n',
+    "_index.zh-cn.md": '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n',
+}
+for name, expected in expected_indexes.items():
+    source = ROOT / "content" / "posts" / name
+    if not source.is_file() or source.read_text(encoding="utf-8") != expected:
+        fail(f"Posts section index is missing or nondeterministic: {name}")
+
+try:
+    manifest = json.loads((ROOT / ".notion-sync-manifest.json").read_text(encoding="utf-8"))
+except Exception as error:
+    manifest = {"pages": {}}
+    fail(f"Unable to read Notion manifest for multilingual routing: {error}")
+
+pages = manifest.get("pages", {}) if isinstance(manifest, dict) else {}
+if not isinstance(pages, dict):
+    fail("Notion manifest pages map is invalid")
+    pages = {}
+
+migrated = bool(pages) and all(
+    isinstance(entry, dict) and entry.get("language") and entry.get("contentFile")
+    for entry in pages.values()
+)
+
+if not migrated:
+    # Backward-compatible validation for the committed pre-routing snapshot used
+    # by PR validation before the first production sync applies Notion Language.
+    traditional_articles = sorted((PUBLIC / "posts").glob("*/index.html")) if (PUBLIC / "posts").exists() else []
+    simplified_articles = sorted((PUBLIC / "zh-cn" / "posts").glob("*/index.html")) if (PUBLIC / "zh-cn" / "posts").exists() else []
+    if len(traditional_articles) != len(pages):
+        fail(
+            "Pre-routing snapshot must keep all manifest articles in the default language: "
+            f"manifest={len(pages)}, rendered={len(traditional_articles)}"
+        )
+    if simplified_articles:
+        fail("Pre-routing snapshot unexpectedly contains Simplified article routes")
+else:
+    rendered_expected: set[Path] = set()
+    groups: dict[str, list[tuple[str, Path]]] = {}
+    for page_id, entry in sorted(pages.items()):
+        if not isinstance(entry, dict):
+            fail(f"Invalid manifest article entry: {page_id}")
+            continue
+        slug = str(entry.get("slug", "")).strip()
+        language = str(entry.get("language", "")).strip()
+        content_file = str(entry.get("contentFile", "")).strip()
+        group = str(entry.get("translationGroup", "")).strip()
+        if not slug or not language or not content_file or not group:
+            fail(f"Routed article manifest metadata is incomplete: {page_id}")
+            continue
+        expected_file = expected_content_file(language)
+        if not expected_file:
+            fail(f"Unsupported routed article language: {page_id} -> {language}")
+            continue
+        if content_file != expected_file:
+            fail(f"Manifest contentFile mismatch: {page_id} -> {content_file}, expected {expected_file}")
+        source = ROOT / "content" / "posts" / slug / content_file
+        if not source.is_file():
+            fail(f"Routed source article is missing: {source}")
+        source_text = source.read_text(encoding="utf-8", errors="replace") if source.is_file() else ""
+        if f'contentLanguage: "{language}"' not in source_text:
+            fail(f"Routed source is missing contentLanguage front matter: {source}")
+        if f'translationKey: "{group}"' not in source_text:
+            fail(f"Routed source is missing translationKey front matter: {source}")
+
+        rendered = rendered_article_path(language, slug)
+        rendered_expected.add(rendered.resolve())
+        _, parser = read_html(rendered, f"article:{language}:{slug}")
+        if parser.lang != language:
+            fail(f"Article language mismatch: {language}:{slug} rendered lang={parser.lang!r}")
+        groups.setdefault(group, []).append((language, rendered))
+
+    actual = set(path.resolve() for path in (PUBLIC / "posts").glob("*/index.html"))
+    actual.update(path.resolve() for path in (PUBLIC / "zh-cn" / "posts").glob("*/index.html"))
+    if actual != rendered_expected:
+        fail(
+            "Rendered multilingual article routes differ from manifest: "
+            f"expected={sorted(str(p.relative_to(PUBLIC)) for p in rendered_expected)}, "
+            f"actual={sorted(str(p.relative_to(PUBLIC)) for p in actual)}"
+        )
+
+    # A language switch is allowed only when the same translation group has a
+    # genuine counterpart in another language. Unique groups must not fabricate
+    # a translation link.
+    for group, members in groups.items():
+        languages = {language for language, _ in members}
+        if len(languages) != len(members):
+            fail(f"Translation Group contains duplicate language entries: {group}")
+        if len(members) > 1:
+            expected_hrefs = {
+                "/" + str(path.relative_to(PUBLIC).parent).replace("\\", "/").strip("/") + "/"
+                for _, path in members
+            }
+            for language, path in members:
+                _, parser = read_html(path, f"translation-group:{group}:{language}")
+                own = "/" + str(path.relative_to(PUBLIC).parent).replace("\\", "/").strip("/") + "/"
+                for href in expected_hrefs - {own}:
+                    if href not in parser.hrefs:
+                        fail(f"Real translation counterpart is missing from language switcher: {group} -> {href}")
 
 if ERRORS:
     for error in ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Multilingual site verification: PASS (zh-TW primary + zh-CN interface foundation)")
+state = "routed articles" if migrated else "pre-routing snapshot"
+print(f"Multilingual site verification: PASS (zh-TW primary + zh-CN secondary, {state})")
