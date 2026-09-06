@@ -13,6 +13,7 @@ python3 scripts/test-cover-resolution.py
 python3 scripts/resolve-article-covers.py
 python3 scripts/verify-source-contract.py
 python3 scripts/verify-video-rendering.py source
+python3 scripts/verify-notion-media-gateway.py
 
 if [ "${REFRESH_HOMEPAGE_ROTATION:-0}" = "1" ]; then
   python3 scripts/prepare-homepage-rotation.py
