@@ -28,7 +28,7 @@
   </h1>
 
   <p class="text-sm opacity-70 article-date-line">
-    {{ .Date.Format "2006年1月2日" }} · 閱讀約 {{ .ReadingTime }} 分鐘
+    {{ .Date.Format "2006年1月2日" }} · {{ i18n "huikai.reading_time" .ReadingTime }}
   </p>
 
   {{ $category := "" }}
@@ -36,7 +36,7 @@
     {{ $category = index . 0 }}
   {{ end }}
   {{ if or $category .Params.entryType }}
-    <div class="article-context" aria-label="文章資訊">
+    <div class="article-context" aria-label="{{ i18n "huikai.article_context" }}">
       {{ with $category }}<span class="article-context-chip">{{ . }}</span>{{ end }}
       {{ with .Params.entryType }}<span class="article-context-chip">{{ . }}</span>{{ end }}
     </div>
