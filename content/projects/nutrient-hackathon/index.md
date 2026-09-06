@@ -15,5 +15,3 @@ showBreadcrumbs: false
 **Problem → Real Input → Sponsor Technology → Observable Evidence → Human Action → Observable State Change → Result → Scope Boundary**
 
 这套方法后来也成为继续制作 Hackathon 项目时的重要基线：功能必须真的存在，而且评审必须能够在有限时间里看见它为什么成立。
-
-[阅读完整复盘](/posts/first-Hackathon/)
