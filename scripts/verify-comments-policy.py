@@ -12,7 +12,6 @@ PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
 POSTS = ROOT / "content" / "posts"
 MANIFEST = ROOT / ".notion-sync-manifest.json"
 PARAMS = ROOT / "config" / "_default" / "params.toml"
-LEGACY_COMMENTS_TAG = "技术学习"
 GISCUS_CLIENT = "https://giscus.app/client.js"
 
 ERRORS: list[str] = []
@@ -40,16 +39,6 @@ def value_for(front: list[str], key: str) -> str | None:
     return None
 
 
-def parse_tags(front: list[str]) -> list[str]:
-    raw = value_for(front, "tags")
-    if raw is None:
-        return []
-    parsed = json.loads(raw)
-    if not isinstance(parsed, list):
-        raise ValueError("tags is not a list")
-    return [str(item) for item in parsed]
-
-
 def parse_scalar(front: list[str], key: str) -> str:
     raw = value_for(front, key)
     if raw is None:
@@ -62,10 +51,9 @@ def parse_scalar(front: list[str], key: str) -> str:
 
 def expected_comments(front: list[str]) -> tuple[bool, str]:
     visibility = parse_scalar(front, "contentVisibility")
-    if visibility:
-        return visibility == "Public", f"contentVisibility={visibility}"
-    legacy = LEGACY_COMMENTS_TAG in parse_tags(front)
-    return legacy, f"legacy-tag={LEGACY_COMMENTS_TAG}"
+    if not visibility:
+        raise ValueError("contentVisibility is required for comments policy")
+    return visibility == "Public", f"contentVisibility={visibility}"
 
 
 def attrs_dict(attrs: list[tuple[str, str | None]]) -> dict[str, str]:

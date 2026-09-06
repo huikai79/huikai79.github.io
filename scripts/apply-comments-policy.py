@@ -8,7 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 POSTS = ROOT / "content" / "posts"
 MANIFEST = ROOT / ".notion-sync-manifest.json"
-LEGACY_COMMENTS_TAG = "技术学习"
 
 
 def directory_hash(directory: Path) -> str:
@@ -45,19 +44,6 @@ def value_for(front: list[str], key: str) -> str | None:
     return None
 
 
-def parse_tags(front: list[str]) -> list[str]:
-    raw = value_for(front, "tags")
-    if raw is None:
-        return []
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as error:
-        raise ValueError(f"tags must remain a JSON-compatible YAML array: {raw}") from error
-    if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
-        raise ValueError("tags must be an array of strings")
-    return parsed
-
-
 def parse_scalar(front: list[str], key: str) -> str:
     raw = value_for(front, key)
     if raw is None:
@@ -71,13 +57,9 @@ def parse_scalar(front: list[str], key: str) -> str:
 
 def comments_policy(front: list[str]) -> tuple[bool, str]:
     visibility = parse_scalar(front, "contentVisibility")
-    if visibility:
-        return visibility == "Public", f"contentVisibility={visibility}"
-
-    # Compatibility only while legacy generated articles do not yet carry the
-    # new editorial front matter. Remove this fallback after production mode is activated.
-    legacy = LEGACY_COMMENTS_TAG in parse_tags(front)
-    return legacy, f"legacy-tag={LEGACY_COMMENTS_TAG}"
+    if not visibility:
+        raise ValueError("contentVisibility is required for comments policy")
+    return visibility == "Public", f"contentVisibility={visibility}"
 
 
 def apply_policy(index_file: Path, page_id: str) -> tuple[bool, bool, str]:
