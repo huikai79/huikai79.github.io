@@ -61,3 +61,33 @@ export function presentationFingerprintDrift(manifest = {}, fingerprints = {}) {
 
   return changed;
 }
+
+export function prepareManifestForPresentationSync(manifest = {}, reportPages = []) {
+  const next = structuredClone(manifest ?? {});
+  if (!next.pages || typeof next.pages !== "object") next.pages = {};
+
+  const fingerprints = Object.fromEntries(
+    reportPages
+      .filter(row => row?.pageId && row?.presentationFingerprint)
+      .map(row => [row.pageId, row.presentationFingerprint])
+  );
+  const invalidated = presentationFingerprintDrift(next, fingerprints);
+
+  for (const pageId of invalidated) delete next.pages[pageId];
+  return { manifest: next, invalidated, fingerprints };
+}
+
+export function finalizeManifestPresentationFingerprints(manifest = {}, reportPages = []) {
+  const next = structuredClone(manifest ?? {});
+  if (!next.pages || typeof next.pages !== "object") next.pages = {};
+
+  const applied = [];
+  for (const row of reportPages) {
+    if (!row?.pageId || !row?.presentationFingerprint) continue;
+    if (!next.pages[row.pageId]) continue;
+    next.pages[row.pageId].presentationFingerprint = row.presentationFingerprint;
+    applied.push(row.pageId);
+  }
+
+  return { manifest: next, applied };
+}
