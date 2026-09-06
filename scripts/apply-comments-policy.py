@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 POSTS = ROOT / "content" / "posts"
 MANIFEST = ROOT / ".notion-sync-manifest.json"
-COMMENTS_TAG = "技术学习"
+LEGACY_COMMENTS_TAG = "技术学习"
 
 
 def directory_hash(directory: Path) -> str:
@@ -34,30 +34,56 @@ def split_front_matter(text: str) -> tuple[list[str], str]:
     except StopIteration as error:
         raise ValueError("missing closing front matter delimiter") from error
 
-    front = lines[1:closing]
-    body = "\n".join(lines[closing + 1 :])
-    return front, body
+    return lines[1:closing], "\n".join(lines[closing + 1 :])
+
+
+def value_for(front: list[str], key: str) -> str | None:
+    prefix = f"{key}:"
+    for line in front:
+        if line.startswith(prefix):
+            return line.split(":", 1)[1].strip()
+    return None
 
 
 def parse_tags(front: list[str]) -> list[str]:
-    for line in front:
-        if line.startswith("tags:"):
-            raw = line.split(":", 1)[1].strip()
-            try:
-                parsed = json.loads(raw)
-            except json.JSONDecodeError as error:
-                raise ValueError(f"tags must remain a JSON-compatible YAML array: {raw}") from error
-            if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
-                raise ValueError("tags must be an array of strings")
-            return parsed
-    return []
+    raw = value_for(front, "tags")
+    if raw is None:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"tags must remain a JSON-compatible YAML array: {raw}") from error
+    if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
+        raise ValueError("tags must be an array of strings")
+    return parsed
 
 
-def apply_policy(index_file: Path, page_id: str) -> bool:
+def parse_scalar(front: list[str], key: str) -> str:
+    raw = value_for(front, key)
+    if raw is None:
+        return ""
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return raw.strip('"').strip()
+    return str(parsed).strip()
+
+
+def comments_policy(front: list[str]) -> tuple[bool, str]:
+    visibility = parse_scalar(front, "contentVisibility")
+    if visibility:
+        return visibility == "Public", f"contentVisibility={visibility}"
+
+    # Compatibility only while legacy generated articles do not yet carry the
+    # new editorial front matter. Remove this fallback after production mode is activated.
+    legacy = LEGACY_COMMENTS_TAG in parse_tags(front)
+    return legacy, f"legacy-tag={LEGACY_COMMENTS_TAG}"
+
+
+def apply_policy(index_file: Path, page_id: str) -> tuple[bool, bool, str]:
     original = index_file.read_text(encoding="utf-8")
     front, body = split_front_matter(original)
-    tags = parse_tags(front)
-    comments_enabled = COMMENTS_TAG in tags
+    comments_enabled, policy_source = comments_policy(front)
 
     cleaned = [
         line
@@ -76,11 +102,10 @@ def apply_policy(index_file: Path, page_id: str) -> bool:
     if not rewritten.endswith("\n"):
         rewritten += "\n"
 
-    if rewritten == original.replace("\r\n", "\n"):
-        return False
-
-    index_file.write_text(rewritten, encoding="utf-8")
-    return True
+    changed = rewritten != original.replace("\r\n", "\n")
+    if changed:
+        index_file.write_text(rewritten, encoding="utf-8")
+    return changed, comments_enabled, policy_source
 
 
 def main() -> None:
@@ -109,16 +134,15 @@ def main() -> None:
 
     changed = 0
     enabled = 0
+    policy_sources: dict[str, int] = {}
+
     for slug in source_slugs:
         index_file = POSTS / slug / "index.md"
         page_id = slug_to_page_id[slug]
-        if apply_policy(index_file, page_id):
-            changed += 1
-
-        front, _ = split_front_matter(index_file.read_text(encoding="utf-8"))
-        if COMMENTS_TAG in parse_tags(front):
-            enabled += 1
-
+        did_change, is_enabled, policy_source = apply_policy(index_file, page_id)
+        changed += int(did_change)
+        enabled += int(is_enabled)
+        policy_sources[policy_source] = policy_sources.get(policy_source, 0) + 1
         pages[page_id]["bundleHash"] = directory_hash(index_file.parent)
 
     MANIFEST.write_text(
@@ -126,7 +150,8 @@ def main() -> None:
         encoding="utf-8",
     )
     print(
-        f"Comments policy: tag={COMMENTS_TAG}, enabled={enabled}, changed={changed}, total={len(source_slugs)}"
+        "Comments policy: "
+        f"enabled={enabled}, changed={changed}, total={len(source_slugs)}, sources={policy_sources}"
     )
 
 

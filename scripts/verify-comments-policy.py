@@ -12,7 +12,7 @@ PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
 POSTS = ROOT / "content" / "posts"
 MANIFEST = ROOT / ".notion-sync-manifest.json"
 PARAMS = ROOT / "config" / "_default" / "params.toml"
-COMMENTS_TAG = "技术学习"
+LEGACY_COMMENTS_TAG = "技术学习"
 GISCUS_CLIENT = "https://giscus.app/client.js"
 
 ERRORS: list[str] = []
@@ -48,6 +48,24 @@ def parse_tags(front: list[str]) -> list[str]:
     if not isinstance(parsed, list):
         raise ValueError("tags is not a list")
     return [str(item) for item in parsed]
+
+
+def parse_scalar(front: list[str], key: str) -> str:
+    raw = value_for(front, key)
+    if raw is None:
+        return ""
+    try:
+        return str(json.loads(raw)).strip()
+    except json.JSONDecodeError:
+        return raw.strip('"').strip()
+
+
+def expected_comments(front: list[str]) -> tuple[bool, str]:
+    visibility = parse_scalar(front, "contentVisibility")
+    if visibility:
+        return visibility == "Public", f"contentVisibility={visibility}"
+    legacy = LEGACY_COMMENTS_TAG in parse_tags(front)
+    return legacy, f"legacy-tag={LEGACY_COMMENTS_TAG}"
 
 
 def attrs_dict(attrs: list[tuple[str, str | None]]) -> dict[str, str]:
@@ -90,8 +108,7 @@ giscus = params.get("giscus", {}) if isinstance(params, dict) else {}
 giscus_enabled = bool(giscus.get("enabled", False)) if isinstance(giscus, dict) else False
 
 if giscus_enabled:
-    required = ["repo", "repoId", "category", "categoryId"]
-    for key in required:
+    for key in ["repo", "repoId", "category", "categoryId"]:
         if not str(giscus.get(key, "")).strip():
             fail(f"giscus enabled but {key} is empty")
 
@@ -112,8 +129,9 @@ for index_file in sorted(POSTS.glob("*/index.md")):
         fail(f"Source slug collision after Hugo URL normalization: {source_slug_keys[normalized]} / {slug}")
     source_slug_keys[normalized] = slug
 
-technical_slugs: list[str] = []
-nontechnical_slugs: list[str] = []
+enabled_slugs: list[str] = []
+disabled_slugs: list[str] = []
+policy_sources: dict[str, int] = {}
 
 for index_file in sorted(POSTS.glob("*/index.md")):
     slug = index_file.parent.name
@@ -124,48 +142,47 @@ for index_file in sorted(POSTS.glob("*/index.md")):
 
     try:
         front = split_front(index_file.read_text(encoding="utf-8"))
-        tags = parse_tags(front)
+        should_enable, policy_source = expected_comments(front)
     except Exception as error:
         fail(f"Unable to parse comments front matter for {slug}: {error}")
         continue
 
+    policy_sources[policy_source] = policy_sources.get(policy_source, 0) + 1
     show_comments = value_for(front, "showComments")
     comment_key_raw = value_for(front, "commentKey")
     expected_key = f"notion:{page_id}"
-    technical = COMMENTS_TAG in tags
 
-    if technical:
-        technical_slugs.append(slug)
+    if should_enable:
+        enabled_slugs.append(slug)
         if show_comments != "true":
-            fail(f"Technical article must have showComments: true: {slug}")
+            fail(f"Comments-enabled article must have showComments: true: {slug}")
         if comment_key_raw is None:
-            fail(f"Technical article is missing commentKey: {slug}")
+            fail(f"Comments-enabled article is missing commentKey: {slug}")
         else:
             try:
                 actual_key = json.loads(comment_key_raw)
             except json.JSONDecodeError:
                 actual_key = comment_key_raw.strip('"')
             if actual_key != expected_key:
-                fail(f"Technical article commentKey mismatch for {slug}: {actual_key!r} != {expected_key!r}")
+                fail(f"Article commentKey mismatch for {slug}: {actual_key!r} != {expected_key!r}")
     else:
-        nontechnical_slugs.append(slug)
+        disabled_slugs.append(slug)
         if show_comments is not None or comment_key_raw is not None:
-            fail(f"Non-technical article must not retain comments fields: {slug}")
+            fail(f"Comments-disabled article must not retain comments fields: {slug}")
 
     rendered = rendered_by_slug.get(slug.lower())
     if rendered is None:
         fail(f"Rendered article missing for comments verification: {slug}")
         continue
 
-    html = rendered.read_text(encoding="utf-8", errors="replace")
-    parsed = parse_comments_html(html)
-
-    if technical and giscus_enabled:
+    parsed = parse_comments_html(rendered.read_text(encoding="utf-8", errors="replace"))
+    if should_enable and giscus_enabled:
         if len(parsed.giscus_scripts) != 1:
-            fail(f"Technical article must render exactly one giscus client script: {slug} (found {len(parsed.giscus_scripts)})")
+            fail(f"Comments-enabled article must render exactly one giscus client script: {slug} (found {len(parsed.giscus_scripts)})")
             continue
         if len(parsed.comment_containers) != 1:
-            fail(f"Technical article must render exactly one giscus comments container: {slug} (found {len(parsed.comment_containers)})")
+            fail(f"Comments-enabled article must render exactly one giscus comments container: {slug} (found {len(parsed.comment_containers)})")
+            continue
 
         script = parsed.giscus_scripts[0]
         container = parsed.comment_containers[0]
@@ -186,12 +203,8 @@ for index_file in sorted(POSTS.glob("*/index.md")):
                 fail(f"Rendered giscus attribute mismatch for {slug}: {key}={actual!r}, expected {expected!r}")
         if container.get("data-comment-key", "") != expected_key:
             fail(f"Rendered giscus container key mismatch for {slug}")
-    else:
-        if parsed.giscus_scripts or parsed.comment_containers:
-            fail(f"giscus leaked into a disabled/non-technical article: {slug}")
-
-if not technical_slugs:
-    fail(f"No articles currently carry the required comments tag {COMMENTS_TAG!r}")
+    elif parsed.giscus_scripts or parsed.comment_containers:
+        fail(f"giscus leaked into a disabled article: {slug}")
 
 if len(rendered_by_slug) != len(source_slug_keys):
     fail(
@@ -205,6 +218,7 @@ if ERRORS:
     raise SystemExit(1)
 
 print(
-    f"Comments policy verification: PASS (technical={len(technical_slugs)}, "
-    f"nontechnical={len(nontechnical_slugs)}, giscus_enabled={str(giscus_enabled).lower()})"
+    "Comments policy verification: PASS "
+    f"(enabled={len(enabled_slugs)}, disabled={len(disabled_slugs)}, "
+    f"giscus_enabled={str(giscus_enabled).lower()}, sources={policy_sources})"
 )
