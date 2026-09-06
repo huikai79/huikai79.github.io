@@ -93,7 +93,7 @@ else:
         fail(f"404 canonical metadata is invalid: {parser.canonicals}")
     if parser.h1_count != 1:
         fail(f"404 must render exactly one H1; found {parser.h1_count}")
-    if "找不到网页" not in " ".join(parser.h1_text):
+    if "找不到網頁" not in " ".join(parser.h1_text):
         fail("404 visible heading is not localized")
 
 if ERRORS:
