@@ -8,6 +8,7 @@ title = "莊輝愷"
   displayName = "繁體中文"
   isoCode = "zh-TW"
   htmlCode = "zh-TW"
+  contentRole = "primary"
   rtl = false
   dateFormat = "2006年1月2日"
   logo = "https://avatars.githubusercontent.com/u/185808855?v=4&size=16"
