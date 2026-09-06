@@ -2,7 +2,10 @@
   {{ $homepage := hugo.Data.homepage }}
   {{ $runtime := hugo.Data.homepage_runtime }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
-  {{ $selectedLimit := $homepage.selectedLimit | default 3 }}
+  {{ $selectedLimit := 3 }}
+  {{ if isset $homepage "selectedLimit" }}
+    {{ $selectedLimit = int $homepage.selectedLimit }}
+  {{ end }}
   {{ $recentLimit := $homepage.recentLimit | default 5 }}
   {{ $selectedItems := $runtime.selected | default (slice) }}
   {{ $selectedPages := slice }}
@@ -29,17 +32,19 @@
     {{ errorf "Homepage Selected requires exactly %d valid pages; found %d" $selectedLimit (len $selectedPages) }}
   {{ end }}
 
-  <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title" data-rotation-key="{{ $runtime.rotationKey }}" data-rotation-index="{{ $runtime.rotationIndex }}">
-    <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精选</h2>
-    <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
-      {{ range $index, $page := $selectedPages }}
-        {{ $item := index $selectedItems $index }}
-        <div class="home-selected-item" data-home-path="{{ $page.RelPermalink }}" data-page-id="{{ $item.pageId }}" data-selection-source="{{ $item.source }}">
-          {{ partial "article-link/card.html" $page }}
-        </div>
-      {{ end }}
-    </div>
-  </section>
+  {{ if gt $selectedLimit 0 }}
+    <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title" data-rotation-key="{{ $runtime.rotationKey }}" data-rotation-index="{{ $runtime.rotationIndex }}">
+      <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精选</h2>
+      <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {{ range $index, $page := $selectedPages }}
+          {{ $item := index $selectedItems $index }}
+          <div class="home-selected-item" data-home-path="{{ $page.RelPermalink }}" data-page-id="{{ $item.pageId }}" data-selection-source="{{ $item.source }}">
+            {{ partial "article-link/card.html" $page }}
+          </div>
+        {{ end }}
+      </div>
+    </section>
+  {{ end }}
 
   {{ $recentCandidates := slice }}
   {{ range $all.ByDate.Reverse }}

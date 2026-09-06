@@ -224,8 +224,6 @@ if home:
     ]
     if len(hero_ctas) != 1:
         fail(f"Landing hero must contain exactly one 查看文章 CTA to /posts/; found {len(hero_ctas)}")
-    if "home-selected" not in parser.ids or "home-recent" not in parser.ids:
-        fail("Homepage Selected/Recent section contract is incomplete")
 
     config = load_toml(ROOT / "data" / "homepage.toml", "homepage config")
     runtime = load_toml(ROOT / "data" / "homepage_runtime.toml", "homepage runtime")
@@ -243,6 +241,13 @@ if home:
     if not isinstance(pinned, list) or not isinstance(pool, list) or not isinstance(runtime_selected, list):
         fail("Homepage pinned, rotationPool and runtime selected values must be arrays")
         pinned, pool, runtime_selected = [], [], []
+
+    if "home-recent" not in parser.ids:
+        fail("Homepage Recent section contract is incomplete")
+    if selected_limit > 0 and "home-selected" not in parser.ids:
+        fail("Homepage Selected section is required when selectedLimit is greater than zero")
+    if selected_limit == 0 and "home-selected" in parser.ids:
+        fail("Homepage Selected section must be omitted when selectedLimit is zero")
 
     rotation_slots = selected_limit - len(pinned)
     if rotation_slots < 0:
@@ -279,8 +284,10 @@ if home:
     expected_index = delta_days // 7 if delta_days % 7 == 0 else 0
     if runtime_index != expected_index:
         fail(f"Homepage rotation index mismatch: runtime={runtime_index}, expected={expected_index}")
-    if parser.rotation_key != key or parser.rotation_index != str(runtime_index):
+    if selected_limit > 0 and (parser.rotation_key != key or parser.rotation_index != str(runtime_index)):
         fail("Rendered homepage rotation metadata does not match committed runtime state")
+    if selected_limit == 0 and (parser.rotation_key or parser.rotation_index):
+        fail("Homepage rotation metadata must be absent when Selected section is omitted")
 
     expected_runtime: list[dict[str, str]] = []
     for item in pinned:
@@ -310,8 +317,9 @@ if home:
     rendered_selected = parser.selected_items
     if len(rendered_selected) != selected_limit:
         fail(f"Homepage Selected must render exactly {selected_limit} items; found {len(rendered_selected)}")
-    if len(parser.recent_paths) != recent_limit:
-        fail(f"Homepage Recent must render exactly {recent_limit} items; found {len(parser.recent_paths)}")
+    expected_recent_count = min(recent_limit, len([p for p in (ROOT / "content" / "posts").glob("*/index.md")]))
+    if len(parser.recent_paths) != expected_recent_count:
+        fail(f"Homepage Recent must render exactly {expected_recent_count} items; found {len(parser.recent_paths)}")
 
     expected_rendered = [
         {"path": normalize_path(item["path"]), "pageId": item["pageId"], "source": item["source"]}
