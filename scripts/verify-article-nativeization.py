@@ -68,16 +68,20 @@ def rendered_contract() -> None:
         if parser.h1_count != 1:
             fail(f"Gate 6 article must retain exactly one H1: {path} (found {parser.h1_count})")
 
-    both_neighbors = 0
-    for path in article_paths:
-        text = path.read_text(encoding="utf-8", errors="replace")
-        if "border-dotted" in text and "leading-6" in text:
-            both_neighbors += 1
-    if both_neighbors == 0:
-        fail("Blowfish native article pagination markup was not found in rendered articles")
+    # Native pagination and related-content UI require another article to link to.
+    # Keep the rendered markup checks strict once the production corpus has peers,
+    # while the source contract above always verifies that the native partials remain mounted.
+    if len(article_paths) > 1:
+        both_neighbors = 0
+        for path in article_paths:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            if "border-dotted" in text and "leading-6" in text:
+                both_neighbors += 1
+        if both_neighbors == 0:
+            fail("Blowfish native article pagination markup was not found in rendered articles")
 
-    if not any("grid gap-4 sm:grid-cols-2 md:grid-cols-3" in path.read_text(encoding="utf-8", errors="replace") for path in article_paths):
-        fail("Blowfish native related-content grid was not found in rendered articles")
+        if not any("grid gap-4 sm:grid-cols-2 md:grid-cols-3" in path.read_text(encoding="utf-8", errors="replace") for path in article_paths):
+            fail("Blowfish native related-content grid was not found in rendered articles")
 
 
 source_contract()
