@@ -71,3 +71,9 @@ python3 scripts/verify-site-identity.py "$PUBLIC_DIR"
 python3 scripts/verify-comments-policy.py "$PUBLIC_DIR"
 python3 scripts/verify-article-sharing.py "$PUBLIC_DIR"
 python3 scripts/verify-multilingual-site.py "$PUBLIC_DIR"
+
+# Preserve already-public root article URLs when an article is routed into a
+# non-default language. Generate aliases only after canonical pages pass all
+# normal verification so redirect shells are never mistaken for articles.
+python3 scripts/write-language-route-aliases.py "$PUBLIC_DIR"
+python3 scripts/verify-language-route-aliases.py "$PUBLIC_DIR"
