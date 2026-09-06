@@ -1,5 +1,5 @@
 [[main]]
-  name = "首页"
+  name = "首頁"
   pageRef = "/"
   weight = 10
 
@@ -10,7 +10,7 @@
   weight = 20
 
 [[main]]
-  name = "项目"
+  name = "專案"
   pageRef = "projects"
   weight = 30
 
@@ -20,6 +20,6 @@
   weight = 40
 
 [[main]]
-  name = "关于"
+  name = "關於"
   pageRef = "about"
   weight = 50
