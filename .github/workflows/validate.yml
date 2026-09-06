@@ -25,6 +25,8 @@ jobs:
       - name: Verify Notion content contract helpers
         run: |
           node scripts/verify-notion-content-contract.mjs
+          node scripts/verify-notion-cover-contract.mjs
+          node --check scripts/notion-cover-contract.mjs
           node --check scripts/check-notion-publication-contract.mjs
           node --check scripts/check-notion-staged-page.mjs
           node --check scripts/check-sync-deletion-quarantine.mjs
@@ -96,6 +98,8 @@ jobs:
           grep -Fq "timezone: 'Asia/Kuala_Lumpur'" .github/workflows/sync.yml
           grep -Fq 'EVENT_SCHEDULE' .github/workflows/sync.yml
           grep -Fq 'data/homepage_runtime.toml' .github/workflows/sync.yml
+          grep -Fq 'semantic cover required before production publication' scripts/check-notion-publication-contract.mjs
+          grep -Fq 'publicationReady' scripts/check-notion-staged-page.mjs
 
           if grep -Eq '^  (push|schedule):' .github/workflows/deploy.yml; then
             echo "::error::Production deploy workflow must only be entered through an explicit exact-SHA dispatch"
