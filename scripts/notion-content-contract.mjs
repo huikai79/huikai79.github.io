@@ -1,4 +1,5 @@
 const VALID_SYNC_MODES = new Set(["legacy", "production", "preview"]);
+export const VALID_CONTENT_LANGUAGES = new Set(["zh-TW", "zh-CN", "en"]);
 
 export function normalizeSyncMode(value = "legacy") {
   const mode = String(value || "legacy").trim().toLowerCase();
@@ -52,7 +53,9 @@ export function extractEditorialFields(properties = {}) {
     category: selectValue(properties.Category),
     entryType: selectValue(properties.Type),
     summary: richTextValue(properties.Summary),
-    homePlacement: selectValue(properties.Home)
+    homePlacement: selectValue(properties.Home),
+    language: selectValue(properties.Language),
+    translationGroup: richTextValue(properties["Translation Group"])
   };
 }
 
@@ -62,6 +65,12 @@ export function productionMetadataMissing(candidate) {
   if (!candidate.summary) missing.push("Summary");
   if (!candidate.category) missing.push("Category");
   if (!candidate.entryType) missing.push("Type");
+  if (!candidate.language) {
+    missing.push("Language");
+  } else if (!VALID_CONTENT_LANGUAGES.has(candidate.language)) {
+    missing.push(`Language=${candidate.language}`);
+  }
+  if (!candidate.translationGroup) missing.push("Translation Group");
   return missing;
 }
 
@@ -84,8 +93,17 @@ export function editorialFrontMatter(candidate = {}) {
     categories: [candidate.category],
     entryType: candidate.entryType,
     contentVisibility: candidate.visibility,
-    homePlacement: candidate.homePlacement || "None"
+    homePlacement: candidate.homePlacement || "None",
+    contentLanguage: candidate.language,
+    translationKey: candidate.translationGroup
   };
+}
+
+export function contentFilename(language) {
+  if (language === "zh-TW") return "index.md";
+  if (language === "zh-CN") return "index.zh-cn.md";
+  if (language === "en") return "index.en.md";
+  throw new Error(`Unsupported content language: ${JSON.stringify(language)}`);
 }
 
 export function shouldQuarantineDeletion({
