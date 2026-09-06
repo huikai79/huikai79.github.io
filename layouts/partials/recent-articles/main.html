@@ -34,7 +34,7 @@
 
   {{ if gt $selectedLimit 0 }}
     <section id="home-selected" class="mt-8" aria-labelledby="home-selected-title" data-rotation-key="{{ $runtime.rotationKey }}" data-rotation-index="{{ $runtime.rotationIndex }}">
-      <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精选</h2>
+      <h2 id="home-selected-title" class="mb-10 text-2xl font-extrabold">精選</h2>
       <div class="grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3">
         {{ range $index, $page := $selectedPages }}
           {{ $item := index $selectedItems $index }}
