@@ -3,7 +3,7 @@
 # https://blowfish.page/docs/getting-started/
 
 baseURL = "https://huikai.com.kg/"
-defaultContentLanguage = "zh-CN"
+defaultContentLanguage = "zh-TW"
 
 pluralizeListTitles = false
 
