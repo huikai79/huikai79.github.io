@@ -1,0 +1,54 @@
+name: "Notion editorial preview preflight"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-editorial-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install locked Notion dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Read Notion preview contract only
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: |
+          node scripts/check-notion-publication-contract.mjs preview /tmp/notion-preview-contract.json
+          test -s /tmp/notion-preview-contract.json
+          jq -e '.status == "pass" and .mode == "preview"' /tmp/notion-preview-contract.json > /dev/null
+
+          {
+            echo "## Notion editorial preview"
+            echo ""
+            echo "Preview rows: **$(jq -r '.count' /tmp/notion-preview-contract.json)**"
+            echo "Public rows: **$(jq -r '.productionCount' /tmp/notion-preview-contract.json)**"
+            echo ""
+            echo "This workflow is read-only: it does not write content/posts, the production manifest, main, or deployment state."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prove production files remained untouched
+        run: |
+          if ! git diff --quiet -- content/posts .notion-sync-manifest.json data/homepage_runtime.toml; then
+            echo "::error::Preview workflow modified production-managed files"
+            git diff -- content/posts .notion-sync-manifest.json data/homepage_runtime.toml
+            exit 1
+          fi
