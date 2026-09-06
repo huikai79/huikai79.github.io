@@ -2,9 +2,11 @@
 import assert from "node:assert/strict";
 import {
   buildNotionFilter,
+  editorialFrontMatter,
   extractEditorialFields,
   normalizeSyncMode,
   productionMetadataMissing,
+  publicationRecordMissing,
   publicSlugChangeBlocked,
   shouldQuarantineDeletion
 } from "./notion-content-contract.mjs";
@@ -69,6 +71,30 @@ assert.deepEqual(
     entryType: ""
   }),
   ["Visibility=Public", "Summary", "Category", "Type"]
+);
+
+const publicationCandidate = {
+  title: "大學該如何培養創業者",
+  slug: "daxuepeiyangchuangyezhe",
+  date: "2026-09-06",
+  visibility: "Public",
+  summary: "摘要",
+  category: "教育",
+  entryType: "推薦／整理",
+  homePlacement: "None"
+};
+assert.deepEqual(publicationRecordMissing(publicationCandidate), []);
+assert.deepEqual(publicationRecordMissing({ ...publicationCandidate, date: "" }), ["date"]);
+assert.deepEqual(editorialFrontMatter(publicationCandidate), {
+  description: "摘要",
+  categories: ["教育"],
+  entryType: "推薦／整理",
+  contentVisibility: "Public",
+  homePlacement: "None"
+});
+assert.throws(
+  () => editorialFrontMatter({ ...publicationCandidate, summary: "" }),
+  /Summary/
 );
 
 assert.equal(
