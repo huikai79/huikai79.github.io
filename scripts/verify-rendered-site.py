@@ -13,6 +13,7 @@ from urllib.parse import unquote, urlsplit
 PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
 ROOT = Path(__file__).resolve().parents[1]
 STRICT_CONTENT = os.environ.get("STRICT_CONTENT") == "1"
+HOME_PLACEMENTS = {"None", "Pinned", "Rotation"}
 ERRORS: list[str] = []
 WARNINGS: list[str] = []
 
@@ -47,6 +48,31 @@ def iso_week_monday(value: str) -> dt.date:
     except Exception as error:
         fail(f"Invalid homepage rotation week {value!r}: {error}")
         return dt.date(1970, 1, 5)
+
+
+def front_matter_scalar(index_path: Path, key: str) -> str:
+    try:
+        lines = index_path.read_text(encoding="utf-8").replace("\r\n", "\n").split("\n")
+    except Exception as error:
+        fail(f"Unable to read article front matter {index_path}: {error}")
+        return ""
+    if not lines or lines[0].strip() != "---":
+        fail(f"Article is missing opening front matter: {index_path}")
+        return ""
+    closing = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+    if closing is None:
+        fail(f"Article is missing closing front matter: {index_path}")
+        return ""
+    prefix = f"{key}:"
+    for line in lines[1:closing]:
+        if not line.startswith(prefix):
+            continue
+        raw = line[len(prefix):].strip()
+        try:
+            return str(json.loads(raw)).strip()
+        except json.JSONDecodeError:
+            return raw.strip('"').strip()
+    return ""
 
 
 class SiteParser(HTMLParser):
@@ -233,49 +259,75 @@ if home:
         manifest = {"pages": {}}
         fail(f"Unable to read Notion manifest: {error}")
 
-    selected_limit = int(config.get("selectedLimit", 3))
+    selected_cap = int(config.get("selectedLimit", 3))
     recent_limit = int(config.get("recentLimit", 5))
-    pinned = config.get("pinned", [])
-    pool = config.get("rotationPool", [])
     runtime_selected = runtime.get("selected", [])
-    if not isinstance(pinned, list) or not isinstance(pool, list) or not isinstance(runtime_selected, list):
-        fail("Homepage pinned, rotationPool and runtime selected values must be arrays")
-        pinned, pool, runtime_selected = [], [], []
-
-    if "home-recent" not in parser.ids:
-        fail("Homepage Recent section contract is incomplete")
-    if selected_limit > 0 and "home-selected" not in parser.ids:
-        fail("Homepage Selected section is required when selectedLimit is greater than zero")
-    if selected_limit == 0 and "home-selected" in parser.ids:
-        fail("Homepage Selected section must be omitted when selectedLimit is zero")
-
-    rotation_slots = selected_limit - len(pinned)
-    if rotation_slots < 0:
-        fail("Homepage pinned count exceeds selectedLimit")
-    if rotation_slots > 0 and len(pool) < rotation_slots:
-        fail("Homepage rotationPool is too small for the configured rotating slots")
-    if len(runtime_selected) != selected_limit:
-        fail(f"Homepage runtime must contain exactly {selected_limit} Selected entries; found {len(runtime_selected)}")
+    if not isinstance(runtime_selected, list):
+        fail("Homepage runtime selected value must be an array")
+        runtime_selected = []
+    if selected_cap < 0:
+        fail("Homepage selectedLimit must be zero or greater")
 
     manifest_pages = manifest.get("pages", {}) if isinstance(manifest, dict) else {}
-    configured_ids: set[str] = set()
-    pool_ids: list[str] = []
-    for label, items in (("pinned", pinned), ("rotationPool", pool)):
-        for index, item in enumerate(items, start=1):
-            if not isinstance(item, dict):
-                fail(f"Homepage {label} entry #{index} must be a table")
-                continue
-            page_id = str(item.get("pageId", "")).strip()
-            if not page_id:
-                fail(f"Homepage {label} entry #{index} is missing pageId")
-                continue
-            if page_id in configured_ids:
-                fail(f"Homepage pageId is duplicated across pinned/pool: {page_id}")
-            configured_ids.add(page_id)
-            if page_id not in manifest_pages:
-                fail(f"Homepage {label} pageId is not Published in Notion manifest: {page_id}")
-            if label == "rotationPool":
-                pool_ids.append(page_id)
+    if not isinstance(manifest_pages, dict):
+        fail("Notion manifest pages map is invalid")
+        manifest_pages = {}
+
+    pinned: list[dict[str, str]] = []
+    pool: list[dict[str, str]] = []
+    for page_id, entry in sorted(manifest_pages.items()):
+        if not isinstance(entry, dict):
+            fail(f"Invalid Notion manifest entry: {page_id}")
+            continue
+        slug = str(entry.get("slug", "")).strip()
+        if not slug:
+            fail(f"Notion manifest entry has no slug: {page_id}")
+            continue
+        path = f"posts/{slug}"
+        index_path = ROOT / "content" / path / "index.md"
+        placement = front_matter_scalar(index_path, "homePlacement")
+        if placement not in HOME_PLACEMENTS:
+            fail(f"Homepage article has invalid or missing homePlacement: {path} -> {placement!r}")
+            continue
+        if placement == "None":
+            continue
+        item = {
+            "pageId": page_id,
+            "path": path,
+            "source": "pinned" if placement == "Pinned" else "rotationPool",
+        }
+        if placement == "Pinned":
+            pinned.append(item)
+        else:
+            pool.append(item)
+
+    sort_key = lambda item: (item["path"].casefold(), item["pageId"])
+    pinned.sort(key=sort_key)
+    pool.sort(key=sort_key)
+
+    if len(pinned) > selected_cap:
+        fail(f"Notion Home=Pinned count exceeds selectedLimit: {len(pinned)} > {selected_cap}")
+    rotation_slots = min(max(0, selected_cap - len(pinned)), len(pool))
+    selected_limit = len(pinned) + rotation_slots
+
+    if int(runtime.get("selectedLimitCap", -1)) != selected_cap:
+        fail(
+            f"Homepage runtime selectedLimitCap mismatch: runtime={runtime.get('selectedLimitCap')}, expected={selected_cap}"
+        )
+    if int(runtime.get("selectedLimit", -1)) != selected_limit:
+        fail(
+            f"Homepage runtime selectedLimit mismatch: runtime={runtime.get('selectedLimit')}, expected={selected_limit}"
+        )
+    if int(runtime.get("pinnedSize", -1)) != len(pinned):
+        fail(f"Homepage runtime pinnedSize mismatch: runtime={runtime.get('pinnedSize')}, expected={len(pinned)}")
+    if int(runtime.get("poolSize", -1)) != len(pool):
+        fail(f"Homepage runtime poolSize mismatch: runtime={runtime.get('poolSize')}, expected={len(pool)}")
+    if int(runtime.get("rotationSlots", -1)) != rotation_slots:
+        fail(
+            f"Homepage runtime rotationSlots mismatch: runtime={runtime.get('rotationSlots')}, expected={rotation_slots}"
+        )
+    if len(runtime_selected) != selected_limit:
+        fail(f"Homepage runtime must contain exactly {selected_limit} Selected entries; found {len(runtime_selected)}")
 
     key = str(runtime.get("rotationKey", ""))
     epoch = str(runtime.get("rotationEpoch", config.get("rotationEpoch", "")))
@@ -284,24 +336,15 @@ if home:
     expected_index = delta_days // 7 if delta_days % 7 == 0 else 0
     if runtime_index != expected_index:
         fail(f"Homepage rotation index mismatch: runtime={runtime_index}, expected={expected_index}")
-    if selected_limit > 0 and (parser.rotation_key != key or parser.rotation_index != str(runtime_index)):
-        fail("Rendered homepage rotation metadata does not match committed runtime state")
-    if selected_limit == 0 and (parser.rotation_key or parser.rotation_index):
-        fail("Homepage rotation metadata must be absent when Selected section is omitted")
 
-    expected_runtime: list[dict[str, str]] = []
-    for item in pinned:
-        page_id = str(item.get("pageId", ""))
-        manifest_entry = manifest_pages.get(page_id, {})
-        expected_runtime.append({"pageId": page_id, "path": f"posts/{manifest_entry.get('slug', '')}", "source": "pinned"})
-    if rotation_slots > 0 and pool_ids:
-        offset = (expected_index * rotation_slots) % len(pool_ids)
-        if int(runtime.get("poolOffset", -1)) != offset:
-            fail(f"Homepage pool offset mismatch: runtime={runtime.get('poolOffset')}, expected={offset}")
+    expected_runtime = list(pinned)
+    expected_offset = 0
+    if rotation_slots > 0:
+        expected_offset = (expected_index * rotation_slots) % len(pool)
         for slot in range(rotation_slots):
-            page_id = pool_ids[(offset + slot) % len(pool_ids)]
-            manifest_entry = manifest_pages.get(page_id, {})
-            expected_runtime.append({"pageId": page_id, "path": f"posts/{manifest_entry.get('slug', '')}", "source": "rotationPool"})
+            expected_runtime.append(pool[(expected_offset + slot) % len(pool)])
+    if int(runtime.get("poolOffset", -1)) != expected_offset:
+        fail(f"Homepage pool offset mismatch: runtime={runtime.get('poolOffset')}, expected={expected_offset}")
 
     normalized_runtime = [
         {
@@ -312,12 +355,27 @@ if home:
         for item in runtime_selected if isinstance(item, dict)
     ]
     if normalized_runtime != expected_runtime:
-        fail(f"Committed homepage runtime selection is not deterministic: expected={expected_runtime}, actual={normalized_runtime}")
+        fail(f"Committed homepage runtime selection is not Notion-deterministic: expected={expected_runtime}, actual={normalized_runtime}")
+
+    if selected_limit > 0 and "home-selected" not in parser.ids:
+        fail("Homepage Selected section is required when effective selectedLimit is greater than zero")
+    if selected_limit == 0 and "home-selected" in parser.ids:
+        fail("Homepage Selected section must be omitted when effective selectedLimit is zero")
+    if selected_limit > 0 and (parser.rotation_key != key or parser.rotation_index != str(runtime_index)):
+        fail("Rendered homepage rotation metadata does not match committed runtime state")
+    if selected_limit == 0 and (parser.rotation_key or parser.rotation_index):
+        fail("Homepage rotation metadata must be absent when Selected section is omitted")
 
     rendered_selected = parser.selected_items
     if len(rendered_selected) != selected_limit:
         fail(f"Homepage Selected must render exactly {selected_limit} items; found {len(rendered_selected)}")
-    expected_recent_count = min(recent_limit, len([p for p in (ROOT / "content" / "posts").glob("*/index.md")]))
+
+    total_articles = len(list((ROOT / "content" / "posts").glob("*/index.md")))
+    expected_recent_count = min(recent_limit, max(0, total_articles - selected_limit))
+    if expected_recent_count > 0 and "home-recent" not in parser.ids:
+        fail("Homepage Recent section is required when non-selected articles exist")
+    if expected_recent_count == 0 and "home-recent" in parser.ids:
+        fail("Homepage Recent section must be omitted when no non-selected articles exist")
     if len(parser.recent_paths) != expected_recent_count:
         fail(f"Homepage Recent must render exactly {expected_recent_count} items; found {len(parser.recent_paths)}")
 
