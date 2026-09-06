@@ -108,13 +108,27 @@ jobs:
 
           published="$(jq -r '.published' .notion-sync-report.json)"
           written="$(jq -r '.written' .notion-sync-report.json)"
-          bundle_count="$(find content/posts -mindepth 2 -maxdepth 2 -type f -name 'index.md' | wc -l | tr -d ' ')"
           manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
+          bundle_count=0
+
+          while IFS=$'\t' read -r slug content_file; do
+            if [ -z "$slug" ] || [ -z "$content_file" ] || [ "$content_file" = "null" ]; then
+              echo "::error::Notion manifest article is missing slug/contentFile"
+              exit 1
+            fi
+            article_source="content/posts/${slug}/${content_file}"
+            if [ ! -s "$article_source" ]; then
+              echo "::error::Manifest article source is missing: $article_source"
+              exit 1
+            fi
+            bundle_count=$((bundle_count + 1))
+          done < <(jq -r '.pages[] | [.slug, .contentFile] | @tsv' .notion-sync-manifest.json)
 
           test "$published" -eq "$written"
           test "$written" -eq "$bundle_count"
           test "$published" -eq "$manifest_count"
           test -s content/posts/_index.md
+          test -s content/posts/_index.zh-cn.md
 
           if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
             echo "::error::Notion sync staging/backup directory leaked after completion"
