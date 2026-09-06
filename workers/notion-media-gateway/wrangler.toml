@@ -1,0 +1,8 @@
+name = "huikai-notion-media"
+main = "index.js"
+compatibility_date = "2026-09-06"
+workers_dev = false
+
+[[routes]]
+pattern = "huikai.com.kg/media/*"
+zone_name = "huikai.com.kg"
