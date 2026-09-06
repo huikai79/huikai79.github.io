@@ -49,7 +49,19 @@ fi
 
 rm -rf "$PUBLIC_DIR"
 hugo --minify --destination "$PUBLIC_DIR"
-python3 scripts/verify-rendered-site.py "$PUBLIC_DIR"
+
+if python3 - <<'PY'
+import json
+from pathlib import Path
+p=json.loads(Path('.notion-sync-manifest.json').read_text(encoding='utf-8')).get('pages',{})
+raise SystemExit(0 if p and all(isinstance(v,dict) and v.get('language') and v.get('contentFile') for v in p.values()) else 1)
+PY
+then
+  python3 scripts/verify-routed-rendered-site.py "$PUBLIC_DIR"
+else
+  python3 scripts/verify-rendered-site.py "$PUBLIC_DIR"
+fi
+
 python3 scripts/verify-social-preview.py "$PUBLIC_DIR"
 python3 scripts/verify-discovery-pages.py "$PUBLIC_DIR"
 python3 scripts/verify-video-rendering.py rendered "$PUBLIC_DIR"
