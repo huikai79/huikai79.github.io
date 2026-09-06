@@ -1,0 +1,8 @@
+huikai:
+  reading_time:
+    one: "閱讀約 {{ .Count }} 分鐘"
+    other: "閱讀約 {{ .Count }} 分鐘"
+  article_context: "文章資訊"
+  home_selected: "精選"
+  home_recent: "最近"
+  explore_empty: "目前還沒有可探索的主題。"

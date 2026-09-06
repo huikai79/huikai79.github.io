@@ -232,15 +232,15 @@ def load_toml(path: Path, label: str) -> dict[str, object]:
 home = read_required(PUBLIC / "index.html", "Homepage output")
 if home:
     parser = parse_html(home)
-    if parser.html_lang != "zh-CN":
-        fail(f"Homepage language is not zh-CN: {parser.html_lang!r}")
+    if parser.html_lang != "zh-TW":
+        fail(f"Homepage language is not zh-TW: {parser.html_lang!r}")
     if "og:image" not in parser.meta_properties:
         fail("Homepage Open Graph image metadata is missing")
     if "twitter:image" not in parser.meta_names:
         fail("Homepage Twitter image metadata is missing")
     if "HUIKAI" not in home:
         fail("Landing hero caption is missing")
-    if "思考 AI、学习、阅读与生活" not in home:
+    if "思考 AI、學習、閱讀與生活" not in home:
         fail("Landing hero positioning text is missing")
 
     hero_ctas = [
