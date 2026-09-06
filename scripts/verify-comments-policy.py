@@ -7,13 +7,12 @@ import tomllib
 from html.parser import HTMLParser
 from pathlib import Path
 
+from article_routing import MANIFEST, routes
+
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
-POSTS = ROOT / "content" / "posts"
-MANIFEST = ROOT / ".notion-sync-manifest.json"
 PARAMS = ROOT / "config" / "_default" / "params.toml"
 GISCUS_CLIENT = "https://giscus.app/client.js"
-
 ERRORS: list[str] = []
 
 
@@ -56,10 +55,6 @@ def expected_comments(front: list[str]) -> tuple[bool, str]:
     return visibility == "Public", f"contentVisibility={visibility}"
 
 
-def attrs_dict(attrs: list[tuple[str, str | None]]) -> dict[str, str]:
-    return {key.lower(): value or "" for key, value in attrs}
-
-
 class CommentsParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -67,7 +62,7 @@ class CommentsParser(HTMLParser):
         self.comment_containers: list[dict[str, str]] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        data = attrs_dict(attrs)
+        data = {key.lower(): value or "" for key, value in attrs}
         tag = tag.lower()
         if tag == "script" and data.get("src") == GISCUS_CLIENT:
             self.giscus_scripts.append(data)
@@ -76,137 +71,90 @@ class CommentsParser(HTMLParser):
 
 
 def parse_comments_html(text: str) -> CommentsParser:
-    parser = CommentsParser()
-    parser.feed(text)
-    parser.close()
-    return parser
+    parser = CommentsParser(); parser.feed(text); parser.close(); return parser
 
 
 manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-pages = manifest.get("pages", {}) if isinstance(manifest, dict) else {}
-slug_to_page_id = {
-    str(entry.get("slug", "")): page_id
-    for page_id, entry in pages.items()
-    if isinstance(entry, dict) and entry.get("slug")
-}
-
+article_routes = routes(manifest)
 with PARAMS.open("rb") as handle:
     params = tomllib.load(handle)
 giscus = params.get("giscus", {}) if isinstance(params, dict) else {}
 giscus_enabled = bool(giscus.get("enabled", False)) if isinstance(giscus, dict) else False
-
 if giscus_enabled:
     for key in ["repo", "repoId", "category", "categoryId"]:
         if not str(giscus.get(key, "")).strip():
             fail(f"giscus enabled but {key} is empty")
 
-rendered_by_slug: dict[str, Path] = {}
-posts_output = PUBLIC / "posts"
-if posts_output.is_dir():
-    for rendered in sorted(posts_output.glob("*/index.html")):
-        normalized = rendered.parent.name.lower()
-        if normalized in rendered_by_slug:
-            fail(f"Rendered article slug collision after URL normalization: {normalized}")
-        rendered_by_slug[normalized] = rendered
-
-source_slug_keys: dict[str, str] = {}
-for index_file in sorted(POSTS.glob("*/index.md")):
-    slug = index_file.parent.name
-    normalized = slug.lower()
-    if normalized in source_slug_keys and source_slug_keys[normalized] != slug:
-        fail(f"Source slug collision after Hugo URL normalization: {source_slug_keys[normalized]} / {slug}")
-    source_slug_keys[normalized] = slug
-
-enabled_slugs: list[str] = []
-disabled_slugs: list[str] = []
+enabled: list[str] = []
+disabled: list[str] = []
 policy_sources: dict[str, int] = {}
+seen_rendered: set[Path] = set()
 
-for index_file in sorted(POSTS.glob("*/index.md")):
-    slug = index_file.parent.name
-    page_id = slug_to_page_id.get(slug)
-    if not page_id:
-        fail(f"No Notion page ID found for comments policy: {slug}")
+for route in article_routes:
+    if not route.source.is_file():
+        fail(f"Routed source missing for comments verification: {route.source}")
         continue
-
     try:
-        front = split_front(index_file.read_text(encoding="utf-8"))
+        front = split_front(route.source.read_text(encoding="utf-8"))
         should_enable, policy_source = expected_comments(front)
     except Exception as error:
-        fail(f"Unable to parse comments front matter for {slug}: {error}")
+        fail(f"Unable to parse comments front matter for {route.slug}: {error}")
         continue
-
     policy_sources[policy_source] = policy_sources.get(policy_source, 0) + 1
     show_comments = value_for(front, "showComments")
     comment_key_raw = value_for(front, "commentKey")
-    expected_key = f"notion:{page_id}"
-
+    expected_key = f"notion:{route.page_id}"
+    label = f"{route.language}:{route.slug}"
     if should_enable:
-        enabled_slugs.append(slug)
-        if show_comments != "true":
-            fail(f"Comments-enabled article must have showComments: true: {slug}")
+        enabled.append(label)
+        if show_comments != "true": fail(f"Comments-enabled article must have showComments: true: {label}")
         if comment_key_raw is None:
-            fail(f"Comments-enabled article is missing commentKey: {slug}")
+            fail(f"Comments-enabled article is missing commentKey: {label}")
         else:
-            try:
-                actual_key = json.loads(comment_key_raw)
-            except json.JSONDecodeError:
-                actual_key = comment_key_raw.strip('"')
-            if actual_key != expected_key:
-                fail(f"Article commentKey mismatch for {slug}: {actual_key!r} != {expected_key!r}")
+            try: actual_key = json.loads(comment_key_raw)
+            except json.JSONDecodeError: actual_key = comment_key_raw.strip('"')
+            if actual_key != expected_key: fail(f"Article commentKey mismatch for {label}: {actual_key!r} != {expected_key!r}")
     else:
-        disabled_slugs.append(slug)
+        disabled.append(label)
         if show_comments is not None or comment_key_raw is not None:
-            fail(f"Comments-disabled article must not retain comments fields: {slug}")
+            fail(f"Comments-disabled article must not retain comments fields: {label}")
 
-    rendered = rendered_by_slug.get(slug.lower())
-    if rendered is None:
-        fail(f"Rendered article missing for comments verification: {slug}")
+    rendered = route.rendered(PUBLIC)
+    seen_rendered.add(rendered.resolve())
+    if not rendered.is_file():
+        fail(f"Rendered article missing for comments verification: {label} -> {rendered}")
         continue
-
     parsed = parse_comments_html(rendered.read_text(encoding="utf-8", errors="replace"))
     if should_enable and giscus_enabled:
         if len(parsed.giscus_scripts) != 1:
-            fail(f"Comments-enabled article must render exactly one giscus client script: {slug} (found {len(parsed.giscus_scripts)})")
+            fail(f"Comments-enabled article must render exactly one giscus client script: {label} (found {len(parsed.giscus_scripts)})")
             continue
         if len(parsed.comment_containers) != 1:
-            fail(f"Comments-enabled article must render exactly one giscus comments container: {slug} (found {len(parsed.comment_containers)})")
+            fail(f"Comments-enabled article must render exactly one giscus comments container: {label} (found {len(parsed.comment_containers)})")
             continue
-
-        script = parsed.giscus_scripts[0]
-        container = parsed.comment_containers[0]
+        script = parsed.giscus_scripts[0]; container = parsed.comment_containers[0]
         expected_attrs = {
-            "data-repo": str(giscus.get("repo", "")),
-            "data-repo-id": str(giscus.get("repoId", "")),
-            "data-category": str(giscus.get("category", "")),
-            "data-category-id": str(giscus.get("categoryId", "")),
-            "data-mapping": "specific",
-            "data-term": expected_key,
-            "data-strict": "1",
-            "data-reactions-enabled": "1",
-            "data-emit-metadata": "0",
+            "data-repo": str(giscus.get("repo", "")), "data-repo-id": str(giscus.get("repoId", "")),
+            "data-category": str(giscus.get("category", "")), "data-category-id": str(giscus.get("categoryId", "")),
+            "data-mapping": "specific", "data-term": expected_key, "data-strict": "1",
+            "data-reactions-enabled": "1", "data-emit-metadata": "0",
+            "data-lang": route.language,
         }
-        for key, expected in expected_attrs.items():
+        for key, expected_value in expected_attrs.items():
             actual = script.get(key, "")
-            if actual != expected:
-                fail(f"Rendered giscus attribute mismatch for {slug}: {key}={actual!r}, expected {expected!r}")
+            if actual != expected_value:
+                fail(f"Rendered giscus attribute mismatch for {label}: {key}={actual!r}, expected {expected_value!r}")
         if container.get("data-comment-key", "") != expected_key:
-            fail(f"Rendered giscus container key mismatch for {slug}")
+            fail(f"Rendered giscus container key mismatch for {label}")
     elif parsed.giscus_scripts or parsed.comment_containers:
-        fail(f"giscus leaked into a disabled article: {slug}")
+        fail(f"giscus leaked into a disabled article: {label}")
 
-if len(rendered_by_slug) != len(source_slug_keys):
-    fail(
-        f"Rendered/source article count mismatch for comments verification: "
-        f"rendered={len(rendered_by_slug)}, source={len(source_slug_keys)}"
-    )
+actual_rendered = set(path.resolve() for path in (PUBLIC / "posts").glob("*/index.html"))
+actual_rendered.update(path.resolve() for path in (PUBLIC / "zh-cn" / "posts").glob("*/index.html"))
+if actual_rendered != seen_rendered:
+    fail(f"Rendered/manifest article mismatch for comments verification: expected={len(seen_rendered)}, actual={len(actual_rendered)}")
 
 if ERRORS:
-    for error in ERRORS:
-        print(f"::error::{error}")
+    for error in ERRORS: print(f"::error::{error}")
     raise SystemExit(1)
-
-print(
-    "Comments policy verification: PASS "
-    f"(enabled={len(enabled_slugs)}, disabled={len(disabled_slugs)}, "
-    f"giscus_enabled={str(giscus_enabled).lower()}, sources={policy_sources})"
-)
+print(f"Comments policy verification: PASS (enabled={len(enabled)}, disabled={len(disabled)}, giscus_enabled={str(giscus_enabled).lower()}, sources={policy_sources})")
