@@ -28,7 +28,7 @@
   </h1>
 
   <p class="text-sm opacity-70 mb-8">
-    {{ .Date.Format "2006年1月2日" }} · 阅读约 {{ .ReadingTime }} 分钟
+    {{ .Date.Format "2006年1月2日" }} · 閱讀約 {{ .ReadingTime }} 分鐘
   </p>
 
   {{/* The page template owns the single document H1. This is a defensive
@@ -38,9 +38,9 @@
   {{ $content | safeHTML }}
 </article>
 
+{{ partial "sharing-links.html" . }}
 {{ partial "article/author.html" . }}
 <div class="article-footer mx-auto w-full max-w-3xl px-4">
-  {{ partial "sharing-links.html" . }}
   {{ partial "article-pagination.html" . }}
   {{ partial "related.html" . }}
 </div>
