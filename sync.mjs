@@ -7,6 +7,13 @@ import path from "node:path";
 import fetch from "node-fetch";
 import pLimit from "p-limit";
 import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
+import {
+  buildNotionFilter,
+  editorialFrontMatter,
+  extractEditorialFields,
+  normalizeSyncMode,
+  productionMetadataMissing
+} from "./scripts/notion-content-contract.mjs";
 
 /* ---------- 基本設定 ---------- */
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
@@ -21,7 +28,8 @@ const REPORT_FILE = ".notion-sync-report.json";
 const MANIFEST_FILE = ".notion-sync-manifest.json";
 const MANIFEST_VERSION = 1;
 const ALLOW_EMPTY = process.env.ALLOW_EMPTY_NOTION_SYNC === "true";
-const filter = { property: "status", status: { equals: "Published" } };
+const SYNC_MODE = normalizeSyncMode(process.env.NOTION_SYNC_MODE || "legacy");
+const filter = buildNotionFilter(SYNC_MODE);
 const dl = pLimit(5);
 const SECTION_INDEX = '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n';
 
@@ -51,7 +59,8 @@ async function generatorHash() {
   const hash = createHash("sha256");
   for (const source of [
     new URL(import.meta.url),
-    new URL("./scripts/notion-video-transformer.mjs", import.meta.url)
+    new URL("./scripts/notion-video-transformer.mjs", import.meta.url),
+    new URL("./scripts/notion-content-contract.mjs", import.meta.url)
   ]) {
     hash.update(await fs.readFile(source));
     hash.update("\0");
@@ -245,7 +254,7 @@ async function collectPublishedPages() {
 
   if (!pages.length && !ALLOW_EMPTY) {
     throw new Error(
-      "Notion 查詢成功但沒有 Published 文章；為避免意外清空網站，已停止同步。若確定要清空文章，請明確設定 ALLOW_EMPTY_NOTION_SYNC=true。"
+      `Notion 查詢成功但 ${SYNC_MODE} 模式沒有可同步文章；為避免意外清空網站，已停止同步。若確定要清空文章，請明確設定 ALLOW_EMPTY_NOTION_SYNC=true。`
     );
   }
 
@@ -263,23 +272,27 @@ function validatePages(pages) {
     const date = p.date?.date?.start ?? "";
     const tags = p.tags?.multi_select?.map(tag => tag.name) ?? [];
     const lastEditedTime = page.last_edited_time ?? "";
+    const editorial = extractEditorialFields(p);
 
     const missing = [];
     if (!title) missing.push("Title");
     if (!slug) missing.push("slug");
     if (!date) missing.push("date");
     if (!lastEditedTime) missing.push("last_edited_time");
+    if (SYNC_MODE === "production") {
+      missing.push(...productionMetadataMissing(editorial));
+    }
 
     if (missing.length) {
-      throw new Error(`Published page ${page.id} 缺少必要欄位：${missing.join(", ")}`);
+      throw new Error(`Selected page ${page.id} 缺少必要欄位：${missing.join(", ")}`);
     }
 
     if (seenSlugs.has(slug)) {
-      throw new Error(`Published 文章 slug 重複：${slug}（${seenSlugs.get(slug)} / ${page.id}）`);
+      throw new Error(`同步文章 slug 重複：${slug}（${seenSlugs.get(slug)} / ${page.id}）`);
     }
     seenSlugs.set(slug, page.id);
 
-    return { page, title, slug, date, tags, lastEditedTime };
+    return { page, title, slug, date, tags, lastEditedTime, editorial };
   });
 
   return validated.sort((a, b) => a.slug.localeCompare(b.slug));
@@ -351,7 +364,11 @@ async function buildArticle(candidate) {
   );
   mdBody = normalizeMarkdownBody(mdBody);
   mdBody = await localizeMarkdownImages(mdBody, bundle);
-  const description = plainTextSummary(mdBody);
+
+  const productionFields = SYNC_MODE === "production"
+    ? editorialFrontMatter({ title, slug, date, ...candidate.editorial })
+    : null;
+  const description = productionFields?.description || plainTextSummary(mdBody);
 
   /* Front matter. The closing delimiter must remain on its own line. */
   const front = [
@@ -361,6 +378,10 @@ async function buildArticle(candidate) {
     `slug: ${yamlString(slug)}`,
     description && `description: ${yamlString(description)}`,
     `tags: [${tags.map(yamlString).join(", ")}]`,
+    productionFields && `categories: [${productionFields.categories.map(yamlString).join(", ")}]`,
+    productionFields && `entryType: ${yamlString(productionFields.entryType)}`,
+    productionFields && `contentVisibility: ${yamlString(productionFields.contentVisibility)}`,
+    productionFields && `homePlacement: ${yamlString(productionFields.homePlacement)}`,
     coverField && `cover: ${yamlString(coverField)}`,
     iconField && `icon: ${yamlString(iconField)}`,
     coverField && `images: [${yamlString(coverField)}]`,
@@ -449,7 +470,7 @@ async function sync() {
         });
         console.log("♻️  沿用", `${candidate.slug}/index.md`);
       }
-      console.log("⚡ 所有 Published 文章均未變更，略過 Markdown 與媒體重新下載");
+      console.log(`⚡ 所有 ${SYNC_MODE} 模式文章均未變更，略過 Markdown 與媒體重新下載`);
     } else {
       /* 2. 需要變更時才建立 staging snapshot */
       await fs.mkdir(STAGING_DIR, { recursive: true });
@@ -483,7 +504,7 @@ async function sync() {
 
     const written = reused + rebuilt;
     if (written !== candidates.length) {
-      throw new Error(`同步數量不一致：Published=${candidates.length}, written=${written}`);
+      throw new Error(`同步數量不一致：selected=${candidates.length}, written=${written}`);
     }
 
     /* 4. manifest 必須 deterministic，無變更時 Git 不應產生差異 */
@@ -497,6 +518,7 @@ async function sync() {
     /* 5. report 提供 CI 與 Actions Summary 使用，不加入 Git */
     const report = {
       status: "complete",
+      mode: SYNC_MODE,
       published: candidates.length,
       written,
       reused,
@@ -517,10 +539,10 @@ async function sync() {
     await fs.writeFile(REPORT_FILE, `${JSON.stringify(report, null, 2)}\n`);
 
     if (deleted.length) {
-      console.log(`🗑️  移除未再 Published 的文章：${deleted.join(", ")}`);
+      console.log(`🗑️  移除未再符合 ${SYNC_MODE} 模式的文章：${deleted.join(", ")}`);
     }
     console.log(
-      `✅ 同步完成：Published=${candidates.length}, reused=${reused}, rebuilt=${rebuilt}, deleted=${deleted.length}`
+      `✅ 同步完成：mode=${SYNC_MODE}, selected=${candidates.length}, reused=${reused}, rebuilt=${rebuilt}, deleted=${deleted.length}`
     );
   } catch (error) {
     await fs.rm(STAGING_DIR, { recursive: true, force: true }).catch(() => {});
