@@ -12,6 +12,7 @@ python3 scripts/test-notion-media-localization.py
 python3 scripts/localize-notion-media.py
 python3 scripts/test-cover-resolution.py
 python3 scripts/resolve-article-covers.py
+python3 scripts/ensure-multilingual-section-indexes.py
 python3 scripts/verify-source-contract.py
 python3 scripts/verify-video-rendering.py source
 python3 scripts/verify-notion-media-gateway.py
@@ -57,3 +58,4 @@ python3 scripts/verify-gate7-cleanup.py "$PUBLIC_DIR"
 python3 scripts/verify-site-identity.py "$PUBLIC_DIR"
 python3 scripts/verify-comments-policy.py "$PUBLIC_DIR"
 python3 scripts/verify-article-sharing.py "$PUBLIC_DIR"
+python3 scripts/verify-multilingual-site.py "$PUBLIC_DIR"
