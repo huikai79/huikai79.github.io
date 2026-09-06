@@ -21,6 +21,7 @@ def source_contract() -> None:
         'partial "related.html" .',
         'partial "article/author.html" .',
         'partial "article-comments.html" .',
+        'partial "sharing-links.html" .',
     ]
     for token in required:
         if token not in template:
@@ -39,20 +40,40 @@ def source_contract() -> None:
     if "replaceRE `<h1([^>]*)>`" not in template:
         fail("Gate 6 phase 1 must preserve the defensive single-H1 boundary")
 
+    reader_context_tokens = [
+        ".Params.categories",
+        ".Params.entryType",
+        ".Description",
+        "article-context",
+        "article-summary",
+    ]
+    for token in reader_context_tokens:
+        if token not in template:
+            fail(f"Article reader context contract is missing: {token}")
+
 
 class ArticleParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.h1_count = 0
         self.hrefs: list[str] = []
+        self.context_blocks = 0
+        self.context_chips = 0
+        self.summary_blocks = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        data = {key.lower(): value or "" for key, value in attrs}
+        classes = set(data.get("class", "").split())
         if tag.lower() == "h1":
             self.h1_count += 1
-        if tag.lower() == "a":
-            data = {key.lower(): value or "" for key, value in attrs}
-            if data.get("href"):
-                self.hrefs.append(data["href"])
+        if tag.lower() == "a" and data.get("href"):
+            self.hrefs.append(data["href"])
+        if "article-context" in classes:
+            self.context_blocks += 1
+        if "article-context-chip" in classes:
+            self.context_chips += 1
+        if "article-summary" in classes:
+            self.summary_blocks += 1
 
 
 def rendered_contract() -> None:
@@ -67,6 +88,12 @@ def rendered_contract() -> None:
         parser.close()
         if parser.h1_count != 1:
             fail(f"Gate 6 article must retain exactly one H1: {path} (found {parser.h1_count})")
+        if parser.context_blocks != 1:
+            fail(f"Article reader context must render exactly once: {path} (found {parser.context_blocks})")
+        if parser.context_chips < 1:
+            fail(f"Article reader context must expose at least one governed metadata chip: {path}")
+        if parser.summary_blocks != 1:
+            fail(f"Article summary must render exactly once: {path} (found {parser.summary_blocks})")
 
     # Native pagination and related-content UI require another article to link to.
     # Keep the rendered markup checks strict once the production corpus has peers,
