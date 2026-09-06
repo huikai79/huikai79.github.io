@@ -15,6 +15,7 @@ MANIFEST_PATH = ROOT / ".notion-sync-manifest.json"
 RUNTIME_PATH = ROOT / "data" / "homepage_runtime.toml"
 WEEK_RE = re.compile(r"^(\d{4})-W(\d{2})$")
 HOME_PLACEMENTS = {"None", "Pinned", "Rotation"}
+PRIMARY_LANGUAGE = "zh-TW"
 
 
 def fail(message: str) -> "None":
@@ -75,11 +76,19 @@ def collect_home_candidates(
         if not slug:
             fail(f"manifest entry has no slug: {page_id}")
 
+        # Old manifests predate Language and therefore represent the historical
+        # default-language snapshot. New manifests route only declared zh-TW
+        # articles into the primary homepage selection.
+        language = str(entry.get("language", PRIMARY_LANGUAGE)).strip() or PRIMARY_LANGUAGE
+        if language != PRIMARY_LANGUAGE:
+            continue
+
+        content_file = str(entry.get("contentFile", "index.md")).strip() or "index.md"
         resolved_path = f"posts/{slug}"
         source_dir = ROOT / "content" / resolved_path
-        index_path = source_dir / "index.md"
+        index_path = source_dir / content_file
         if not index_path.is_file():
-            fail(f"manifest article bundle is missing: {resolved_path}")
+            fail(f"manifest article content file is missing: {resolved_path}/{content_file}")
 
         placement = front_matter_scalar(index_path, "homePlacement")
         if placement not in HOME_PLACEMENTS:
@@ -187,7 +196,7 @@ def main() -> None:
 
     RUNTIME_PATH.write_text("\n".join(lines), encoding="utf-8")
     print(
-        "Homepage rotation prepared from Notion Home: "
+        "Homepage rotation prepared from Notion Home for zh-TW: "
         f"key={rotation_key}, index={rotation_index}, cap={selected_cap}, "
         f"pinned={len(pinned)}, pool={len(pool)}, offset={pool_offset}, "
         f"selected={','.join(item['path'] for item in selected)}"
