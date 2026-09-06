@@ -26,6 +26,7 @@ jobs:
         run: |
           node scripts/verify-notion-content-contract.mjs
           node --check scripts/check-notion-publication-contract.mjs
+          node --check scripts/check-notion-staged-page.mjs
           node --check scripts/check-sync-deletion-quarantine.mjs
 
           printf '%s\n' '{"status":"complete","published":14,"deleted":["one"]}' > /tmp/deletion-safe.json
