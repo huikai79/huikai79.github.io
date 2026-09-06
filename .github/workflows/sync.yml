@@ -75,6 +75,9 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node scripts/check-notion-publication-contract.mjs production /tmp/notion-publication-contract.json
 
+      - name: Invalidate bundles when Notion cover or icon changed
+        run: node scripts/prepare-notion-presentation-fingerprints.mjs /tmp/notion-publication-contract.json /tmp/notion-presentation-fingerprints.json
+
       - name: Sync Notion into candidate snapshot
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
@@ -87,6 +90,9 @@ jobs:
 
       - name: Apply comments policy
         run: python3 scripts/apply-comments-policy.py
+
+      - name: Persist Notion cover and icon fingerprints
+        run: node scripts/finalize-notion-presentation-fingerprints.mjs /tmp/notion-publication-contract.json
 
       - name: Verify sync report and article bundles
         run: |
@@ -123,6 +129,7 @@ jobs:
             echo "Rebuilt: **$(jq -r '.rebuilt' .notion-sync-report.json)**"
             echo "Deleted: **$(jq -r '.deleted | length' .notion-sync-report.json)**"
             echo "Fast path: **$(jq -r '.fastPath' .notion-sync-report.json)**"
+            echo "Presentation invalidated: **$(jq -r '.invalidated | length' /tmp/notion-presentation-fingerprints.json)**"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Finalize runtime and dependency fingerprint

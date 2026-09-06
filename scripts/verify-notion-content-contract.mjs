@@ -10,6 +10,11 @@ import {
   publicSlugChangeBlocked,
   shouldQuarantineDeletion
 } from "./notion-content-contract.mjs";
+import {
+  finalizeManifestPresentationFingerprints,
+  notionPresentationFingerprint,
+  prepareManifestForPresentationSync
+} from "./notion-presentation-fingerprint.mjs";
 
 assert.equal(normalizeSyncMode(undefined), "legacy");
 assert.equal(normalizeSyncMode("PRODUCTION"), "production");
@@ -136,5 +141,70 @@ assert.equal(
   ),
   false
 );
+
+const externalCoverA = {
+  cover: { type: "external", external: { url: "https://images.example/a.jpg?fit=crop&w=1600" } },
+  icon: null
+};
+const externalCoverB = {
+  cover: { type: "external", external: { url: "https://images.example/b.jpg?fit=crop&w=1600" } },
+  icon: null
+};
+assert.notEqual(
+  notionPresentationFingerprint(externalCoverA),
+  notionPresentationFingerprint(externalCoverB)
+);
+
+const signedFileA = {
+  cover: { type: "file", file: { url: "https://prod-files-secure.s3.us-west-2.amazonaws.com/path/asset.jpg?X-Amz-Signature=one" } },
+  icon: null
+};
+const signedFileB = {
+  cover: { type: "file", file: { url: "https://prod-files-secure.s3.us-west-2.amazonaws.com/path/asset.jpg?X-Amz-Signature=two" } },
+  icon: null
+};
+assert.equal(
+  notionPresentationFingerprint(signedFileA),
+  notionPresentationFingerprint(signedFileB)
+);
+
+const fpA = notionPresentationFingerprint(externalCoverA);
+const fpB = notionPresentationFingerprint(externalCoverB);
+const prepared = prepareManifestForPresentationSync(
+  {
+    version: 1,
+    pages: {
+      pageA: { slug: "a", presentationFingerprint: fpA, bundleHash: "hash-a" },
+      pageB: { slug: "b", presentationFingerprint: fpA, bundleHash: "hash-b" },
+      deletedPage: { slug: "deleted", presentationFingerprint: fpA, bundleHash: "hash-c" }
+    }
+  },
+  [
+    { pageId: "pageA", presentationFingerprint: fpA },
+    { pageId: "pageB", presentationFingerprint: fpB }
+  ]
+);
+assert.deepEqual(prepared.invalidated, ["pageB"]);
+assert.equal(prepared.manifest.pages.pageA.slug, "a");
+assert.equal(prepared.manifest.pages.pageB, undefined);
+assert.equal(prepared.manifest.pages.deletedPage.slug, "deleted");
+
+const finalized = finalizeManifestPresentationFingerprints(
+  {
+    version: 1,
+    pages: {
+      pageA: { slug: "a", bundleHash: "hash-a" },
+      pageB: { slug: "b", bundleHash: "hash-b" }
+    }
+  },
+  [
+    { pageId: "pageA", presentationFingerprint: fpA },
+    { pageId: "pageB", presentationFingerprint: fpB },
+    { pageId: "missing", presentationFingerprint: fpB }
+  ]
+);
+assert.deepEqual(finalized.applied, ["pageA", "pageB"]);
+assert.equal(finalized.manifest.pages.pageA.presentationFingerprint, fpA);
+assert.equal(finalized.manifest.pages.pageB.presentationFingerprint, fpB);
 
 console.log("Notion content contract verification: PASS");
