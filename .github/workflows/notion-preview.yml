@@ -2,6 +2,11 @@ name: "Notion editorial preview preflight"
 
 on:
   workflow_dispatch:
+    inputs:
+      staged_page_id:
+        description: "Optional Draft + Public Notion page ID to validate without publishing"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -39,10 +44,34 @@ jobs:
           {
             echo "## Notion editorial preview"
             echo ""
-            echo "Preview rows: **$(jq -r '.count' /tmp/notion-preview-contract.json)**"
-            echo "Public rows: **$(jq -r '.productionCount' /tmp/notion-preview-contract.json)**"
+            echo "Published preview rows: **$(jq -r '.count' /tmp/notion-preview-contract.json)**"
+            echo "Published Public rows: **$(jq -r '.productionCount' /tmp/notion-preview-contract.json)**"
             echo ""
             echo "This workflow is read-only: it does not write content/posts, the production manifest, main, or deployment state."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate staged Draft + Public page
+        if: ${{ inputs.staged_page_id != '' }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          STAGED_PAGE_ID: ${{ inputs.staged_page_id }}
+        run: |
+          node scripts/check-notion-staged-page.mjs "$STAGED_PAGE_ID" /tmp/notion-staged-page-contract.json
+          test -s /tmp/notion-staged-page-contract.json
+          jq -e '.status == "pass" and .contentVisibility == null' /tmp/notion-staged-page-contract.json > /dev/null || true
+          jq -e '.status == "pass" and .visibility == "Public" and .notionStatus != "Published"' /tmp/notion-staged-page-contract.json > /dev/null
+
+          {
+            echo ""
+            echo "### Staged page"
+            echo ""
+            echo "Title: **$(jq -r '.title' /tmp/notion-staged-page-contract.json)**"
+            echo "Slug: \`$(jq -r '.slug' /tmp/notion-staged-page-contract.json)\`"
+            echo "Date: **$(jq -r '.date' /tmp/notion-staged-page-contract.json)**"
+            echo "Category: **$(jq -r '.category' /tmp/notion-staged-page-contract.json)**"
+            echo "Entry type: **$(jq -r '.entryType' /tmp/notion-staged-page-contract.json)**"
+            echo "Notion status: **$(jq -r '.notionStatus' /tmp/notion-staged-page-contract.json)**"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prove production files remained untouched
