@@ -10,8 +10,8 @@ categories: ["教育"]
 entryType: "推薦／整理"
 contentVisibility: "Public"
 homePlacement: "None"
-cover: "cover-fallback.png"
-images: ["cover-fallback.png"]
+cover: "cover.jpg"
+images: ["cover.jpg"]
 ---
 
 **2026 年 8 月**
