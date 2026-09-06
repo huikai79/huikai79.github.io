@@ -63,10 +63,15 @@ class VideoParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.videos: list[dict[str, object]] = []
+        self.gateway_blocks: list[str] = []
         self.current: dict[str, object] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = {key.lower(): value for key, value in attrs}
+        block_id = data.get("data-notion-video-block")
+        if block_id:
+            self.gateway_blocks.append(block_id)
+
         tag = tag.lower()
         if tag == "video":
             self.current = {
@@ -117,9 +122,8 @@ def rendered_contract(public: Path) -> None:
             fail(f"Rendered article missing for video verification: {index.parent.name}")
             continue
 
-        html_text = html.read_text(encoding="utf-8", errors="replace")
         parser = VideoParser()
-        parser.feed(html_text)
+        parser.feed(html.read_text(encoding="utf-8", errors="replace"))
         parser.close()
         rendered_videos += len(parser.videos)
 
@@ -158,9 +162,8 @@ def rendered_contract(public: Path) -> None:
                 fail(f"Rendered legacy video source is missing or external: {html} -> {sources[0]}")
 
         for block_id in gateway:
-            marker = f'data-notion-video-block="{block_id}"'
-            if marker not in html_text:
-                fail(f"Rendered gateway marker missing for {block_id}: {html}")
+            if parser.gateway_blocks.count(block_id) != 1:
+                fail(f"Rendered gateway marker missing or duplicated for {block_id}: {html}")
             matching = [
                 video for video in gateway_videos
                 if str(video["endpoint"]).startswith(f"/media/video/{block_id}?page=")
