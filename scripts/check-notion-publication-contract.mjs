@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 import { Client } from "@notionhq/client";
+import { NotionToMarkdown } from "notion-to-md";
 import fs from "node:fs/promises";
 import {
   buildNotionFilter,
   extractEditorialFields,
   productionMetadataMissing
 } from "./notion-content-contract.mjs";
+import {
+  pageHasExplicitCover,
+  resolveCoverReadiness
+} from "./notion-cover-contract.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -19,6 +24,7 @@ if (!new Set(["production", "preview"]).has(mode)) {
 }
 
 const notion = new Client({ auth: token });
+const n2m = new NotionToMarkdown({ notionClient: notion });
 const filter = buildNotionFilter(mode);
 const pages = [];
 let cursor;
@@ -51,6 +57,7 @@ for (const page of pages) {
   const rawSlug = props.slug?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
   const slug = rawSlug.replace(/[^a-zA-Z0-9-_]/g, "-");
   const editorial = extractEditorialFields(props);
+  let coverPlan = null;
 
   if (!title) failures.push(`${page.id}: missing Title`);
   if (!slug) failures.push(`${page.id}: missing slug`);
@@ -74,6 +81,26 @@ for (const page of pages) {
         `Use an explicitly reviewed alias/migration plan before changing a public URL.`
       );
     }
+
+    const fullPage = await notion.pages.retrieve({ page_id: page.id });
+    let markdown = "";
+    if (!pageHasExplicitCover(fullPage)) {
+      const mdBlocks = await n2m.pageToMarkdown(page.id);
+      markdown = n2m.toMarkdownString(mdBlocks).parent ?? "";
+    }
+
+    coverPlan = resolveCoverReadiness({
+      page: fullPage,
+      markdown,
+      candidate: { title, slug, ...editorial }
+    });
+
+    if (mode === "production" && !coverPlan.ready) {
+      failures.push(
+        `${page.id}: semantic cover required before production publication. ` +
+        `Set a Notion page cover or add an article image; generic procedural fallback is not publication-grade.`
+      );
+    }
   }
 
   rows.push({
@@ -81,7 +108,8 @@ for (const page of pages) {
     title,
     slug,
     lastEditedTime: page.last_edited_time ?? "",
-    ...editorial
+    ...editorial,
+    coverPlan
   });
 }
 
@@ -90,6 +118,8 @@ const report = {
   mode,
   count: rows.length,
   productionCount: rows.filter(row => row.visibility === "Public").length,
+  coverReadyCount: rows.filter(row => row.coverPlan?.ready === true).length,
+  semanticCoverNeededCount: rows.filter(row => row.coverPlan?.strategy === "semantic-cover-required").length,
   failures,
   pages: rows
 };
@@ -102,5 +132,7 @@ if (failures.length) {
 }
 
 console.log(
-  `Notion publication contract: PASS (mode=${mode}, pages=${rows.length}, public=${report.productionCount}, report=${reportPath})`
+  `Notion publication contract: PASS ` +
+  `(mode=${mode}, pages=${rows.length}, public=${report.productionCount}, ` +
+  `coverReady=${report.coverReadyCount}, semanticNeeded=${report.semanticCoverNeededCount}, report=${reportPath})`
 );
