@@ -1,0 +1,47 @@
+name: "Media Library observability"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: media-library-observability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify inventory reporter
+        run: python3 scripts/test-media-library-report.py
+
+      - name: Report current article media
+        run: |
+          python3 scripts/media-library-report.py --root content/posts --json /tmp/media-library-report.json
+          jq -e '.status == "pass"' /tmp/media-library-report.json > /dev/null
+
+          {
+            echo "## Media Library inventory"
+            echo ""
+            echo "Managed files: **$(jq -r '.media.count' /tmp/media-library-report.json)**"
+            echo "Managed bytes: **$(jq -r '.media.totalBytes' /tmp/media-library-report.json)**"
+            echo "Duplicate groups: **$(jq -r '.duplicates.groupCount' /tmp/media-library-report.json)**"
+            echo "Duplicate wasted bytes: **$(jq -r '.duplicates.wastedBytes' /tmp/media-library-report.json)**"
+            echo "Orphan candidates: **$(jq -r '.references.orphanCandidateCount' /tmp/media-library-report.json)**"
+            echo "Inline images: **$(jq -r '.accessibility.inlineImages' /tmp/media-library-report.json)**"
+            echo "Inline images missing alt: **$(jq -r '.accessibility.inlineImagesMissingAlt' /tmp/media-library-report.json)**"
+            echo "Images over 2 MiB: **$(jq -r '.optimization.largeImageCandidateCount' /tmp/media-library-report.json)**"
+            echo ""
+            echo "Largest managed files:"
+            jq -r '.media.largest[] | "- `\(.path)`: \(.bytes) bytes"' /tmp/media-library-report.json
+          } >> "$GITHUB_STEP_SUMMARY"
