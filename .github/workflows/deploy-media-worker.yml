@@ -168,8 +168,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes "wrangler@${WRANGLER_VERSION}" deploy \
-            --config "$WORKER_CONFIG" \
-            --yes
+            --config "$WORKER_CONFIG"
 
       - name: Record deployment lineage
         env:
