@@ -6,6 +6,8 @@ const accepted = [
   "/zh-cn/posts/example/",
   "/en/posts/example/",
   "/posts/example-123_test/",
+  "/posts/謙卑與學習/",
+  "/zh-cn/posts/%E8%B0%A6%E5%8D%91/",
 ];
 
 const rejected = [
@@ -17,6 +19,12 @@ const rejected = [
   "/posts/example",
   "/posts/example/extra/",
   "/posts/../secret/",
+  "/posts/%2e%2e/",
+  "/posts/foo%2Fbar/",
+  "/posts/foo%5Cbar/",
+  "/posts/%E0%A4%A/",
+  "/posts/foo?bar/",
+  "/posts/foo#bar/",
   "https://huikai.com.kg/posts/example/",
 ];
 
