@@ -12,6 +12,14 @@ python3 scripts/test-notion-media-localization.py
 python3 scripts/localize-notion-media.py
 python3 scripts/test-cover-resolution.py
 python3 scripts/resolve-article-covers.py
+python3 scripts/test-discovery-taxonomy-contract.py
+if [ "${STRICT_CONTENT:-0}" != "1" ]; then
+  # PR/local builds may start from the last committed production snapshot. The
+  # production sync writes this projection directly; non-strict validation
+  # normalizes the candidate snapshot so the new discovery templates can be
+  # exercised before merge without mutating an exact production deployment.
+  python3 scripts/apply-discovery-taxonomies.py
+fi
 python3 scripts/ensure-multilingual-section-indexes.py
 python3 scripts/verify-source-contract.py
 python3 scripts/verify-video-rendering.py source
