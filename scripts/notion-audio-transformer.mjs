@@ -1,7 +1,4 @@
-import path from "node:path";
-
 const BLOCK_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SUPPORTED_AUDIO_EXTENSIONS = new Set([".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac"]);
 
 export function notionAudioMarkdown(block) {
   const audio = block?.audio;
@@ -17,19 +14,19 @@ export function notionAudioMarkdown(block) {
     throw new Error(`Notion uploaded audio ${blockId} is missing its temporary file URL`);
   }
 
-  let extension = "";
+  let parsed;
   try {
-    extension = path.extname(new URL(sourceUrl).pathname).toLowerCase();
+    parsed = new URL(sourceUrl);
   } catch {
     throw new Error(`Notion uploaded audio ${blockId} returned an invalid file URL`);
   }
-
-  if (!SUPPORTED_AUDIO_EXTENSIONS.has(extension)) {
-    throw new Error(
-      `Unsupported Notion uploaded audio format for ${blockId}: ${extension || "unknown"}. ` +
-      "Only browser-streamable audio formats are admitted to the media gateway; refusing to download it into Git."
-    );
+  if (parsed.protocol !== "https:") {
+    throw new Error(`Notion uploaded audio ${blockId} returned a non-HTTPS file URL`);
   }
 
+  // The signed Notion file URL is temporary transport metadata, not an
+  // authoritative media-type contract. Keep only the stable block identity in
+  // Git; the runtime gateway re-fetches the block and validates the upstream
+  // audio MIME type before proxying it to the browser.
   return `{{< notion-audio block="${blockId}" >}}`;
 }
