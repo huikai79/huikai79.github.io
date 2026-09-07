@@ -26,10 +26,12 @@ jobs:
         run: |
           node scripts/verify-notion-content-contract.mjs
           node scripts/verify-notion-cover-contract.mjs
+          node scripts/verify-translation-draft-contract.mjs
           node --check scripts/notion-cover-contract.mjs
           node --check scripts/check-notion-publication-contract.mjs
           node --check scripts/check-notion-staged-page.mjs
           node --check scripts/check-sync-deletion-quarantine.mjs
+          node --check scripts/generate-translation-drafts.mjs
 
           printf '%s\n' '{"status":"complete","published":14,"deleted":["one"]}' > /tmp/deletion-safe.json
           node scripts/check-sync-deletion-quarantine.mjs /tmp/deletion-safe.json
@@ -119,9 +121,17 @@ jobs:
           grep -Fq 'data/homepage_runtime.toml' .github/workflows/sync.yml
           grep -Fq 'semantic cover required before production publication' scripts/check-notion-publication-contract.mjs
           grep -Fq 'publicationReady' scripts/check-notion-staged-page.mjs
+          grep -Fq 'Translation Status' scripts/notion-content-contract.mjs
+          grep -Fq 'OPENAI_API_KEY' .github/workflows/translation-drafts.yml
+          grep -Fq 'TRANSLATION_APPLY' .github/workflows/translation-drafts.yml
+          grep -Fq 'default: false' .github/workflows/translation-drafts.yml
 
           if grep -Eq '^  (push|schedule):' .github/workflows/deploy.yml; then
             echo "::error::Production deploy workflow must only be entered through an explicit exact-SHA dispatch"
+            exit 1
+          fi
+          if grep -Eq '^  (push|schedule):' .github/workflows/translation-drafts.yml; then
+            echo "::error::Paid translation draft generation must remain manually gated until explicitly authorized"
             exit 1
           fi
 
