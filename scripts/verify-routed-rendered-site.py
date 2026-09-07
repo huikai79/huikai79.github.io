@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import sys
 import tomllib
 from html.parser import HTMLParser
@@ -27,23 +26,40 @@ class Parser(HTMLParser):
         self.h1_count = 0
         self.hrefs: list[str] = []
         self.srcs: list[str] = []
-        self.selected: list[str] = []
+        self.selected: list[dict[str, str]] = []
         self.recent: list[str] = []
         self.undefined = False
+        self.rotation_key = ""
+        self.rotation_index = ""
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = {key.lower(): value or "" for key, value in attrs}
         classes = set(data.get("class", "").split())
-        if tag.lower() == "html": self.lang = data.get("lang", "")
-        if tag.lower() == "h1": self.h1_count += 1
-        if tag.lower() == "a" and data.get("href"): self.hrefs.append(data["href"])
-        if tag.lower() in {"img", "script", "source", "video", "audio", "iframe"} and data.get("src"): self.srcs.append(data["src"])
-        if tag.lower() == "link" and data.get("href"): self.srcs.append(data["href"])
-        if "home-selected-item" in classes and data.get("data-home-path"): self.selected.append(data["data-home-path"])
-        if "home-recent-row" in classes and data.get("data-home-path"): self.recent.append(data["data-home-path"])
+        if tag.lower() == "html":
+            self.lang = data.get("lang", "")
+        if tag.lower() == "h1":
+            self.h1_count += 1
+        if tag.lower() == "a" and data.get("href"):
+            self.hrefs.append(data["href"])
+        if tag.lower() in {"img", "script", "source", "video", "audio", "iframe"} and data.get("src"):
+            self.srcs.append(data["src"])
+        if tag.lower() == "link" and data.get("href"):
+            self.srcs.append(data["href"])
+        if tag.lower() == "section" and data.get("id") == "home-selected":
+            self.rotation_key = data.get("data-rotation-key", "")
+            self.rotation_index = data.get("data-rotation-index", "")
+        if "home-selected-item" in classes and data.get("data-home-path"):
+            self.selected.append({
+                "path": data["data-home-path"],
+                "pageId": data.get("data-page-id", ""),
+                "source": data.get("data-selection-source", ""),
+            })
+        if "home-recent-row" in classes and data.get("data-home-path"):
+            self.recent.append(data["data-home-path"])
 
     def handle_data(self, data: str) -> None:
-        if data.strip() == "undefined": self.undefined = True
+        if data.strip() == "undefined":
+            self.undefined = True
 
 
 def parse(path: Path, label: str) -> Parser:
@@ -51,21 +67,120 @@ def parse(path: Path, label: str) -> Parser:
     if not path.is_file():
         fail(f"Rendered page missing: {label} -> {path}")
         return parser
-    parser.feed(path.read_text(encoding="utf-8", errors="replace")); parser.close()
+    parser.feed(path.read_text(encoding="utf-8", errors="replace"))
+    parser.close()
     return parser
 
 
 def local_target(page: Path, raw: str) -> Path | None:
     value = raw.strip()
-    if not value or value.startswith(("#", "//", "mailto:", "tel:")): return None
+    if not value or value.startswith(("#", "//", "mailto:", "tel:")):
+        return None
     parsed = urlsplit(value)
-    if parsed.scheme or parsed.netloc: return None
+    if parsed.scheme or parsed.netloc:
+        return None
     clean = unquote(parsed.path)
-    if not clean: return None
+    if not clean:
+        return None
     target = PUBLIC / clean.lstrip("/") if clean.startswith("/") else page.parent / clean
     if clean.endswith("/") or not target.suffix:
         target = target / "index.html"
     return target
+
+
+def runtime_for_language(runtime: dict[str, object], language: str) -> dict[str, object]:
+    if language == "zh-TW":
+        return runtime
+    if language == "zh-CN":
+        secondary = runtime.get("secondary", {})
+        if isinstance(secondary, dict):
+            return secondary
+        fail("Homepage runtime secondary table is missing or invalid")
+        return {}
+    fail(f"Homepage runtime verifier does not support language: {language}")
+    return {}
+
+
+def verify_homepage(
+    language: str,
+    page: Path,
+    language_routes,
+    runtime: dict[str, object],
+) -> None:
+    parser = parse(page, f"{language} homepage")
+    if parser.lang != language:
+        fail(f"Homepage lang mismatch for {language}: {parser.lang!r}")
+
+    selected = runtime.get("selected", [])
+    if not isinstance(selected, list):
+        fail(f"Homepage runtime selected must be an array for {language}")
+        selected = []
+    expected_count = int(runtime.get("selectedLimit", 0))
+    if len(selected) != expected_count:
+        fail(
+            f"Homepage runtime Selected count mismatch for {language}: "
+            f"selected={len(selected)}, selectedLimit={expected_count}"
+        )
+    if int(runtime.get("rotationSlots", 0)) > int(runtime.get("poolSize", 0)):
+        fail(f"Homepage runtime rotationSlots exceeds poolSize for {language}")
+
+    by_page_id = {route.page_id: route for route in language_routes}
+    expected_selected: list[dict[str, str]] = []
+    for item in selected:
+        if not isinstance(item, dict):
+            fail(f"Homepage runtime Selected item must be an object for {language}")
+            continue
+        page_id = str(item.get("pageId", ""))
+        route = by_page_id.get(page_id)
+        if route is None:
+            fail(f"Homepage runtime references a non-{language} article: {page_id}")
+            continue
+        expected_selected.append({
+            "path": route.permalink_path.lower(),
+            "pageId": page_id,
+            "source": str(item.get("source", "")),
+        })
+
+    actual_selected = [
+        {
+            "path": str(item.get("path", "")).lower(),
+            "pageId": str(item.get("pageId", "")),
+            "source": str(item.get("source", "")),
+        }
+        for item in parser.selected
+    ]
+    if actual_selected != expected_selected:
+        fail(
+            f"Homepage Selected mismatch for {language}: "
+            f"rendered={actual_selected}, runtime={expected_selected}"
+        )
+
+    if expected_count > 0:
+        if parser.rotation_key != str(runtime.get("rotationKey", "")):
+            fail(f"Homepage rotationKey mismatch for {language}")
+        if parser.rotation_index != str(runtime.get("rotationIndex", "")):
+            fail(f"Homepage rotationIndex mismatch for {language}")
+    elif parser.selected:
+        fail(f"Homepage rendered Selected despite selectedLimit=0 for {language}")
+
+    valid_paths = {route.permalink_path.lower() for route in language_routes}
+    selected_paths = {item["path"] for item in actual_selected}
+    for raw in parser.recent:
+        path = raw.lower()
+        if path not in valid_paths:
+            fail(f"Homepage leaked a non-{language} article into Recent: {raw}")
+        if path in selected_paths:
+            fail(f"Homepage Selected/Recent overlap for {language}: {raw}")
+
+    expected_recent = min(
+        int(runtime.get("recentLimit", 5)),
+        max(0, len(language_routes) - expected_count),
+    )
+    if len(parser.recent) != expected_recent:
+        fail(
+            f"Homepage Recent count mismatch for {language}: "
+            f"rendered={len(parser.recent)}, expected={expected_recent}"
+        )
 
 
 article_routes = routes()
@@ -88,24 +203,20 @@ for route in article_routes:
         if target is not None and not target.exists():
             fail(f"Broken local asset on {route.language}:{route.slug}: {raw}")
 
-home = parse(PUBLIC / "index.html", "zh-TW homepage")
-if home.lang != "zh-TW": fail(f"Primary homepage lang mismatch: {home.lang!r}")
 with RUNTIME.open("rb") as handle:
-    runtime = tomllib.load(handle)
-runtime_selected = runtime.get("selected", [])
-expected_selected = [str(item.get("path", "")) for item in runtime_selected if isinstance(item, dict)]
-actual_selected = [path.strip("/") for path in home.selected]
-if [path.lower() for path in actual_selected] != [path.lower() for path in expected_selected]:
-    fail(f"Primary homepage Selected mismatch: rendered={actual_selected}, runtime={expected_selected}")
-primary_paths = {f"posts/{route.slug}".lower() for route in primary_routes}
-for path in actual_selected + [value.strip("/") for value in home.recent]:
-    if path.lower() not in primary_paths:
-        fail(f"Primary homepage leaked a non-zh-TW article: {path}")
-
-simplified = parse(PUBLIC / "zh-cn" / "index.html", "zh-CN homepage")
-if simplified.lang != "zh-CN": fail(f"Secondary homepage lang mismatch: {simplified.lang!r}")
-if simplified.selected or simplified.recent:
-    fail("Secondary homepage must not reuse primary Selected/Recent rotation")
+    runtime_root = tomllib.load(handle)
+verify_homepage(
+    "zh-TW",
+    PUBLIC / "index.html",
+    primary_routes,
+    runtime_for_language(runtime_root, "zh-TW"),
+)
+verify_homepage(
+    "zh-CN",
+    PUBLIC / "zh-cn" / "index.html",
+    secondary_routes,
+    runtime_for_language(runtime_root, "zh-CN"),
+)
 
 actual_primary = set((PUBLIC / "posts").glob("*/index.html"))
 actual_secondary = set((PUBLIC / "zh-cn" / "posts").glob("*/index.html"))
@@ -117,6 +228,10 @@ if {p.resolve() for p in actual_secondary} != {p.resolve() for p in expected_sec
     fail("Secondary rendered article set differs from routed manifest")
 
 if ERRORS:
-    for error in ERRORS: print(f"::error::{error}")
+    for error in ERRORS:
+        print(f"::error::{error}")
     raise SystemExit(1)
-print(f"Routed rendered-site verification: PASS (zh-TW={len(primary_routes)}, zh-CN={len(secondary_routes)})")
+print(
+    "Routed rendered-site verification: PASS "
+    f"(zh-TW={len(primary_routes)}, zh-CN={len(secondary_routes)}, bilingual homepage governance)"
+)
