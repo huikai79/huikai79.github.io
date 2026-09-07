@@ -1,0 +1,185 @@
+name: "Validate or deploy Notion media Worker"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-media-worker.yml"
+      - "workers/notion-media-gateway/**"
+      - "layouts/shortcodes/notion-audio.html"
+      - "layouts/shortcodes/notion-video.html"
+      - "scripts/verify-notion-media-gateway.py"
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: "Exact current main commit SHA to deploy"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-media-worker-production
+  cancel-in-progress: false
+
+env:
+  WRANGLER_VERSION: "4.129.0"
+  WORKER_CONFIG: "workers/notion-media-gateway/wrangler.toml"
+
+jobs:
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Verify media gateway contracts
+        run: |
+          set -euo pipefail
+          node workers/notion-media-gateway/test-paths.mjs
+          node workers/notion-media-gateway/test-runtime.mjs
+          python3 scripts/verify-notion-media-gateway.py
+
+      - name: Compile Worker without deploying
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/notion-media-worker-dry-run
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy \
+            --config "$WORKER_CONFIG" \
+            --dry-run \
+            --outdir /tmp/notion-media-worker-dry-run
+          test -n "$(find /tmp/notion-media-worker-dry-run -type f -print -quit)"
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate exact main SHA input
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$REQUESTED_SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::source_sha must be a full 40-character lowercase Git commit SHA"
+            exit 1
+          fi
+
+      - name: Checkout exact source commit without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Require exact current main lineage
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          checkout_sha="$(git rev-parse HEAD)"
+          if [ "$checkout_sha" != "$REQUESTED_SHA" ]; then
+            echo "::error::Checked-out SHA does not match requested source_sha"
+            exit 1
+          fi
+
+          current_main="$(curl --fail-with-body --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" \
+            | jq -r '.object.sha')"
+          if [ "$current_main" != "$REQUESTED_SHA" ]; then
+            echo "::error::Production Worker deployment is restricted to the exact current main SHA. Requested $REQUESTED_SHA, current $current_main"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Verify media gateway contracts
+        run: |
+          set -euo pipefail
+          node workers/notion-media-gateway/test-paths.mjs
+          node workers/notion-media-gateway/test-runtime.mjs
+          python3 scripts/verify-notion-media-gateway.py
+
+      - name: Compile exact Worker source before deployment
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/notion-media-worker-predeploy
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy \
+            --config "$WORKER_CONFIG" \
+            --dry-run \
+            --outdir /tmp/notion-media-worker-predeploy
+          test -n "$(find /tmp/notion-media-worker-predeploy -type f -print -quit)"
+
+      - name: Verify Cloudflare deployment credentials are configured
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || {
+            echo "::error::CLOUDFLARE_API_TOKEN is not configured for the production environment"
+            exit 1
+          }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || {
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is not configured for the production environment"
+            exit 1
+          }
+
+      - name: Reconfirm main has not moved
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current_main="$(curl --fail-with-body --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" \
+            | jq -r '.object.sha')"
+          if [ "$current_main" != "$REQUESTED_SHA" ]; then
+            echo "::error::main moved after pre-deploy validation; aborting Worker deployment"
+            exit 1
+          fi
+
+      - name: Deploy exact Worker source to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy \
+            --config "$WORKER_CONFIG" \
+            --yes
+
+      - name: Record deployment lineage
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          {
+            echo "## Notion media Worker deployment"
+            echo ""
+            echo "Source SHA: \`$REQUESTED_SHA\`"
+            echo "Worker: \`huikai-notion-media\`"
+            echo "Route: \`huikai.com.kg/media/*\`"
+            echo "Wrangler: \`$WRANGLER_VERSION\`"
+          } >> "$GITHUB_STEP_SUMMARY"
