@@ -40,7 +40,7 @@ const filter = buildNotionFilter(SYNC_MODE);
 const dl = pLimit(5);
 const SECTION_INDEXES = new Map([
   ["_index.md", '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n'],
-  ["_index.zh-cn.md", '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔記。"\n---\n']
+  ["_index.zh-cn.md", '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n']
 ]);
 
 /* ---------- 工具函式 ---------- */
