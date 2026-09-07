@@ -8,12 +8,20 @@
     {{- $featured = $resources.GetMatch "{*cover*,*thumbnail*}" -}}
   {{- end -}}
   {{- with $featured -}}
-    {{- $processed := .Fill "1200x630 center q85 jpg" -}}
-    {{- $imgs = $imgs | append (dict
-      "Image" $processed
-      "RelPermalink" $processed.RelPermalink
-      "Permalink" $processed.Permalink
-    ) -}}
+    {{- if reflect.IsImageResourceProcessable . -}}
+      {{- $processed := .Fill "1200x630 center q85 jpg" -}}
+      {{- $imgs = $imgs | append (dict
+        "Image" $processed
+        "RelPermalink" $processed.RelPermalink
+        "Permalink" $processed.Permalink
+      ) -}}
+    {{- else -}}
+      {{- $imgs = $imgs | append (dict
+        "Image" .
+        "RelPermalink" .RelPermalink
+        "Permalink" .Permalink
+      ) -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 
@@ -28,12 +36,20 @@
   {{- $url := urls.Parse $img -}}
   {{- if eq $url.Scheme "" -}}
     {{- with or ($resources.GetMatch $img) (resources.GetMatch $img) -}}
-      {{- $processed := .Fill "1200x630 center q85 jpg" -}}
-      {{- $imgs = $imgs | append (dict
-        "Image" $processed
-        "RelPermalink" $processed.RelPermalink
-        "Permalink" $processed.Permalink
-      ) -}}
+      {{- if reflect.IsImageResourceProcessable . -}}
+        {{- $processed := .Fill "1200x630 center q85 jpg" -}}
+        {{- $imgs = $imgs | append (dict
+          "Image" $processed
+          "RelPermalink" $processed.RelPermalink
+          "Permalink" $processed.Permalink
+        ) -}}
+      {{- else -}}
+        {{- $imgs = $imgs | append (dict
+          "Image" .
+          "RelPermalink" .RelPermalink
+          "Permalink" .Permalink
+        ) -}}
+      {{- end -}}
     {{- else -}}
       {{- $imgs = $imgs | append (dict
         "RelPermalink" (relURL $img)
