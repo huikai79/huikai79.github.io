@@ -36,12 +36,6 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function textContent(richText = []) {
-  return richText
-    .map(item => item?.plain_text ?? item?.text?.content ?? "")
-    .join("");
-}
-
 function isExternalFileObject(value) {
   return Boolean(value && value.type === "external" && value.external?.url);
 }
@@ -52,6 +46,10 @@ function isSafeMediaBlock(block) {
   if (data.type === "external") return Boolean(data.external?.url);
   if (data.external?.url) return true;
   return false;
+}
+
+function isSafeIcon(icon) {
+  return !icon || icon.type === "emoji" || (icon.type === "external" && icon.external?.url);
 }
 
 export function sourceTranslationTargets(editorial = {}) {
@@ -85,7 +83,8 @@ export function inspectBlockTree(blocks = []) {
       return;
     }
     if (items.length > 100) {
-      warnings.push(`${path}: contains ${items.length} children; creation will be chunked`);
+      if (path === "root") warnings.push(`${path}: contains ${items.length} children; creation will be chunked`);
+      else errors.push(`${path}: nested child count ${items.length} exceeds safe Notion creation limit 100`);
     }
 
     items.forEach((block, index) => {
@@ -98,9 +97,11 @@ export function inspectBlockTree(blocks = []) {
       }
 
       if (TRANSLATABLE_RICH_TEXT_BLOCK_TYPES.has(type)) {
-        // safe; rich_text is translated and children are recursively cloned
+        if (type === "callout" && !isSafeIcon(block[type].icon)) {
+          errors.push(`${blockPath}: callout uses a temporary/file icon that cannot be safely cloned`);
+        }
       } else if (type === "code") {
-        // code is intentionally preserved verbatim; captions may be translated later
+        // code is intentionally preserved verbatim; captions may be translated
       } else if (SAFE_PASSTHROUGH_BLOCK_TYPES.has(type)) {
         // safe immutable payload
       } else if (SAFE_EXTERNAL_MEDIA_BLOCK_TYPES.has(type)) {
@@ -293,12 +294,53 @@ export function draftProperties({ source, targetLanguage, translatedTitle, trans
   };
 }
 
-function copyCommon(data, keys) {
-  const result = {};
-  for (const key of keys) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) result[key] = clone(data[key]);
+function writableAnnotations(annotations) {
+  if (!annotations) return undefined;
+  return {
+    bold: Boolean(annotations.bold),
+    italic: Boolean(annotations.italic),
+    strikethrough: Boolean(annotations.strikethrough),
+    underline: Boolean(annotations.underline),
+    code: Boolean(annotations.code),
+    color: annotations.color || "default"
+  };
+}
+
+export function writableRichText(richText = []) {
+  return richText.map(item => {
+    const annotations = writableAnnotations(item.annotations);
+    if (item.type === "text") {
+      const result = {
+        type: "text",
+        text: {
+          content: item.text?.content ?? item.plain_text ?? "",
+          link: item.text?.link?.url ? { url: item.text.link.url } : null
+        }
+      };
+      if (annotations) result.annotations = annotations;
+      return result;
+    }
+    if (item.type === "equation" && item.equation?.expression) {
+      const result = { type: "equation", equation: { expression: item.equation.expression } };
+      if (annotations) result.annotations = annotations;
+      return result;
+    }
+    if (item.type === "mention" && item.mention) {
+      const result = { type: "mention", mention: clone(item.mention) };
+      if (annotations) result.annotations = annotations;
+      return result;
+    }
+    throw new Error(`Unsupported rich_text item type: ${item.type}`);
+  });
+}
+
+function safeCalloutIcon(icon) {
+  if (!icon) return undefined;
+  if (icon.type === "emoji") return { type: "emoji", emoji: icon.emoji };
+  if (icon.type === "external" && icon.external?.url) {
+    return { type: "external", external: { url: icon.external.url } };
   }
-  return result;
+  throw new Error("Callout icon cannot be safely cloned");
 }
 
 export function writableBlock(block) {
@@ -307,22 +349,28 @@ export function writableBlock(block) {
   let payload;
 
   if (TRANSLATABLE_RICH_TEXT_BLOCK_TYPES.has(type)) {
-    payload = copyCommon(data, ["rich_text", "color", "checked", "icon"]);
+    payload = { rich_text: writableRichText(data.rich_text ?? []) };
+    if (Object.prototype.hasOwnProperty.call(data, "color")) payload.color = data.color;
+    if (type === "to_do" && Object.prototype.hasOwnProperty.call(data, "checked")) payload.checked = Boolean(data.checked);
+    if (type === "callout" && data.icon) payload.icon = safeCalloutIcon(data.icon);
   } else if (type === "code") {
-    payload = copyCommon(data, ["rich_text", "caption", "language"]);
+    payload = {
+      rich_text: writableRichText(data.rich_text ?? []),
+      caption: writableRichText(data.caption ?? []),
+      language: data.language || "plain text"
+    };
   } else if (type === "divider") {
     payload = {};
   } else if (type === "equation") {
     payload = { expression: data.expression };
   } else if (type === "bookmark") {
-    payload = copyCommon(data, ["url", "caption"]);
+    payload = { url: data.url, caption: writableRichText(data.caption ?? []) };
   } else if (type === "embed") {
     payload = { url: data.url };
   } else if (SAFE_EXTERNAL_MEDIA_BLOCK_TYPES.has(type) && isSafeMediaBlock(block)) {
     const external = data.external ?? data[data.type];
     payload = { type: "external", external: { url: external.url } };
-    if (Array.isArray(data.caption)) payload.caption = clone(data.caption);
-    if (type === "image" && data.name) payload.name = data.name;
+    if (Array.isArray(data.caption)) payload.caption = writableRichText(data.caption);
   } else {
     throw new Error(`Block type cannot be safely cloned: ${type}`);
   }
@@ -337,11 +385,14 @@ export function writableBlock(block) {
 }
 
 export function copyablePageIcon(source) {
-  if (source?.icon?.type === "emoji") return clone(source.icon);
-  if (source?.icon?.type === "external" && source.icon.external?.url) return clone(source.icon);
+  if (source?.icon?.type === "emoji") return { type: "emoji", emoji: source.icon.emoji };
+  if (source?.icon?.type === "external" && source.icon.external?.url) {
+    return { type: "external", external: { url: source.icon.external.url } };
+  }
   return undefined;
 }
 
 export function copyablePageCover(source) {
-  return isExternalFileObject(source?.cover) ? clone(source.cover) : undefined;
+  if (!isExternalFileObject(source?.cover)) return undefined;
+  return { type: "external", external: { url: source.cover.external.url } };
 }
