@@ -41,6 +41,14 @@ required_audio_shortcode = [
     'fetch("/media/session"',
     'credentials: "same-origin"',
 ]
+required_wrangler = [
+    'name = "huikai-notion-media"',
+    'workers_dev = false',
+    '[secrets]',
+    'required = ["NOTION_TOKEN", "MEDIA_SESSION_SECRET"]',
+    'pattern = "huikai.com.kg/media/*"',
+    'zone_name = "huikai.com.kg"',
+]
 
 errors = []
 for needle in required_worker:
@@ -52,8 +60,9 @@ for needle in required_video_shortcode:
 for needle in required_audio_shortcode:
     if needle not in audio_shortcode:
         errors.append(f"audio shortcode contract missing: {needle}")
-if 'pattern = "huikai.com.kg/media/*"' not in wrangler:
-    errors.append("worker route is not limited to huikai.com.kg/media/*")
+for needle in required_wrangler:
+    if needle not in wrangler:
+        errors.append(f"wrangler contract missing: {needle}")
 
 if 'html.includes(`data-notion-video-block="${blockId}"`)' in worker:
     errors.append("worker must not require quoted video marker attributes after Hugo minification")
