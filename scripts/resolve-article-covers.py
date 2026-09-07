@@ -140,10 +140,19 @@ def procedural_cover_png(page_id: str, slug: str, title: str) -> bytes:
     )
 
 
+def manifest_source(page_id: str, entry: dict) -> tuple[str, str, Path, Path]:
+    slug = str(entry.get("slug", "")).strip()
+    if not slug:
+        raise RuntimeError(f"Manifest page {page_id} is missing slug")
+    bundle_path = str(entry.get("bundlePath", slug)).strip() or slug
+    if bundle_path in {".", ".."} or "/" in bundle_path or "\\" in bundle_path:
+        raise RuntimeError(f"Manifest page {page_id} has unsafe bundlePath: {bundle_path!r}")
+    content_file = str(entry.get("contentFile", "index.md")).strip() or "index.md"
+    bundle = POSTS_DIR / bundle_path
+    return slug, bundle_path, bundle, bundle / content_file
+
+
 def main() -> None:
-    # This file is intentionally ignored by Git. Its presence means sync.mjs has
-    # just produced a candidate Notion snapshot in the current workflow run.
-    # Deploy/validation jobs therefore execute this script read-only and skip.
     if not REPORT_PATH.is_file():
         print("Cover resolution: SKIP (no fresh Notion sync report)")
         return
@@ -157,25 +166,22 @@ def main() -> None:
     if not isinstance(manifest_pages, dict):
         raise RuntimeError("Notion manifest pages object is missing")
 
-    by_slug: dict[str, tuple[str, dict]] = {}
-    for page_id, entry in manifest_pages.items():
-        slug = entry.get("slug") if isinstance(entry, dict) else None
-        if not slug:
-            raise RuntimeError(f"Manifest page {page_id} is missing slug")
-        if slug in by_slug:
-            raise RuntimeError(f"Duplicate slug in Notion manifest: {slug}")
-        by_slug[slug] = (page_id, entry)
-
+    seen_bundles: dict[str, str] = {}
     resolved: list[dict[str, str]] = []
     touched: set[str] = set()
 
-    for index_path in sorted(POSTS_DIR.glob("*/index.md")):
-        bundle = index_path.parent
-        slug = bundle.name
-        manifest_entry = by_slug.get(slug)
-        if manifest_entry is None:
-            raise RuntimeError(f"Article is missing from Notion manifest: {slug}")
-        page_id, entry = manifest_entry
+    for page_id, entry in sorted(manifest_pages.items()):
+        if not isinstance(entry, dict):
+            raise RuntimeError(f"Manifest page {page_id} entry is invalid")
+        slug, bundle_path, bundle, index_path = manifest_source(page_id, entry)
+        if bundle_path in seen_bundles:
+            raise RuntimeError(
+                f"Duplicate bundlePath in Notion manifest: {bundle_path} "
+                f"({seen_bundles[bundle_path]} / {page_id})"
+            )
+        seen_bundles[bundle_path] = page_id
+        if not index_path.is_file():
+            raise RuntimeError(f"Article source is missing from Notion manifest bundle: {index_path}")
 
         text = index_path.read_text(encoding="utf-8", errors="strict").replace("\r\n", "\n")
         lines = text.split("\n")
@@ -184,19 +190,16 @@ def main() -> None:
         cover = front_matter_value(front_lines, "cover")
         fallback_path = bundle / FALLBACK_FILENAME
 
-        # Explicit Notion/manual cover always wins. Remove only our reserved
-        # generated fallback if it survived an incremental bundle reuse.
         if cover and cover != FALLBACK_FILENAME:
             if fallback_path.is_file():
                 fallback_path.unlink()
-                touched.add(slug)
-                print(f"🧹 移除舊 fallback 封面 {slug}: {FALLBACK_FILENAME}")
+                touched.add(page_id)
+                print(f"🧹 移除舊 fallback 封面 {slug} [{bundle_path}]: {FALLBACK_FILENAME}")
             continue
 
         body = "\n".join(lines[closing + 1:])
         image = first_local_markdown_image(body, bundle)
 
-        # Phase 1: prefer media already localized into the article bundle.
         if not cover and image:
             additions = [f"cover: {json.dumps(image, ensure_ascii=False)}"]
             if front_matter_value(front_lines, "images") is None:
@@ -205,25 +208,23 @@ def main() -> None:
             index_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
             if fallback_path.is_file():
                 fallback_path.unlink()
-            touched.add(slug)
+            touched.add(page_id)
             resolved.append({
                 "pageId": page_id,
                 "slug": slug,
+                "bundlePath": bundle_path,
                 "cover": image,
                 "strategy": "first-localized-markdown-image",
             })
-            print(f"🖼️  自動封面（內文首圖） {slug}: {image}")
+            print(f"🖼️  自動封面（內文首圖） {slug} [{bundle_path}]: {image}")
             continue
 
-        # Phase 2: articles with no reusable image receive a deterministic 16:9
-        # PNG generated only from stable article identity/title. No AI API,
-        # network request, font, image package, or random source is involved.
         if not cover or cover == FALLBACK_FILENAME:
             title = front_matter_value(front_lines, "title") or slug
             expected = procedural_cover_png(page_id, slug, title)
             if not fallback_path.is_file() or fallback_path.read_bytes() != expected:
                 fallback_path.write_bytes(expected)
-                touched.add(slug)
+                touched.add(page_id)
 
             additions: list[str] = []
             if not cover:
@@ -234,20 +235,22 @@ def main() -> None:
             if additions:
                 lines[closing:closing] = additions
                 index_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-                touched.add(slug)
+                touched.add(page_id)
 
             resolved.append({
                 "pageId": page_id,
                 "slug": slug,
+                "bundlePath": bundle_path,
                 "cover": FALLBACK_FILENAME,
                 "strategy": "deterministic-procedural-png",
             })
-            print(f"🎨 自動封面（程序化 fallback） {slug}: {FALLBACK_FILENAME}")
+            print(f"🎨 自動封面（程序化 fallback） {slug} [{bundle_path}]: {FALLBACK_FILENAME}")
 
     if touched:
-        for slug in sorted(touched):
-            _, entry = by_slug[slug]
-            entry["bundleHash"] = directory_hash(POSTS_DIR / slug)
+        for page_id in sorted(touched):
+            entry = manifest_pages[page_id]
+            _, _, bundle, _ = manifest_source(page_id, entry)
+            entry["bundleHash"] = directory_hash(bundle)
 
         MANIFEST_PATH.write_text(
             f"{json.dumps(manifest, ensure_ascii=False, indent=2)}\n",
