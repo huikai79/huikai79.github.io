@@ -9,7 +9,7 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Callable
+from typing import BinaryIO, Callable
 
 from article_routing import MANIFEST, routes
 
@@ -19,7 +19,11 @@ TEMP_NOTION_MEDIA_HOST = "prod-files-secure.s3.us-west-2.amazonaws.com"
 MARKDOWN_LINK_RE = re.compile(r'(?<!!)\[([^\]]*)\]\((https?://[^)\s]+)(\s+"[^"]*")?\)')
 LOCAL_VIDEO_LINK_RE = re.compile(r'(?<!!)\[([^\]]*)\]\((attachment-[^)\s]+\.mp4)(\s+"[^"]*")?\)', re.IGNORECASE)
 SAFE_EXTENSION_RE = re.compile(r"^\.[A-Za-z0-9]{1,10}$")
-VIDEO_EXTENSIONS = {".mp4"}
+MAX_LOCALIZED_ATTACHMENT_BYTES = 10 * 1024 * 1024
+STREAMING_MEDIA_EXTENSIONS = {
+    ".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi",
+    ".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac",
+}
 
 
 def directory_hash(directory: Path) -> str:
@@ -66,6 +70,16 @@ def normalize_local_video_links(markdown: str) -> tuple[str, list[str]]:
     return result, converted
 
 
+def read_limited(response: BinaryIO, limit: int = MAX_LOCALIZED_ATTACHMENT_BYTES) -> bytes:
+    payload = response.read(limit + 1)
+    if len(payload) > limit:
+        raise RuntimeError(
+            f"Notion attachment exceeds Git localization limit of {limit} bytes; "
+            "use a streaming/external storage path instead."
+        )
+    return payload
+
+
 def download_file(url: str, destination: Path, attempts: int = 3, timeout: int = 30) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f"{destination.name}.tmp-{os.getpid()}")
@@ -74,7 +88,7 @@ def download_file(url: str, destination: Path, attempts: int = 3, timeout: int =
         try:
             request = urllib.request.Request(url, headers={"User-Agent": "huikai-notion-sync/1"})
             with urllib.request.urlopen(request, timeout=timeout) as response:
-                temporary.write_bytes(response.read())
+                temporary.write_bytes(read_limited(response))
             temporary.replace(destination)
             return
         except Exception as error:  # noqa: BLE001
@@ -96,8 +110,12 @@ def localize_markdown_links(markdown: str, bundle: Path, fetcher: Callable[[str,
     for match in matches:
         original, label, url, title = match.group(0), match.group(1), match.group(2), match.group(3) or ""
         filename = stable_attachment_name(url)
-        if Path(filename).suffix.lower() in VIDEO_EXTENSIONS:
-            raise RuntimeError("Temporary Notion MP4 reached the attachment localizer; refusing to write MP4 into Git.")
+        suffix = Path(filename).suffix.lower()
+        if suffix in STREAMING_MEDIA_EXTENSIONS:
+            raise RuntimeError(
+                f"Temporary Notion streaming media ({suffix}) reached the attachment localizer; "
+                "refusing to write it into Git."
+            )
         destination = bundle / filename
         if filename not in downloaded:
             fetcher(url, destination); downloaded.add(filename)
@@ -147,11 +165,15 @@ def main() -> None:
     if manifest_changed:
         MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     report["mediaLocalization"] = {
-        "status": "complete", "strategy": "temporary-notion-nonvideo-links",
+        "status": "complete", "strategy": "temporary-notion-nonstreaming-links",
+        "maxAttachmentBytes": MAX_LOCALIZED_ATTACHMENT_BYTES,
         "resolved": resolved, "legacyVideoShortcodes": converted_videos,
     }
     REPORT_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-    print(f"Notion media localization: PASS ({len(resolved)} non-video link(s) localized, {len(converted_videos)} legacy video link(s) normalized)")
+    print(
+        "Notion media localization: PASS "
+        f"({len(resolved)} non-streaming link(s) localized, {len(converted_videos)} legacy video link(s) normalized)"
+    )
 
 
 if __name__ == "__main__":
