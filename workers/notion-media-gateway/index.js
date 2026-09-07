@@ -182,6 +182,11 @@ async function proxyUploadedMedia(request, blockId, pagePath, mediaType, env) {
     return new Response(`${mediaType === "video" ? "Video" : "Audio"} unavailable`, { status: 502 });
   }
 
+  const contentType = (upstream.headers.get("Content-Type") || "").split(";", 1)[0].trim().toLowerCase();
+  if (!contentType.startsWith(`${mediaType}/`)) {
+    return new Response(`${mediaType === "video" ? "Video" : "Audio"} unavailable`, { status: 502 });
+  }
+
   const headers = new Headers();
   for (const name of ["Content-Type", "Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) {
     const value = upstream.headers.get(name);
