@@ -5,7 +5,8 @@ import fs from "node:fs/promises";
 import {
   buildNotionFilter,
   extractEditorialFields,
-  productionMetadataMissing
+  productionMetadataMissing,
+  productionTranslationIssues
 } from "./notion-content-contract.mjs";
 import {
   pageHasExplicitCover,
@@ -48,7 +49,9 @@ try {
   if (error?.code !== "ENOENT") throw error;
 }
 
-const seen = new Map();
+const routeKeys = new Map();
+const slugFamilies = new Map();
+const familyMembers = new Map();
 const failures = [];
 const rows = [];
 
@@ -64,16 +67,43 @@ for (const page of pages) {
   if (!title) failures.push(`${page.id}: missing Title`);
   if (!slug) failures.push(`${page.id}: missing slug`);
 
-  if (seen.has(slug)) {
-    failures.push(`${page.id}: duplicate slug ${slug} with ${seen.get(slug)}`);
-  } else if (slug) {
-    seen.set(slug, page.id);
+  const routeKey = `${editorial.language}\0${slug}`;
+  if (slug && editorial.language) {
+    if (routeKeys.has(routeKey)) {
+      failures.push(
+        `${page.id}: duplicate language route ${editorial.language}/${slug} with ${routeKeys.get(routeKey)}`
+      );
+    } else {
+      routeKeys.set(routeKey, page.id);
+    }
+  }
+
+  if (slug && editorial.translationGroup) {
+    const previousGroup = slugFamilies.get(slug);
+    if (previousGroup && previousGroup !== editorial.translationGroup) {
+      failures.push(
+        `${page.id}: shared slug ${slug} crosses Translation Groups ` +
+        `${previousGroup} / ${editorial.translationGroup}`
+      );
+    } else {
+      slugFamilies.set(slug, editorial.translationGroup);
+    }
+  }
+
+  if (editorial.translationGroup) {
+    const members = familyMembers.get(editorial.translationGroup) ?? [];
+    members.push({ pageId: page.id, slug, ...editorial });
+    familyMembers.set(editorial.translationGroup, members);
   }
 
   if (editorial.visibility === "Public") {
     const missing = productionMetadataMissing(editorial);
     if (missing.length) {
       failures.push(`${page.id}: missing production metadata: ${missing.join(", ")}`);
+    }
+    const translationIssues = productionTranslationIssues(editorial);
+    for (const issue of translationIssues) {
+      failures.push(`${page.id}: translation governance: ${issue}`);
     }
 
     const previous = manifest?.pages?.[page.id];
@@ -118,6 +148,38 @@ for (const page of pages) {
   });
 }
 
+for (const [group, members] of familyMembers) {
+  const byLanguage = new Map();
+  for (const member of members) {
+    if (byLanguage.has(member.language)) {
+      failures.push(
+        `${member.pageId}: Translation Group ${group} contains duplicate language ${member.language} ` +
+        `with ${byLanguage.get(member.language)}`
+      );
+    } else {
+      byLanguage.set(member.language, member.pageId);
+    }
+  }
+
+  if (mode === "production") {
+    const sourceMembers = members.filter(member => member.translationStatus === "Source");
+    if (sourceMembers.length !== 1) {
+      failures.push(
+        `Translation Group ${group}: production family requires exactly one Source; found ${sourceMembers.length}`
+      );
+    } else {
+      const sourceId = sourceMembers[0].pageId;
+      for (const member of members.filter(item => item.translationStatus === "Approved")) {
+        if (member.translationSourceIds.length !== 1 || member.translationSourceIds[0] !== sourceId) {
+          failures.push(
+            `${member.pageId}: Approved translation in ${group} must relate to canonical Source ${sourceId}`
+          );
+        }
+      }
+    }
+  }
+}
+
 const report = {
   status: failures.length ? "blocked" : "pass",
   mode,
@@ -125,6 +187,7 @@ const report = {
   productionCount: rows.filter(row => row.visibility === "Public").length,
   coverReadyCount: rows.filter(row => row.coverPlan?.ready === true).length,
   semanticCoverNeededCount: rows.filter(row => row.coverPlan?.strategy === "semantic-cover-required").length,
+  translationFamilyCount: familyMembers.size,
   failures,
   pages: rows
 };
@@ -139,5 +202,6 @@ if (failures.length) {
 console.log(
   `Notion publication contract: PASS ` +
   `(mode=${mode}, pages=${rows.length}, public=${report.productionCount}, ` +
-  `coverReady=${report.coverReadyCount}, semanticNeeded=${report.semanticCoverNeededCount}, report=${reportPath})`
+  `families=${report.translationFamilyCount}, coverReady=${report.coverReadyCount}, ` +
+  `semanticNeeded=${report.semanticCoverNeededCount}, report=${reportPath})`
 );

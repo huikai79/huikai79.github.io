@@ -1,0 +1,308 @@
+#!/usr/bin/env node
+import { Client } from "@notionhq/client";
+import fs from "node:fs/promises";
+import {
+  applyTranslations,
+  collectTranslationSegments,
+  copyablePageCover,
+  copyablePageIcon,
+  draftProperties,
+  extractOpenAIOutputText,
+  inspectBlockTree,
+  sourceTranslationTargets,
+  translationInstructions,
+  translationResponseSchema,
+  validateSourceForTranslation,
+  writableBlock
+} from "./translation-draft-contract.mjs";
+import { extractEditorialFields } from "./notion-content-contract.mjs";
+
+const token = process.env.NOTION_TOKEN;
+const databaseId = process.env.NOTION_DATABASE_ID;
+const apply = process.env.TRANSLATION_APPLY === "1";
+const apiKey = process.env.OPENAI_API_KEY || "";
+const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-5.6-luna";
+const reportPath = process.env.TRANSLATION_REPORT_PATH || "/tmp/notion-translation-drafts.json";
+
+if (!token) throw new Error("NOTION_TOKEN 未設定");
+if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
+if (apply && !apiKey) {
+  throw new Error("TRANSLATION_APPLY=1 requires OPENAI_API_KEY; no draft was created");
+}
+
+const notion = new Client({ auth: token });
+
+function titleValue(properties = {}) {
+  return properties.Title?.title?.map(item => item.plain_text).join("").trim() ?? "";
+}
+
+function richTextValue(property) {
+  return property?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
+}
+
+async function queryAll(filter) {
+  const results = [];
+  let cursor;
+  do {
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      filter,
+      page_size: 100,
+      start_cursor: cursor
+    });
+    results.push(...response.results);
+    cursor = response.has_more ? response.next_cursor : undefined;
+  } while (cursor);
+  return results;
+}
+
+async function listBlockTree(parentId) {
+  const blocks = [];
+  let cursor;
+  do {
+    const response = await notion.blocks.children.list({
+      block_id: parentId,
+      page_size: 100,
+      start_cursor: cursor
+    });
+    for (const block of response.results) {
+      const copy = JSON.parse(JSON.stringify(block));
+      if (block.has_children) copy.children = await listBlockTree(block.id);
+      blocks.push(copy);
+    }
+    cursor = response.has_more ? response.next_cursor : undefined;
+  } while (cursor);
+  return blocks;
+}
+
+async function findExistingTarget(group, language) {
+  const matches = await queryAll({
+    and: [
+      { property: "Translation Group", rich_text: { equals: group } },
+      { property: "Language", select: { equals: language } }
+    ]
+  });
+  return matches;
+}
+
+async function translateSegments({ sourceLanguage, targetLanguage, segments }) {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model,
+      store: false,
+      instructions: translationInstructions(sourceLanguage, targetLanguage),
+      input: JSON.stringify({ sourceLanguage, targetLanguage, segments }),
+      max_output_tokens: 65536,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "translation_segments",
+          strict: true,
+          schema: translationResponseSchema()
+        }
+      }
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.error?.message || JSON.stringify(payload).slice(0, 1000);
+    throw new Error(`OpenAI Responses request failed (${response.status}): ${message}`);
+  }
+  return JSON.parse(extractOpenAIOutputText(payload));
+}
+
+async function appendChildren(pageId, blocks) {
+  for (let offset = 0; offset < blocks.length; offset += 100) {
+    await notion.blocks.children.append({
+      block_id: pageId,
+      children: blocks.slice(offset, offset + 100)
+    });
+  }
+}
+
+async function createDraft({ source, targetLanguage, translated }) {
+  const engine = `openai:${model}`;
+  const properties = draftProperties({
+    source,
+    targetLanguage,
+    translatedTitle: translated.title,
+    translatedSummary: translated.summary,
+    engine
+  });
+  const request = {
+    parent: { database_id: databaseId },
+    properties
+  };
+  const icon = copyablePageIcon(source);
+  const cover = copyablePageCover(source);
+  if (icon) request.icon = icon;
+  if (cover) request.cover = cover;
+
+  const created = await notion.pages.create(request);
+  try {
+    const children = translated.blocks.map(writableBlock);
+    await appendChildren(created.id, children);
+  } catch (error) {
+    // The page was created by this invocation and is not a valid draft without
+    // its complete body. Roll it back instead of leaving a partial review item.
+    try {
+      await notion.pages.update({ page_id: created.id, archived: true });
+    } catch (rollbackError) {
+      throw new Error(
+        `Draft body creation failed (${error.message}); rollback also failed (${rollbackError.message}). ` +
+        `Inspect newly-created Notion page ${created.id}`
+      );
+    }
+    throw error;
+  }
+  return { pageId: created.id, engine };
+}
+
+const sources = await queryAll({
+  and: [
+    { property: "status", status: { equals: "Published" } },
+    { property: "Visibility", select: { equals: "Public" } },
+    { property: "Translation Status", select: { equals: "Source" } }
+  ]
+});
+
+const report = {
+  status: "complete",
+  apply,
+  provider: "openai-responses",
+  model,
+  sourceCount: sources.length,
+  requestedTargetCount: 0,
+  planned: [],
+  generated: [],
+  skipped: [],
+  blocked: []
+};
+
+for (const sourceStub of sources) {
+  const source = await notion.pages.retrieve({ page_id: sourceStub.id });
+  const properties = source.properties ?? {};
+  const editorial = extractEditorialFields(properties);
+  const title = titleValue(properties);
+  const summary = richTextValue(properties.Summary);
+  const group = editorial.translationGroup;
+  const sourceErrors = validateSourceForTranslation({ pageId: source.id, editorial });
+  if (!title) sourceErrors.push("missing Title");
+  if (!summary) sourceErrors.push("missing Summary");
+
+  const targets = sourceTranslationTargets(editorial);
+  report.requestedTargetCount += targets.length;
+  if (sourceErrors.length) {
+    report.blocked.push({
+      sourcePageId: source.id,
+      title,
+      targetLanguage: null,
+      reasons: sourceErrors
+    });
+    continue;
+  }
+
+  for (const targetLanguage of targets) {
+    const existing = await findExistingTarget(group, targetLanguage);
+    if (existing.length) {
+      report.skipped.push({
+        sourcePageId: source.id,
+        title,
+        targetLanguage,
+        reason: "target language already exists in Translation Group",
+        existingPageIds: existing.map(page => page.id)
+      });
+      continue;
+    }
+
+    const blocks = await listBlockTree(source.id);
+    const inspection = inspectBlockTree(blocks);
+    if (inspection.errors.length) {
+      report.blocked.push({
+        sourcePageId: source.id,
+        title,
+        targetLanguage,
+        reasons: inspection.errors,
+        warnings: inspection.warnings,
+        blockCount: inspection.count
+      });
+      continue;
+    }
+
+    const collected = collectTranslationSegments({ title, summary, blocks });
+    if (!collected.segments.length) {
+      report.blocked.push({
+        sourcePageId: source.id,
+        title,
+        targetLanguage,
+        reasons: ["source contains no translatable text segments"]
+      });
+      continue;
+    }
+
+    report.planned.push({
+      sourcePageId: source.id,
+      title,
+      sourceLanguage: editorial.language,
+      targetLanguage,
+      translationGroup: group,
+      sourceRevision: source.last_edited_time ?? "",
+      textSegmentCount: collected.segments.length,
+      blockCount: inspection.count,
+      warnings: inspection.warnings
+    });
+
+    if (!apply) continue;
+
+    try {
+      const translatedResponse = await translateSegments({
+        sourceLanguage: editorial.language,
+        targetLanguage,
+        segments: collected.segments
+      });
+      const translated = applyTranslations({ title, summary, blocks }, translatedResponse);
+      const result = await createDraft({ source, targetLanguage, translated });
+      report.generated.push({
+        sourcePageId: source.id,
+        pageId: result.pageId,
+        sourceLanguage: editorial.language,
+        targetLanguage,
+        translationGroup: group,
+        sourceRevision: source.last_edited_time ?? "",
+        engine: result.engine
+      });
+    } catch (error) {
+      report.blocked.push({
+        sourcePageId: source.id,
+        title,
+        targetLanguage,
+        reasons: [error.message]
+      });
+    }
+  }
+}
+
+if (apply && report.blocked.length) report.status = "partial";
+await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+
+console.log(
+  `Translation drafts: ${report.status.toUpperCase()} ` +
+  `(apply=${apply}, sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
+  `planned=${report.planned.length}, generated=${report.generated.length}, ` +
+  `skipped=${report.skipped.length}, blocked=${report.blocked.length}, report=${reportPath})`
+);
+
+if (apply && report.blocked.length) {
+  for (const item of report.blocked) {
+    console.error(
+      `::error::Translation draft blocked: source=${item.sourcePageId}, target=${item.targetLanguage ?? "n/a"}, ` +
+      `${(item.reasons ?? []).join("; ")}`
+    );
+  }
+  process.exitCode = 1;
+}

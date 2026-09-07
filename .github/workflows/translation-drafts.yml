@@ -1,0 +1,59 @@
+name: "Notion translation draft preflight"
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Create missing translation drafts in Notion (uses paid model API when true)"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-translation-drafts
+  cancel-in-progress: false
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify translation draft contracts
+        run: |
+          node scripts/verify-translation-draft-contract.mjs
+          node --check scripts/generate-translation-drafts.mjs
+
+      - name: Preflight or create missing Notion translation drafts
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_TRANSLATION_MODEL: gpt-5.6-luna
+          TRANSLATION_APPLY: ${{ inputs.apply && '1' || '0' }}
+          TRANSLATION_REPORT_PATH: /tmp/notion-translation-drafts.json
+        run: node scripts/generate-translation-drafts.mjs
+
+      - name: Report translation result
+        if: always()
+        run: |
+          if [ -s /tmp/notion-translation-drafts.json ]; then
+            jq '{status,apply,provider,model,sourceCount,requestedTargetCount,planned,generated,skipped,blocked}' /tmp/notion-translation-drafts.json
+          else
+            echo "Translation report was not created."
+          fi

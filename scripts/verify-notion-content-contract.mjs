@@ -7,9 +7,11 @@ import {
   extractEditorialFields,
   normalizeSyncMode,
   productionMetadataMissing,
+  productionTranslationIssues,
   publicationRecordMissing,
   publicSlugChangeBlocked,
-  shouldQuarantineDeletion
+  shouldQuarantineDeletion,
+  translationGovernanceIssues
 } from "./notion-content-contract.mjs";
 import {
   finalizeManifestPresentationFingerprints,
@@ -52,7 +54,12 @@ const fields = extractEditorialFields({
   Summary: { rich_text: [{ plain_text: "摘要" }] },
   Home: { select: { name: "Rotation" } },
   Language: { select: { name: "zh-TW" } },
-  "Translation Group": { rich_text: [{ plain_text: "example-article" }] }
+  "Translation Group": { rich_text: [{ plain_text: "example-article" }] },
+  "Translate To": { multi_select: [{ name: "zh-CN" }, { name: "en" }] },
+  "Translation Status": { select: { name: "Source" } },
+  "Translation Source": { relation: [] },
+  "Translation Source Revision": { rich_text: [] },
+  "Translation Engine": { rich_text: [] }
 });
 assert.deepEqual(fields, {
   visibility: "Public",
@@ -61,7 +68,12 @@ assert.deepEqual(fields, {
   summary: "摘要",
   homePlacement: "Rotation",
   language: "zh-TW",
-  translationGroup: "example-article"
+  translationGroup: "example-article",
+  translateTo: ["zh-CN", "en"],
+  translationStatus: "Source",
+  translationSourceIds: [],
+  translationSourceRevision: "",
+  translationEngine: ""
 });
 
 assert.deepEqual(
@@ -71,7 +83,8 @@ assert.deepEqual(
     category: "教育",
     entryType: "文章",
     language: "zh-CN",
-    translationGroup: "article-key"
+    translationGroup: "article-key",
+    translationStatus: "Source"
   }),
   []
 );
@@ -82,9 +95,10 @@ assert.deepEqual(
     category: "",
     entryType: "",
     language: "",
-    translationGroup: ""
+    translationGroup: "",
+    translationStatus: ""
   }),
-  ["Visibility=Public", "Summary", "Category", "Type", "Language", "Translation Group"]
+  ["Visibility=Public", "Summary", "Category", "Type", "Language", "Translation Group", "Translation Status"]
 );
 assert.deepEqual(
   productionMetadataMissing({
@@ -93,9 +107,55 @@ assert.deepEqual(
     category: "教育",
     entryType: "文章",
     language: "xx",
-    translationGroup: "article-key"
+    translationGroup: "article-key",
+    translationStatus: "Source"
   }),
   ["Language=xx"]
+);
+
+const sourceTranslation = {
+  visibility: "Public",
+  language: "zh-TW",
+  translationStatus: "Source",
+  translateTo: ["zh-CN", "en"],
+  translationSourceIds: [],
+  translationSourceRevision: "",
+  translationEngine: ""
+};
+assert.deepEqual(translationGovernanceIssues(sourceTranslation), []);
+assert.deepEqual(productionTranslationIssues(sourceTranslation), []);
+assert.deepEqual(
+  translationGovernanceIssues({ ...sourceTranslation, translateTo: ["zh-TW"] }),
+  ["Translate To includes source language zh-TW"]
+);
+assert.deepEqual(
+  translationGovernanceIssues({ ...sourceTranslation, translationSourceIds: ["source-id"] }),
+  ["Source article must not have Translation Source"]
+);
+
+const approvedTranslation = {
+  visibility: "Public",
+  language: "zh-CN",
+  translationStatus: "Approved",
+  translateTo: [],
+  translationSourceIds: ["source-id"],
+  translationSourceRevision: "2026-09-07T00:00:00.000Z",
+  translationEngine: "openai:gpt-5.6-luna"
+};
+assert.deepEqual(translationGovernanceIssues(approvedTranslation), []);
+assert.deepEqual(productionTranslationIssues(approvedTranslation), []);
+assert.deepEqual(
+  productionTranslationIssues({ ...approvedTranslation, translationStatus: "Review" }),
+  ["Public translation lifecycle requires Source or Approved; found Review"]
+);
+assert.deepEqual(
+  translationGovernanceIssues({
+    ...approvedTranslation,
+    translationSourceIds: [],
+    translationSourceRevision: "",
+    translationEngine: ""
+  }),
+  ["Translated article requires exactly one Translation Source", "Translation Source Revision", "Translation Engine"]
 );
 
 const publicationCandidate = {
@@ -108,7 +168,12 @@ const publicationCandidate = {
   entryType: "推薦／整理",
   homePlacement: "None",
   language: "zh-TW",
-  translationGroup: "daxuepeiyangchuangyezhe"
+  translationGroup: "daxuepeiyangchuangyezhe",
+  translationStatus: "Source",
+  translateTo: [],
+  translationSourceIds: [],
+  translationSourceRevision: "",
+  translationEngine: ""
 };
 assert.deepEqual(publicationRecordMissing(publicationCandidate), []);
 assert.deepEqual(publicationRecordMissing({ ...publicationCandidate, date: "" }), ["date"]);
@@ -124,6 +189,10 @@ assert.deepEqual(editorialFrontMatter(publicationCandidate), {
 assert.throws(
   () => editorialFrontMatter({ ...publicationCandidate, summary: "" }),
   /Summary/
+);
+assert.throws(
+  () => editorialFrontMatter({ ...publicationCandidate, translationStatus: "Review" }),
+  /Source or Approved/
 );
 assert.equal(contentFilename("zh-TW"), "index.md");
 assert.equal(contentFilename("zh-CN"), "index.zh-cn.md");
