@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import tempfile
 from pathlib import Path
 
@@ -30,6 +31,10 @@ def main() -> None:
         "https://prod-files-secure.s3.us-west-2.amazonaws.com/"
         "workspace/page/demo.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=video"
     )
+    temporary_audio = (
+        "https://prod-files-secure.s3.us-west-2.amazonaws.com/"
+        "workspace/page/audio.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=audio"
+    )
     external_url = "https://example.com/reference.pdf"
     external_video = "https://example.com/demo.mp4"
     legacy_local_video = "attachment-0123456789abcdef.mp4"
@@ -46,6 +51,16 @@ def main() -> None:
     if not pdf_name_a.endswith(".pdf"):
         fail("Attachment filename must preserve a safe extension")
 
+    if module.read_limited(io.BytesIO(b"12345"), limit=5) != b"12345":
+        fail("Attachment size guard must accept a payload exactly at the limit")
+    try:
+        module.read_limited(io.BytesIO(b"123456"), limit=5)
+    except RuntimeError as error:
+        if "exceeds Git localization limit" not in str(error):
+            fail(f"Unexpected attachment size error: {error}")
+    else:
+        fail("Attachment size guard must reject a payload over the limit")
+
     with tempfile.TemporaryDirectory() as tmp:
         bundle = Path(tmp)
         downloads: list[tuple[str, str]] = []
@@ -55,15 +70,15 @@ def main() -> None:
             downloads.append((url, destination.name))
 
         markdown = (
-            f"[image]({temporary_pdf})\n\n"
+            f"[attachment]({temporary_pdf})\n\n"
             f"[ordinary external]({external_url})\n\n"
             f"[external video]({external_video})\n\n"
             f"![already-an-image]({temporary_pdf})\n"
         )
         updated, localized = module.localize_markdown_links(markdown, bundle, fake_fetcher)
 
-        if f"[image]({pdf_name_a})" not in updated:
-            fail("Temporary Notion non-video attachment link was not localized")
+        if f"[attachment]({pdf_name_a})" not in updated:
+            fail("Temporary Notion non-streaming attachment link was not localized")
         if f"[ordinary external]({external_url})" not in updated:
             fail("Ordinary external link was unexpectedly changed")
         if f"[external video]({external_video})" not in updated:
@@ -71,20 +86,21 @@ def main() -> None:
         if f"![already-an-image]({temporary_pdf})" not in updated:
             fail("Image syntax must remain owned by the existing image localizer")
         if len(localized) != 1 or len(downloads) != 1:
-            fail("Expected exactly one temporary non-video attachment localization")
+            fail("Expected exactly one temporary non-streaming attachment localization")
         if not (bundle / pdf_name_a).is_file():
             fail("Localized attachment file was not written")
 
-        try:
-            module.localize_markdown_links(f"[video]({temporary_video})", bundle, fake_fetcher)
-        except RuntimeError as error:
-            if "refusing to write MP4 into Git" not in str(error):
-                fail(f"Unexpected MP4 refusal error: {error}")
-        else:
-            fail("Temporary Notion MP4 must fail closed instead of being downloaded")
+        for label, media_url in [("video", temporary_video), ("audio", temporary_audio)]:
+            try:
+                module.localize_markdown_links(f"[{label}]({media_url})", bundle, fake_fetcher)
+            except RuntimeError as error:
+                if "streaming media" not in str(error) or "refusing to write it into Git" not in str(error):
+                    fail(f"Unexpected {label} refusal error: {error}")
+            else:
+                fail(f"Temporary Notion {label} must fail closed instead of being downloaded")
 
         if len(downloads) != 1:
-            fail("Temporary Notion MP4 refusal must occur before any download")
+            fail("Temporary Notion streaming-media refusal must occur before any download")
 
         legacy_markdown = f"[legacy video]({legacy_local_video})"
         converted, names = module.normalize_local_video_links(legacy_markdown)
@@ -95,7 +111,7 @@ def main() -> None:
 
         second, second_localized = module.localize_markdown_links(updated, bundle, fake_fetcher)
         if second != updated or second_localized:
-            fail("Second non-video localization run must be byte-stable")
+            fail("Second non-streaming localization run must be byte-stable")
         if len(downloads) != 1:
             fail("Second run must not redownload already-localized Markdown")
 
