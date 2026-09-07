@@ -54,7 +54,7 @@ jobs:
           git count-objects -vH | tee /tmp/git-count-objects.txt
           git rev-list --objects --all \
             | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
-            | awk '$1 == "blob" { print }' \
+            | awk "\$1 == \"blob\" { print }" \
             | sort -k3,3nr > /tmp/all-history-blobs.txt
           head -20 /tmp/all-history-blobs.txt > /tmp/largest-history-blobs.txt
 
@@ -71,9 +71,9 @@ jobs:
             echo ""
             echo "Largest historical blobs:"
             while IFS= read -r line; do
-              type="$(printf '%s\n' "$line" | awk '{print $1}')"
-              sha="$(printf '%s\n' "$line" | awk '{print $2}')"
-              bytes="$(printf '%s\n' "$line" | awk '{print $3}')"
+              type="$(printf '%s\n' "$line" | awk "{print \$1}")"
+              sha="$(printf '%s\n' "$line" | awk "{print \$2}")"
+              bytes="$(printf '%s\n' "$line" | awk "{print \$3}")"
               path="$(printf '%s\n' "$line" | cut -d' ' -f4-)"
               printf -- '- `%s` — %s bytes — `%s` (%s)\n' "$path" "$bytes" "$sha" "$type"
             done < /tmp/largest-history-blobs.txt
