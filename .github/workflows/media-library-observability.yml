@@ -1,0 +1,80 @@
+name: "Media Library observability"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: media-library-observability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify inventory reporter
+        run: python3 scripts/test-media-library-report.py
+
+      - name: Report current article media
+        run: |
+          set -euo pipefail
+          python3 scripts/media-library-report.py --root content/posts --json /tmp/media-library-report.json
+          jq -e '.status == "pass"' /tmp/media-library-report.json > /dev/null
+
+          {
+            echo "## Media Library inventory"
+            echo ""
+            echo "Managed files: **$(jq -r '.media.count' /tmp/media-library-report.json)**"
+            echo "Managed bytes: **$(jq -r '.media.totalBytes' /tmp/media-library-report.json)**"
+            echo "Duplicate groups: **$(jq -r '.duplicates.groupCount' /tmp/media-library-report.json)**"
+            echo "Duplicate wasted bytes: **$(jq -r '.duplicates.wastedBytes' /tmp/media-library-report.json)**"
+            echo "Orphan candidates: **$(jq -r '.references.orphanCandidateCount' /tmp/media-library-report.json)**"
+            echo "Inline images: **$(jq -r '.accessibility.inlineImages' /tmp/media-library-report.json)**"
+            echo "Inline images missing alt: **$(jq -r '.accessibility.inlineImagesMissingAlt' /tmp/media-library-report.json)**"
+            echo "Images over 2 MiB: **$(jq -r '.optimization.largeImageCandidateCount' /tmp/media-library-report.json)**"
+            echo ""
+            echo "Largest managed files:"
+            jq -r '.media.largest[] | "- `\(.path)`: \(.bytes) bytes"' /tmp/media-library-report.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report Git history footprint
+        run: |
+          set -euo pipefail
+          git count-objects -vH | tee /tmp/git-count-objects.txt
+          git rev-list --objects --all \
+            | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
+            | awk "\$1 == \"blob\" { print }" \
+            | sort -k3,3nr > /tmp/all-history-blobs.txt
+          head -20 /tmp/all-history-blobs.txt > /tmp/largest-history-blobs.txt
+
+          echo "Largest historical blobs (top 20):"
+          cat /tmp/largest-history-blobs.txt
+
+          {
+            echo ""
+            echo "## Repository history footprint"
+            echo ""
+            echo "\`\`\`text"
+            cat /tmp/git-count-objects.txt
+            echo "\`\`\`"
+            echo ""
+            echo "Largest historical blobs:"
+            while IFS= read -r line; do
+              type="$(printf '%s\n' "$line" | awk "{print \$1}")"
+              sha="$(printf '%s\n' "$line" | awk "{print \$2}")"
+              bytes="$(printf '%s\n' "$line" | awk "{print \$3}")"
+              path="$(printf '%s\n' "$line" | cut -d' ' -f4-)"
+              printf -- "- \`%s\` — %s bytes — \`%s\` (%s)\n" "$path" "$bytes" "$sha" "$type"
+            done < /tmp/largest-history-blobs.txt
+          } >> "$GITHUB_STEP_SUMMARY"
