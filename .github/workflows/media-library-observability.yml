@@ -28,6 +28,7 @@ jobs:
 
       - name: Report current article media
         run: |
+          set -euo pipefail
           python3 scripts/media-library-report.py --root content/posts --json /tmp/media-library-report.json
           jq -e '.status == "pass"' /tmp/media-library-report.json > /dev/null
 
@@ -49,12 +50,16 @@ jobs:
 
       - name: Report Git history footprint
         run: |
+          set -euo pipefail
           git count-objects -vH | tee /tmp/git-count-objects.txt
           git rev-list --objects --all \
             | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
             | awk '$1 == "blob" { print }' \
-            | sort -k3,3nr \
-            | head -20 > /tmp/largest-history-blobs.txt
+            | sort -k3,3nr > /tmp/all-history-blobs.txt
+          head -20 /tmp/all-history-blobs.txt > /tmp/largest-history-blobs.txt
+
+          echo "Largest historical blobs (top 20):"
+          cat /tmp/largest-history-blobs.txt
 
           {
             echo ""
