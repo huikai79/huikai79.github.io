@@ -10,6 +10,7 @@ go version
 node scripts/test-notion-video-transformer.mjs
 node scripts/test-notion-audio-transformer.mjs
 node workers/notion-media-gateway/test-paths.mjs
+node workers/notion-media-gateway/test-runtime.mjs
 python3 scripts/test-notion-media-localization.py
 python3 scripts/test-media-budget.py
 python3 scripts/localize-notion-media.py
