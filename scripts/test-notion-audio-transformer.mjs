@@ -17,17 +17,19 @@ const wavBlock = {
 assert.equal(
   notionAudioMarkdown(wavBlock),
   `{{< notion-audio block="${blockId}" >}}`,
-  "uploaded WAV must become a gateway shortcode containing only its Notion block ID"
+  "uploaded audio must become a gateway shortcode containing only its Notion block ID"
 );
 
-for (const extension of ["mp3", "m4a", "aac", "ogg", "flac"]) {
+for (const url of [
+  "https://example.com/demo.mp3",
+  "https://example.com/demo.oga",
+  "https://example.com/demo.midi",
+  "https://example.com/download-without-extension?token=temporary"
+]) {
   assert.equal(
-    notionAudioMarkdown({
-      ...wavBlock,
-      audio: { type: "file", file: { url: `https://example.com/demo.${extension}` } }
-    }),
+    notionAudioMarkdown({ ...wavBlock, audio: { type: "file", file: { url } } }),
     `{{< notion-audio block="${blockId}" >}}`,
-    `uploaded ${extension} must be admitted to the audio gateway`
+    "temporary URL filename must not be treated as the authoritative audio type"
   );
 }
 
@@ -38,9 +40,15 @@ assert.equal(
 );
 
 assert.throws(
-  () => notionAudioMarkdown({ ...wavBlock, audio: { type: "file", file: { url: "https://example.com/demo.aiff" } } }),
-  /Unsupported Notion uploaded audio format/,
-  "unsupported uploaded audio formats must fail closed rather than enter Git"
+  () => notionAudioMarkdown({ ...wavBlock, audio: { type: "file", file: { url: "file:///tmp/demo.wav" } } }),
+  /non-HTTPS file URL/,
+  "uploaded audio transport must remain HTTPS"
+);
+
+assert.throws(
+  () => notionAudioMarkdown({ ...wavBlock, audio: { type: "file", file: { url: "not a url" } } }),
+  /invalid file URL/,
+  "invalid temporary URLs must fail closed"
 );
 
 assert.throws(
