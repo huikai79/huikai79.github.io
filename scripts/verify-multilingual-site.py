@@ -120,11 +120,8 @@ for left, right in (
     if right not in parser.hrefs:
         fail(f"Translated page does not expose its Simplified counterpart: {left} -> {right}")
 
-# The secondary-language homepage intentionally remains editorially quiet until
-# it gets an independent Notion Home-selection policy. Articles are still
-# discoverable through /zh-cn/posts/.
-if 'id="home-selected"' in simplified or 'id="home-recent"' in simplified:
-    fail("Simplified homepage must not reuse the zh-TW Selected/Recent rotation")
+# Homepage Selected/Recent governance is language-specific and is verified in
+# verify-routed-rendered-site.py against the committed bilingual runtime.
 
 expected_indexes = {
     "_index.md": '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n',
@@ -152,8 +149,6 @@ migrated = bool(pages) and all(
 )
 
 if not migrated:
-    # Backward-compatible validation for the committed pre-routing snapshot used
-    # by PR validation before the first production sync applies Notion Language.
     traditional_articles = sorted((PUBLIC / "posts").glob("*/index.html")) if (PUBLIC / "posts").exists() else []
     simplified_articles = sorted((PUBLIC / "zh-cn" / "posts").glob("*/index.html")) if (PUBLIC / "zh-cn" / "posts").exists() else []
     if len(traditional_articles) != len(pages):
@@ -208,9 +203,6 @@ else:
             f"actual={sorted(str(p.relative_to(PUBLIC)) for p in actual)}"
         )
 
-    # A language switch is allowed only when the same translation group has a
-    # genuine counterpart in another language. Unique groups must not fabricate
-    # a translation link.
     for group, members in groups.items():
         languages = {language for language, _ in members}
         if len(languages) != len(members):
