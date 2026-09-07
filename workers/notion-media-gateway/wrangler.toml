@@ -3,6 +3,9 @@ main = "index.js"
 compatibility_date = "2026-09-06"
 workers_dev = false
 
+[secrets]
+required = ["NOTION_TOKEN", "MEDIA_SESSION_SECRET"]
+
 [[routes]]
 pattern = "huikai.com.kg/media/*"
 zone_name = "huikai.com.kg"
