@@ -65,9 +65,9 @@ jobs:
             echo ""
             echo "## Repository history footprint"
             echo ""
-            echo '```text'
+            echo "\`\`\`text"
             cat /tmp/git-count-objects.txt
-            echo '```'
+            echo "\`\`\`"
             echo ""
             echo "Largest historical blobs:"
             while IFS= read -r line; do
@@ -75,6 +75,6 @@ jobs:
               sha="$(printf '%s\n' "$line" | awk "{print \$2}")"
               bytes="$(printf '%s\n' "$line" | awk "{print \$3}")"
               path="$(printf '%s\n' "$line" | cut -d' ' -f4-)"
-              printf -- '- `%s` — %s bytes — `%s` (%s)\n' "$path" "$bytes" "$sha" "$type"
+              printf -- "- \`%s\` — %s bytes — \`%s\` (%s)\n" "$path" "$bytes" "$sha" "$type"
             done < /tmp/largest-history-blobs.txt
           } >> "$GITHUB_STEP_SUMMARY"
