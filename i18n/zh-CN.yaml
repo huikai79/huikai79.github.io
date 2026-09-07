@@ -5,4 +5,10 @@ huikai:
   article_context: "文章信息"
   home_selected: "精选"
   home_recent: "最近"
+  explore_categories: "按分类探索"
+  explore_formats: "按形式探索"
+  explore_tags: "按标签探索"
+  explore_count:
+    one: "{{ .Count }} 篇"
+    other: "{{ .Count }} 篇"
   explore_empty: "目前还没有可探索的主题。"
