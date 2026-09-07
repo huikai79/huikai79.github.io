@@ -71,8 +71,8 @@ function validBlockId(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
-function validArticlePath(value) {
-  return /^\/posts\/[A-Za-z0-9_-]+\/$/.test(value || "");
+export function validArticlePath(value) {
+  return /^\/(?:(?:zh-cn|en)\/)?posts\/[A-Za-z0-9_-]+\/$/.test(value || "");
 }
 
 function htmlContainsVideoBlock(html, blockId) {
