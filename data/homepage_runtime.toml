@@ -14,3 +14,32 @@ poolOffset = 0
 pageId = "23b7a59e-0439-81d2-b926-cb11c044d7e9"
 path = "posts/how-to-make-wealth"
 source = "rotationPool"
+
+[secondary]
+
+rotationKey = "2026-W37"
+rotationIndex = 1
+rotationEpoch = "2026-W36"
+rotationTimezone = "Asia/Kuala_Lumpur"
+selectedLimitCap = 3
+selectedLimit = 3
+recentLimit = 5
+pinnedSize = 1
+rotationSlots = 2
+poolSize = 3
+poolOffset = 2
+
+[[secondary.selected]]
+pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
+path = "posts/How-you-know"
+source = "pinned"
+
+[[secondary.selected]]
+pageId = "23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
+path = "posts/Writing-and-speaking"
+source = "rotationPool"
+
+[[secondary.selected]]
+pageId = "2367a59e-0439-807a-8de1-c7050f44183e"
+path = "posts/be-alife"
+source = "rotationPool"
