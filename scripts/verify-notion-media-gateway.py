@@ -3,7 +3,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 worker = (ROOT / "workers/notion-media-gateway/index.js").read_text(encoding="utf-8")
-shortcode = (ROOT / "layouts/shortcodes/notion-video.html").read_text(encoding="utf-8")
+video_shortcode = (ROOT / "layouts/shortcodes/notion-video.html").read_text(encoding="utf-8")
+audio_shortcode = (ROOT / "layouts/shortcodes/notion-audio.html").read_text(encoding="utf-8")
 wrangler = (ROOT / "workers/notion-media-gateway/wrangler.toml").read_text(encoding="utf-8")
 
 required_worker = [
@@ -15,14 +16,28 @@ required_worker = [
     'publishedPageContainsVideo',
     'htmlContainsVideoBlock',
     'data-notion-video-block\\\\s*=\\\\s*',
+    'publishedPageContainsAudio',
+    'htmlContainsAudioBlock',
+    'data-notion-audio-block\\\\s*=\\\\s*',
+    'notionUploadedFileUrl',
+    'proxyUploadedMedia',
     'Content-Disposition", "inline"',
     'Cache-Control", "private, no-store"',
 ]
-required_shortcode = [
+required_video_shortcode = [
     'data-notion-video-block=',
     'controlslist="nodownload noremoteplayback"',
     'disablepictureinpicture',
     'disableremoteplayback',
+    'data-media-endpoint="/media/video/',
+    'fetch("/media/session"',
+    'credentials: "same-origin"',
+]
+required_audio_shortcode = [
+    'data-notion-audio-block=',
+    'controlslist="nodownload noremoteplayback"',
+    'disableremoteplayback',
+    'data-media-endpoint="/media/audio/',
     'fetch("/media/session"',
     'credentials: "same-origin"',
 ]
@@ -31,14 +46,19 @@ errors = []
 for needle in required_worker:
     if needle not in worker:
         errors.append(f"worker contract missing: {needle}")
-for needle in required_shortcode:
-    if needle not in shortcode:
-        errors.append(f"shortcode contract missing: {needle}")
+for needle in required_video_shortcode:
+    if needle not in video_shortcode:
+        errors.append(f"video shortcode contract missing: {needle}")
+for needle in required_audio_shortcode:
+    if needle not in audio_shortcode:
+        errors.append(f"audio shortcode contract missing: {needle}")
 if 'pattern = "huikai.com.kg/media/*"' not in wrangler:
     errors.append("worker route is not limited to huikai.com.kg/media/*")
 
 if 'html.includes(`data-notion-video-block="${blockId}"`)' in worker:
     errors.append("worker must not require quoted video marker attributes after Hugo minification")
+if 'html.includes(`data-notion-audio-block="${blockId}"`)' in worker:
+    errors.append("worker must not require quoted audio marker attributes after Hugo minification")
 
 for forbidden in ["secret =", "NOTION_TOKEN =", "MEDIA_SESSION_SECRET ="]:
     if forbidden in worker or forbidden in wrangler:
