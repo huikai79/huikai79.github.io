@@ -7,7 +7,6 @@ import path from "node:path";
 import fetch from "node-fetch";
 import pLimit from "p-limit";
 import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
-import { notionAudioMarkdown } from "./scripts/notion-audio-transformer.mjs";
 import {
   buildNotionFilter,
   contentFilename,
@@ -25,7 +24,6 @@ import {
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 n2m.setCustomTransformer("video", notionVideoMarkdown);
-n2m.setCustomTransformer("audio", notionAudioMarkdown);
 
 const DB_ID = process.env.NOTION_DATABASE_ID;
 const OUT_DIR = "content/posts";
@@ -86,7 +84,6 @@ async function generatorHash() {
   for (const source of [
     new URL(import.meta.url),
     new URL("./scripts/notion-video-transformer.mjs", import.meta.url),
-    new URL("./scripts/notion-audio-transformer.mjs", import.meta.url),
     new URL("./scripts/notion-content-contract.mjs", import.meta.url),
     new URL("./scripts/article-bundle-contract.mjs", import.meta.url)
   ]) {
