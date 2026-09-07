@@ -1,13 +1,49 @@
-{{- $terms := .Site.Taxonomies.tags.ByCount -}}
-{{- if $terms -}}
-<div class="explore-grid not-prose">
-  {{- range $terms -}}
-  <a class="explore-topic" href="{{ .Page.RelPermalink }}">
-    <span class="explore-topic-name">{{ .Page.LinkTitle }}</span>
-    <span class="explore-topic-count">{{ .Count }} 篇</span>
-  </a>
+{{- $categories := .Site.Taxonomies.categories.ByCount -}}
+{{- $formats := .Site.Taxonomies.formats.ByCount -}}
+{{- $tags := .Site.Taxonomies.tags.ByCount -}}
+
+{{- if or $categories $formats $tags -}}
+  {{- with $categories -}}
+  <section class="explore-taxonomy-group" data-discovery-taxonomy="categories">
+    <h2>{{ i18n "huikai.explore_categories" }}</h2>
+    <div class="explore-grid not-prose">
+      {{- range . -}}
+      <a class="explore-topic" href="{{ .Page.RelPermalink }}">
+        <span class="explore-topic-name">{{ .Page.LinkTitle }}</span>
+        <span class="explore-topic-count">{{ i18n "huikai.explore_count" .Count }}</span>
+      </a>
+      {{- end -}}
+    </div>
+  </section>
   {{- end -}}
-</div>
+
+  {{- with $formats -}}
+  <section class="explore-taxonomy-group" data-discovery-taxonomy="formats">
+    <h2>{{ i18n "huikai.explore_formats" }}</h2>
+    <div class="explore-grid not-prose">
+      {{- range . -}}
+      <a class="explore-topic" href="{{ .Page.RelPermalink }}">
+        <span class="explore-topic-name">{{ .Page.LinkTitle }}</span>
+        <span class="explore-topic-count">{{ i18n "huikai.explore_count" .Count }}</span>
+      </a>
+      {{- end -}}
+    </div>
+  </section>
+  {{- end -}}
+
+  {{- with $tags -}}
+  <section class="explore-taxonomy-group" data-discovery-taxonomy="tags">
+    <h2>{{ i18n "huikai.explore_tags" }}</h2>
+    <div class="explore-grid not-prose">
+      {{- range . -}}
+      <a class="explore-topic" href="{{ .Page.RelPermalink }}">
+        <span class="explore-topic-name">{{ .Page.LinkTitle }}</span>
+        <span class="explore-topic-count">{{ i18n "huikai.explore_count" .Count }}</span>
+      </a>
+      {{- end -}}
+    </div>
+  </section>
+  {{- end -}}
 {{- else -}}
 <p>{{ i18n "huikai.explore_empty" }}</p>
 {{- end -}}
