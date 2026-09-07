@@ -2,7 +2,7 @@
   {{ $homepage := hugo.Data.homepage }}
   {{ $runtimeRoot := hugo.Data.homepage_runtime }}
   {{ $runtime := $runtimeRoot }}
-  {{ if eq .Site.Language.Lang "zh-CN" }}
+  {{ if eq (lower .Site.Language.Lang) "zh-cn" }}
     {{ $runtime = $runtimeRoot.secondary | default dict }}
   {{ end }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
