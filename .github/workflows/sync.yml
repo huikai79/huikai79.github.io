@@ -111,18 +111,18 @@ jobs:
           manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
           bundle_count=0
 
-          while IFS=$'\t' read -r slug content_file; do
-            if [ -z "$slug" ] || [ -z "$content_file" ] || [ "$content_file" = "null" ]; then
-              echo "::error::Notion manifest article is missing slug/contentFile"
+          while IFS=$'\t' read -r bundle_path content_file; do
+            if [ -z "$bundle_path" ] || [ -z "$content_file" ] || [ "$content_file" = "null" ]; then
+              echo "::error::Notion manifest article is missing bundlePath/slug/contentFile"
               exit 1
             fi
-            article_source="content/posts/${slug}/${content_file}"
+            article_source="content/posts/${bundle_path}/${content_file}"
             if [ ! -s "$article_source" ]; then
               echo "::error::Manifest article source is missing: $article_source"
               exit 1
             fi
             bundle_count=$((bundle_count + 1))
-          done < <(jq -r '.pages[] | [.slug, .contentFile] | @tsv' .notion-sync-manifest.json)
+          done < <(jq -r '.pages[] | [(.bundlePath // .slug), .contentFile] | @tsv' .notion-sync-manifest.json)
 
           test "$published" -eq "$written"
           test "$written" -eq "$bundle_count"
