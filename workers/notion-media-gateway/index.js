@@ -179,11 +179,20 @@ async function proxyUploadedMedia(request, blockId, pagePath, mediaType, env) {
   }
 
   if (!upstream.ok && upstream.status !== 206) {
+    console.error("media upstream status", {
+      mediaType,
+      status: upstream.status
+    });
     return new Response(`${mediaType === "video" ? "Video" : "Audio"} unavailable`, { status: 502 });
   }
 
   const contentType = (upstream.headers.get("Content-Type") || "").split(";", 1)[0].trim().toLowerCase();
   if (!contentType.startsWith(`${mediaType}/`)) {
+    console.error("media upstream mime", {
+      mediaType,
+      status: upstream.status,
+      contentType
+    });
     return new Response(`${mediaType === "video" ? "Video" : "Audio"} unavailable`, { status: 502 });
   }
 
