@@ -48,9 +48,14 @@ def completed_cover_resolution() -> bool:
     )
 
 
-require_cover = completed_cover_resolution()
+def article_sources() -> list[Path]:
+    return sorted((ROOT / "content" / "posts").glob("*/index*.md"))
 
-for path in sorted((ROOT / "content" / "posts").glob("*/index.md")):
+
+require_cover = completed_cover_resolution()
+sources = article_sources()
+
+for path in sources:
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.replace("\r\n", "\n").split("\n")
     rel = path.relative_to(ROOT)
@@ -112,6 +117,6 @@ if errors:
 
 print(
     "Source contract verification: PASS "
-    f"({len(list((ROOT / 'content' / 'posts').glob('*/index.md')))} articles checked"
+    f"({len(sources)} articles checked"
     f", cover requirement={'on' if require_cover else 'off'})"
 )
