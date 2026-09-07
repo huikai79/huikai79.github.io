@@ -8,7 +8,10 @@
   {{ $cover = .Resources.GetMatch "cover*" }}
 {{ end }}
 {{ with $cover }}
-  {{ $src := .Fill "1920x1080 center" }}
+  {{ $src := . }}
+  {{ if reflect.IsImageResourceProcessable . }}
+    {{ $src = .Fill "1920x1080 center" }}
+  {{ end }}
   <div class="post-hero">
     <img src="{{ $src.RelPermalink }}" alt="{{ $.Title }}" class="post-cover" loading="eager">
   </div>
