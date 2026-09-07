@@ -5,6 +5,7 @@ import importlib.util
 import io
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 SCRIPT = Path(__file__).with_name("localize-notion-media.py")
 spec = importlib.util.spec_from_file_location("localize_notion_media", SCRIPT)
@@ -16,6 +17,23 @@ spec.loader.exec_module(module)
 
 def fail(message: str) -> None:
     raise AssertionError(message)
+
+
+class ShortReadBytesIO(io.BytesIO):
+    def __init__(self, payload: bytes, max_chunk: int):
+        super().__init__(payload)
+        self.max_chunk = max_chunk
+
+    def read(self, size: int = -1) -> bytes:
+        if size < 0:
+            size = self.max_chunk
+        return super().read(min(size, self.max_chunk))
+
+
+class HeaderBytesIO(io.BytesIO):
+    def __init__(self, payload: bytes, content_type: str):
+        super().__init__(payload)
+        self.headers = {"Content-Type": content_type}
 
 
 def main() -> None:
@@ -61,6 +79,22 @@ def main() -> None:
     else:
         fail("Attachment size guard must reject a payload over the limit")
 
+    if module.read_limited(ShortReadBytesIO(b"12345", max_chunk=2), limit=5) != b"12345":
+        fail("Attachment size guard must collect partial reads until EOF")
+    try:
+        module.read_limited(ShortReadBytesIO(b"123456", max_chunk=2), limit=5)
+    except RuntimeError:
+        pass
+    else:
+        fail("Attachment size guard must reject an over-limit payload even when reads are partial")
+
+    if not module.is_streaming_content_type("audio/wav; charset=binary"):
+        fail("Audio MIME type must be treated as streaming media")
+    if not module.is_streaming_content_type("VIDEO/MP4"):
+        fail("Video MIME type matching must be case-insensitive")
+    if module.is_streaming_content_type("application/pdf"):
+        fail("Ordinary document MIME type must not be treated as streaming media")
+
     with tempfile.TemporaryDirectory() as tmp:
         bundle = Path(tmp)
         downloads: list[tuple[str, str]] = []
@@ -101,6 +135,24 @@ def main() -> None:
 
         if len(downloads) != 1:
             fail("Temporary Notion streaming-media refusal must occur before any download")
+
+        mime_destination = bundle / "attachment-extensionless.bin"
+        with mock.patch.object(
+            module.urllib.request,
+            "urlopen",
+            return_value=HeaderBytesIO(b"streaming bytes", "audio/wav"),
+        ):
+            try:
+                module.download_file("https://example.invalid/attachment", mime_destination, attempts=1)
+            except RuntimeError as error:
+                if "streaming media content type" not in str(error):
+                    fail(f"Unexpected MIME refusal error: {error}")
+            else:
+                fail("Streaming MIME type must fail closed even when the URL has no media extension")
+        if mime_destination.exists():
+            fail("Streaming MIME refusal must not install a destination file")
+        if list(bundle.glob("attachment-extensionless.bin.tmp-*")):
+            fail("Streaming MIME refusal must clean up temporary files")
 
         legacy_markdown = f"[legacy video]({legacy_local_video})"
         converted, names = module.normalize_local_video_links(legacy_markdown)
