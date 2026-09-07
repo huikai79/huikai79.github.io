@@ -70,14 +70,25 @@ def normalize_local_video_links(markdown: str) -> tuple[str, list[str]]:
     return result, converted
 
 
+def is_streaming_content_type(value: str) -> bool:
+    media_type = (value or "").split(";", 1)[0].strip().lower()
+    return media_type.startswith("audio/") or media_type.startswith("video/")
+
+
 def read_limited(response: BinaryIO, limit: int = MAX_LOCALIZED_ATTACHMENT_BYTES) -> bytes:
-    payload = response.read(limit + 1)
+    payload = bytearray()
+    while len(payload) <= limit:
+        remaining = (limit + 1) - len(payload)
+        chunk = response.read(remaining)
+        if not chunk:
+            break
+        payload.extend(chunk)
     if len(payload) > limit:
         raise RuntimeError(
             f"Notion attachment exceeds Git localization limit of {limit} bytes; "
             "use a streaming/external storage path instead."
         )
-    return payload
+    return bytes(payload)
 
 
 def download_file(url: str, destination: Path, attempts: int = 3, timeout: int = 30) -> None:
@@ -88,6 +99,12 @@ def download_file(url: str, destination: Path, attempts: int = 3, timeout: int =
         try:
             request = urllib.request.Request(url, headers={"User-Agent": "huikai-notion-sync/1"})
             with urllib.request.urlopen(request, timeout=timeout) as response:
+                content_type = response.headers.get("Content-Type", "")
+                if is_streaming_content_type(content_type):
+                    raise RuntimeError(
+                        f"Temporary Notion streaming media content type ({content_type or 'unknown'}) "
+                        "reached the attachment localizer; refusing to write it into Git."
+                    )
                 temporary.write_bytes(read_limited(response))
             temporary.replace(destination)
             return
