@@ -1,5 +1,6 @@
 const VALID_SYNC_MODES = new Set(["legacy", "production", "preview"]);
 export const VALID_CONTENT_LANGUAGES = new Set(["zh-TW", "zh-CN", "en"]);
+export const VALID_TRANSLATION_STATUSES = new Set(["Source", "Draft", "Review", "Approved", "Stale"]);
 
 export function normalizeSyncMode(value = "legacy") {
   const mode = String(value || "legacy").trim().toLowerCase();
@@ -47,6 +48,14 @@ function selectValue(property) {
   return property?.select?.name?.trim() ?? "";
 }
 
+function multiSelectValues(property) {
+  return property?.multi_select?.map(item => item.name?.trim()).filter(Boolean) ?? [];
+}
+
+function relationIds(property) {
+  return property?.relation?.map(item => item.id?.trim()).filter(Boolean) ?? [];
+}
+
 export function extractEditorialFields(properties = {}) {
   return {
     visibility: selectValue(properties.Visibility),
@@ -55,8 +64,62 @@ export function extractEditorialFields(properties = {}) {
     summary: richTextValue(properties.Summary),
     homePlacement: selectValue(properties.Home),
     language: selectValue(properties.Language),
-    translationGroup: richTextValue(properties["Translation Group"])
+    translationGroup: richTextValue(properties["Translation Group"]),
+    translateTo: multiSelectValues(properties["Translate To"]),
+    translationStatus: selectValue(properties["Translation Status"]),
+    translationSourceIds: relationIds(properties["Translation Source"]),
+    translationSourceRevision: richTextValue(properties["Translation Source Revision"]),
+    translationEngine: richTextValue(properties["Translation Engine"])
   };
+}
+
+export function translationGovernanceIssues(candidate = {}) {
+  const issues = [];
+  const language = String(candidate.language || "").trim();
+  const status = String(candidate.translationStatus || "").trim();
+  const targets = Array.isArray(candidate.translateTo) ? candidate.translateTo : [];
+  const sourceIds = Array.isArray(candidate.translationSourceIds) ? candidate.translationSourceIds : [];
+
+  if (!status) {
+    issues.push("Translation Status");
+    return issues;
+  }
+  if (!VALID_TRANSLATION_STATUSES.has(status)) {
+    issues.push(`Translation Status=${status}`);
+  }
+
+  for (const target of targets) {
+    if (!VALID_CONTENT_LANGUAGES.has(target)) {
+      issues.push(`Translate To=${target}`);
+    }
+    if (language && target === language) {
+      issues.push(`Translate To includes source language ${language}`);
+    }
+  }
+  if (new Set(targets).size !== targets.length) {
+    issues.push("Translate To contains duplicates");
+  }
+
+  if (status === "Source") {
+    if (sourceIds.length) issues.push("Source article must not have Translation Source");
+    if (candidate.translationSourceRevision) issues.push("Source article must not have Translation Source Revision");
+  } else if (VALID_TRANSLATION_STATUSES.has(status)) {
+    if (sourceIds.length !== 1) issues.push("Translated article requires exactly one Translation Source");
+    if (!candidate.translationSourceRevision) issues.push("Translation Source Revision");
+    if (!candidate.translationEngine) issues.push("Translation Engine");
+    if (targets.length) issues.push("Translated article must not set Translate To");
+  }
+
+  return issues;
+}
+
+export function productionTranslationIssues(candidate = {}) {
+  const issues = translationGovernanceIssues(candidate);
+  const status = String(candidate.translationStatus || "").trim();
+  if (candidate.visibility === "Public" && status && !new Set(["Source", "Approved"]).has(status)) {
+    issues.push(`Public translation lifecycle requires Source or Approved; found ${status}`);
+  }
+  return issues;
 }
 
 export function productionMetadataMissing(candidate) {
@@ -71,6 +134,7 @@ export function productionMetadataMissing(candidate) {
     missing.push(`Language=${candidate.language}`);
   }
   if (!candidate.translationGroup) missing.push("Translation Group");
+  if (!candidate.translationStatus) missing.push("Translation Status");
   return missing;
 }
 
@@ -84,8 +148,11 @@ export function publicationRecordMissing(candidate = {}) {
 
 export function editorialFrontMatter(candidate = {}) {
   const missing = publicationRecordMissing(candidate);
-  if (missing.length) {
-    throw new Error(`Publication front matter missing: ${missing.join(", ")}`);
+  const translationIssues = productionTranslationIssues(candidate);
+  if (missing.length || translationIssues.length) {
+    throw new Error(
+      `Publication front matter missing/invalid: ${[...missing, ...translationIssues].join(", ")}`
+    );
   }
 
   return {
