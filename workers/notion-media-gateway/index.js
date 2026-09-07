@@ -2,8 +2,9 @@ const SITE_ORIGIN = "https://huikai.com.kg";
 const SESSION_COOKIE = "__Host-hk_media";
 const SESSION_TTL_SECONDS = 600;
 const NOTION_API_VERSION = "2022-06-28";
-const VIDEO_URL_CACHE_MS = 45 * 60 * 1000;
+const MEDIA_URL_CACHE_MS = 45 * 60 * 1000;
 const videoUrlCache = new Map();
+const audioUrlCache = new Map();
 
 function base64Url(bytes) {
   let binary = "";
@@ -110,6 +111,14 @@ function htmlContainsVideoBlock(html, blockId) {
   return marker.test(html);
 }
 
+function htmlContainsAudioBlock(html, blockId) {
+  const marker = new RegExp(
+    `data-notion-audio-block\\s*=\\s*(?:"${blockId}"|'${blockId}'|${blockId}(?=[\\s>]))`,
+    "i"
+  );
+  return marker.test(html);
+}
+
 async function publishedPageContainsVideo(pagePath, blockId) {
   const response = await fetch(`${SITE_ORIGIN}${pagePath}`, {
     headers: { "User-Agent": "huikai-media-gateway/1" },
@@ -120,8 +129,19 @@ async function publishedPageContainsVideo(pagePath, blockId) {
   return htmlContainsVideoBlock(html, blockId);
 }
 
-async function notionVideoUrl(blockId, env, force = false) {
-  const cached = videoUrlCache.get(blockId);
+async function publishedPageContainsAudio(pagePath, blockId) {
+  const response = await fetch(`${SITE_ORIGIN}${pagePath}`, {
+    headers: { "User-Agent": "huikai-media-gateway/1" },
+    cf: { cacheEverything: true, cacheTtl: 300 }
+  });
+  if (!response.ok) return false;
+  const html = await response.text();
+  return htmlContainsAudioBlock(html, blockId);
+}
+
+async function notionUploadedFileUrl(blockId, mediaType, env, force = false) {
+  const cache = mediaType === "video" ? videoUrlCache : audioUrlCache;
+  const cached = cache.get(blockId);
   if (!force && cached && cached.expiresAt > Date.now()) return cached.url;
 
   const response = await fetch(`https://api.notion.com/v1/blocks/${encodeURIComponent(blockId)}`, {
@@ -133,30 +153,34 @@ async function notionVideoUrl(blockId, env, force = false) {
   if (!response.ok) throw new Error(`Notion block lookup failed: ${response.status}`);
 
   const block = await response.json();
-  if (block.type !== "video" || block.video?.type !== "file" || !block.video.file?.url) {
-    throw new Error("Notion block is not an uploaded video file");
+  const media = block?.[mediaType];
+  if (block.type !== mediaType || media?.type !== "file" || !media.file?.url) {
+    throw new Error(`Notion block is not an uploaded ${mediaType} file`);
   }
 
-  const entry = { url: block.video.file.url, expiresAt: Date.now() + VIDEO_URL_CACHE_MS };
-  videoUrlCache.set(blockId, entry);
+  const entry = { url: media.file.url, expiresAt: Date.now() + MEDIA_URL_CACHE_MS };
+  cache.set(blockId, entry);
   return entry.url;
 }
 
-async function proxyVideo(request, blockId, pagePath, env) {
+async function proxyUploadedMedia(request, blockId, pagePath, mediaType, env) {
   const upstreamHeaders = new Headers();
   const range = request.headers.get("Range");
   if (range) upstreamHeaders.set("Range", range);
 
-  let upstreamUrl = await notionVideoUrl(blockId, env);
+  const cache = mediaType === "video" ? videoUrlCache : audioUrlCache;
+  let upstreamUrl = await notionUploadedFileUrl(blockId, mediaType, env);
   let upstream = await fetch(upstreamUrl, { method: request.method, headers: upstreamHeaders, redirect: "follow" });
 
   if ([401, 403].includes(upstream.status)) {
-    videoUrlCache.delete(blockId);
-    upstreamUrl = await notionVideoUrl(blockId, env, true);
+    cache.delete(blockId);
+    upstreamUrl = await notionUploadedFileUrl(blockId, mediaType, env, true);
     upstream = await fetch(upstreamUrl, { method: request.method, headers: upstreamHeaders, redirect: "follow" });
   }
 
-  if (!upstream.ok && upstream.status !== 206) return new Response("Video unavailable", { status: 502 });
+  if (!upstream.ok && upstream.status !== 206) {
+    return new Response(`${mediaType === "video" ? "Video" : "Audio"} unavailable`, { status: 502 });
+  }
 
   const headers = new Headers();
   for (const name of ["Content-Type", "Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) {
@@ -199,24 +223,31 @@ export default {
       });
     }
 
-    const match = url.pathname.match(/^\/media\/video\/([0-9a-f-]+)$/i);
-    if (!match || !["GET", "HEAD"].includes(request.method)) return new Response("Not found", { status: 404 });
+    const videoMatch = url.pathname.match(/^\/media\/video\/([0-9a-f-]+)$/i);
+    const audioMatch = url.pathname.match(/^\/media\/audio\/([0-9a-f-]+)$/i);
+    if ((!videoMatch && !audioMatch) || !["GET", "HEAD"].includes(request.method)) {
+      return new Response("Not found", { status: 404 });
+    }
     if (!sameSiteRequest(request, false)) return new Response("Forbidden", { status: 403 });
 
-    const blockId = match[1];
+    const mediaType = videoMatch ? "video" : "audio";
+    const blockId = (videoMatch || audioMatch)[1];
     const pagePath = url.searchParams.get("page") || "";
     if (!validBlockId(blockId) || !validArticlePath(pagePath)) return new Response("Bad request", { status: 400 });
 
     const session = cookieValue(request, SESSION_COOKIE);
     if (!(await validSession(session, env.MEDIA_SESSION_SECRET))) return new Response("Session expired", { status: 401 });
 
-    if (!(await publishedPageContainsVideo(pagePath, blockId))) return new Response("Forbidden", { status: 403 });
+    const published = mediaType === "video"
+      ? await publishedPageContainsVideo(pagePath, blockId)
+      : await publishedPageContainsAudio(pagePath, blockId);
+    if (!published) return new Response("Forbidden", { status: 403 });
 
     try {
-      return await proxyVideo(request, blockId, pagePath, env);
+      return await proxyUploadedMedia(request, blockId, pagePath, mediaType, env);
     } catch (error) {
       console.error("media gateway error", error instanceof Error ? error.message : "unknown error");
-      return new Response("Video unavailable", { status: 502 });
+      return new Response(`${mediaType === "video" ? "Video" : "Audio"} unavailable`, { status: 502 });
     }
   }
 };
