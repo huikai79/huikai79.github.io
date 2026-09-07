@@ -7,6 +7,7 @@ import path from "node:path";
 import fetch from "node-fetch";
 import pLimit from "p-limit";
 import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
+import { notionAudioMarkdown } from "./scripts/notion-audio-transformer.mjs";
 import {
   buildNotionFilter,
   contentFilename,
@@ -24,6 +25,7 @@ import {
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 n2m.setCustomTransformer("video", notionVideoMarkdown);
+n2m.setCustomTransformer("audio", notionAudioMarkdown);
 
 const DB_ID = process.env.NOTION_DATABASE_ID;
 const OUT_DIR = "content/posts";
@@ -38,7 +40,7 @@ const filter = buildNotionFilter(SYNC_MODE);
 const dl = pLimit(5);
 const SECTION_INDEXES = new Map([
   ["_index.md", '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n'],
-  ["_index.zh-cn.md", '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\n---\n']
+  ["_index.zh-cn.md", '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔記。"\n---\n']
 ]);
 
 /* ---------- 工具函式 ---------- */
@@ -84,6 +86,7 @@ async function generatorHash() {
   for (const source of [
     new URL(import.meta.url),
     new URL("./scripts/notion-video-transformer.mjs", import.meta.url),
+    new URL("./scripts/notion-audio-transformer.mjs", import.meta.url),
     new URL("./scripts/notion-content-contract.mjs", import.meta.url),
     new URL("./scripts/article-bundle-contract.mjs", import.meta.url)
   ]) {
