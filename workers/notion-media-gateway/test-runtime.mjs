@@ -7,8 +7,11 @@ const env = {
   MEDIA_SESSION_SECRET: "test-media-session-secret-with-enough-entropy"
 };
 const blockId = "23b7a59e-0439-8006-a923-e6b66af95201";
+const unknownAudioBlockId = "23b7a59e-0439-8006-a923-e6b66af95202";
 const pagePath = "/posts/how-to-make-wealth/";
 const siteOrigin = "https://huikai.com.kg";
+const wavUrl = "https://signed.example.test/%E5%89%B5%E9%80%A0%E8%B2%A1%E5%AF%8C%E4%B9%8B%E9%81%93.wav?token=short-lived";
+const unknownAudioUrl = "https://signed.example.test/audio-object?token=unknown-extension";
 
 const sessionResponse = await worker.fetch(new Request(`${siteOrigin}/media/session`, {
   method: "POST",
@@ -40,15 +43,15 @@ try {
     if (url === `https://api.notion.com/v1/blocks/${blockId}`) {
       return new Response(JSON.stringify({
         type: "audio",
-        audio: { type: "file", file: { url: "https://signed.example.test/audio-object?token=short-lived" } }
+        audio: { type: "file", file: { url: wavUrl } }
       }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
-    if (url === "https://signed.example.test/audio-object?token=short-lived") {
+    if (url === wavUrl) {
       assert.equal(init.headers.get("Range"), "bytes=0-9", "browser Range header must be forwarded upstream");
       return new Response(new Uint8Array([1, 2, 3, 4]), {
         status: 206,
         headers: {
-          "Content-Type": "audio/wav",
+          "Content-Type": "audio",
           "Content-Length": "4",
           "Content-Range": "bytes 0-3/4",
           "Accept-Ranges": "bytes"
@@ -70,18 +73,18 @@ try {
     }
   ), env);
   assert.equal(mediaResponse.status, 206, "authorized published audio must preserve partial-content status");
-  assert.equal(mediaResponse.headers.get("Content-Type"), "audio/wav");
+  assert.equal(mediaResponse.headers.get("Content-Type"), "audio/wav", "bare audio MIME from a .wav signed URL must normalize to audio/wav");
   assert.equal(mediaResponse.headers.get("Content-Disposition"), "inline");
   assert.equal(mediaResponse.headers.get("Cache-Control"), "private, no-store");
   assert.equal(mediaResponse.headers.get("Content-Range"), "bytes 0-3/4");
   assert.ok(calls.some(call => call.url.startsWith("https://api.notion.com/v1/blocks/")), "gateway must resolve the current Notion file URL at runtime");
 
-  globalThis.fetch = async (input, init = {}) => {
+  globalThis.fetch = async input => {
     const url = typeof input === "string" ? input : input.url;
     if (url === `${siteOrigin}${pagePath}`) {
       return new Response(`<div data-notion-audio-block="${blockId}"></div>`, { status: 200 });
     }
-    if (url === "https://signed.example.test/audio-object?token=short-lived") {
+    if (url === wavUrl) {
       return new Response("not audio", { status: 200, headers: { "Content-Type": "application/octet-stream" } });
     }
     throw new Error(`unexpected fetch in MIME test: ${url}`);
@@ -98,6 +101,38 @@ try {
     }
   ), env);
   assert.equal(badMime.status, 502, "non-audio upstream MIME must fail closed");
+
+  globalThis.fetch = async input => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url === `${siteOrigin}${pagePath}`) {
+      return new Response(`<div data-notion-audio-block="${unknownAudioBlockId}"></div>`, { status: 200 });
+    }
+    if (url === `https://api.notion.com/v1/blocks/${unknownAudioBlockId}`) {
+      return new Response(JSON.stringify({
+        type: "audio",
+        audio: { type: "file", file: { url: unknownAudioUrl } }
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    if (url === unknownAudioUrl) {
+      return new Response(new Uint8Array([1, 2, 3, 4]), {
+        status: 206,
+        headers: { "Content-Type": "audio" }
+      });
+    }
+    throw new Error(`unexpected fetch in unknown audio extension test: ${url}`);
+  };
+
+  const unknownAudioMime = await worker.fetch(new Request(
+    `${siteOrigin}/media/audio/${unknownAudioBlockId}?page=${encodeURIComponent(pagePath)}`,
+    {
+      headers: {
+        Referer: `${siteOrigin}${pagePath}`,
+        "Sec-Fetch-Site": "same-origin",
+        Cookie: cookie
+      }
+    }
+  ), env);
+  assert.equal(unknownAudioMime.status, 502, "bare audio MIME without a recognized filename extension must fail closed");
 
   globalThis.fetch = async input => {
     const url = typeof input === "string" ? input : input.url;

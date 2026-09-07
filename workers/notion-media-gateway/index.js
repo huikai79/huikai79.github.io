@@ -5,6 +5,21 @@ const NOTION_API_VERSION = "2022-06-28";
 const MEDIA_URL_CACHE_MS = 45 * 60 * 1000;
 const videoUrlCache = new Map();
 const audioUrlCache = new Map();
+const AUDIO_MIME_BY_EXTENSION = new Map([
+  [".aac", "audio/aac"],
+  [".adts", "audio/aac"],
+  [".m4a", "audio/mp4"],
+  [".m4b", "audio/mp4"],
+  [".mp4", "audio/mp4"],
+  [".mp3", "audio/mpeg"],
+  [".mpga", "audio/mpeg"],
+  [".oga", "audio/ogg"],
+  [".ogg", "audio/ogg"],
+  [".wav", "audio/wav"],
+  [".mid", "audio/midi"],
+  [".midi", "audio/midi"],
+  [".wma", "audio/x-ms-wma"]
+]);
 
 function base64Url(bytes) {
   let binary = "";
@@ -119,6 +134,56 @@ function htmlContainsAudioBlock(html, blockId) {
   return marker.test(html);
 }
 
+function filenameFromContentDisposition(value) {
+  if (!value) return "";
+
+  const extended = value.match(/filename\*\s*=\s*([^;]+)/i);
+  if (extended) {
+    const raw = extended[1].trim().replace(/^"|"$/g, "");
+    return raw.replace(/^[^']*'[^']*'/, "");
+  }
+
+  const plain = value.match(/filename\s*=\s*(?:"([^"]+)"|'([^']+)'|([^;]+))/i);
+  return (plain?.[1] || plain?.[2] || plain?.[3] || "").trim();
+}
+
+function extensionFromFilename(value) {
+  if (!value) return "";
+  let decoded = value.trim();
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    return "";
+  }
+  const match = decoded.toLowerCase().match(/(\.[a-z0-9]+)$/);
+  return match ? match[1] : "";
+}
+
+function inferAudioMimeType(upstreamUrl, contentDisposition) {
+  const candidates = [];
+  try {
+    candidates.push(new URL(upstreamUrl).pathname.split("/").pop() || "");
+  } catch {
+    // Ignore malformed upstream URL here; the fetch path will fail separately.
+  }
+  candidates.push(filenameFromContentDisposition(contentDisposition));
+
+  for (const candidate of candidates) {
+    const extension = extensionFromFilename(candidate);
+    const mime = AUDIO_MIME_BY_EXTENSION.get(extension);
+    if (mime) return mime;
+  }
+  return "";
+}
+
+function normalizeUpstreamContentType(mediaType, contentType, upstreamUrl, contentDisposition) {
+  if (contentType.startsWith(`${mediaType}/`)) return contentType;
+  if (mediaType === "audio" && contentType === "audio") {
+    return inferAudioMimeType(upstreamUrl, contentDisposition);
+  }
+  return "";
+}
+
 async function publishedPageContainsVideo(pagePath, blockId) {
   const response = await fetch(`${SITE_ORIGIN}${pagePath}`, {
     headers: { "User-Agent": "huikai-media-gateway/1" },
@@ -187,7 +252,13 @@ async function proxyUploadedMedia(request, blockId, pagePath, mediaType, env) {
   }
 
   const contentType = (upstream.headers.get("Content-Type") || "").split(";", 1)[0].trim().toLowerCase();
-  if (!contentType.startsWith(`${mediaType}/`)) {
+  const normalizedContentType = normalizeUpstreamContentType(
+    mediaType,
+    contentType,
+    upstreamUrl,
+    upstream.headers.get("Content-Disposition") || ""
+  );
+  if (!normalizedContentType) {
     console.error("media upstream mime", {
       mediaType,
       status: upstream.status,
@@ -197,10 +268,11 @@ async function proxyUploadedMedia(request, blockId, pagePath, mediaType, env) {
   }
 
   const headers = new Headers();
-  for (const name of ["Content-Type", "Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) {
+  for (const name of ["Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"]) {
     const value = upstream.headers.get(name);
     if (value) headers.set(name, value);
   }
+  headers.set("Content-Type", normalizedContentType);
   headers.set("Content-Disposition", "inline");
   headers.set("Cache-Control", "private, no-store");
   headers.set("X-Content-Type-Options", "nosniff");
