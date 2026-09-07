@@ -412,6 +412,7 @@ async function buildArticle(candidate) {
     `tags: [${tags.map(yamlString).join(", ")}]`,
     productionFields && `categories: [${productionFields.categories.map(yamlString).join(", ")}]`,
     productionFields && `entryType: ${yamlString(productionFields.entryType)}`,
+    productionFields && `formats: [${yamlString(productionFields.entryType)}]`,
     productionFields && `contentVisibility: ${yamlString(productionFields.contentVisibility)}`,
     productionFields && `homePlacement: ${yamlString(productionFields.homePlacement)}`,
     productionFields && `contentLanguage: ${yamlString(productionFields.contentLanguage)}`,
