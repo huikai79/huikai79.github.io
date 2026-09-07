@@ -24,6 +24,7 @@ enableEmoji = true
 [taxonomies]
   tag = "tags"
   category = "categories"
+  format = "formats"
   author = "authors"
   series = "series"
 
@@ -47,6 +48,10 @@ enableEmoji = true
     [[related.indices]]
         name = "categories"
         weight = 90
+
+    [[related.indices]]
+        name = "formats"
+        weight = 60
 
     [[related.indices]]
         name = "series"
