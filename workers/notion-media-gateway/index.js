@@ -71,8 +71,35 @@ function validBlockId(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
+function validArticleSlugSegment(value) {
+  if (!value || value === "." || value === "..") return false;
+  if (/[?#\\\u0000-\u001F\u007F]/u.test(value)) return false;
+  if (/%2f|%5c/i.test(value)) return false;
+  try {
+    const decoded = decodeURIComponent(value);
+    if (!decoded || decoded === "." || decoded === "..") return false;
+    if (decoded.includes("/") || decoded.includes("\\")) return false;
+    if (/[?#\u0000-\u001F\u007F]/u.test(decoded)) return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
 export function validArticlePath(value) {
-  return /^\/(?:(?:zh-cn|en)\/)?posts\/[A-Za-z0-9_-]+\/$/.test(value || "");
+  if (typeof value !== "string" || !value.startsWith("/") || !value.endsWith("/")) return false;
+  if (value.includes("//")) return false;
+
+  const parts = value.slice(1, -1).split("/");
+  let slug = "";
+  if (parts.length === 2 && parts[0] === "posts") {
+    slug = parts[1];
+  } else if (parts.length === 3 && ["zh-cn", "en"].includes(parts[0]) && parts[1] === "posts") {
+    slug = parts[2];
+  } else {
+    return false;
+  }
+  return validArticleSlugSegment(slug);
 }
 
 function htmlContainsVideoBlock(html, blockId) {
