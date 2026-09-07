@@ -8,6 +8,7 @@ hugo version
 go version
 
 node scripts/test-notion-video-transformer.mjs
+node scripts/test-notion-audio-transformer.mjs
 node workers/notion-media-gateway/test-paths.mjs
 python3 scripts/test-notion-media-localization.py
 python3 scripts/test-media-budget.py
@@ -26,6 +27,7 @@ fi
 python3 scripts/ensure-multilingual-section-indexes.py
 python3 scripts/verify-source-contract.py
 python3 scripts/verify-video-rendering.py source
+python3 scripts/verify-audio-rendering.py source
 python3 scripts/verify-notion-media-gateway.py
 
 if [ "${REFRESH_HOMEPAGE_ROTATION:-0}" = "1" ]; then
@@ -76,6 +78,7 @@ fi
 python3 scripts/verify-social-preview.py "$PUBLIC_DIR"
 python3 scripts/verify-discovery-pages.py "$PUBLIC_DIR"
 python3 scripts/verify-video-rendering.py rendered "$PUBLIC_DIR"
+python3 scripts/verify-audio-rendering.py rendered "$PUBLIC_DIR"
 python3 scripts/verify-article-nativeization.py "$PUBLIC_DIR"
 python3 scripts/verify-gate7-cleanup.py "$PUBLIC_DIR"
 python3 scripts/verify-site-identity.py "$PUBLIC_DIR"
