@@ -179,7 +179,7 @@ jobs:
             echo "## Notion media Worker deployment"
             echo ""
             echo "Source SHA: \`$REQUESTED_SHA\`"
-            echo "Worker: \`huikai-notion-media\`"
+            echo "Worker: \`notion-media-gateway\`"
             echo "Route: \`huikai.com.kg/media/*\`"
             echo "Wrangler: \`$WRANGLER_VERSION\`"
           } >> "$GITHUB_STEP_SUMMARY"
