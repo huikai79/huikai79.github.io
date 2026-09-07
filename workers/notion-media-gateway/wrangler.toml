@@ -1,4 +1,4 @@
-name = "huikai-notion-media"
+name = "notion-media-gateway"
 main = "index.js"
 compatibility_date = "2026-09-06"
 workers_dev = false
