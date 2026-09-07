@@ -31,15 +31,30 @@
     {{ .Date.Format "2006年1月2日" }} · {{ i18n "huikai.reading_time" .ReadingTime }}
   </p>
 
-  {{ $category := "" }}
-  {{ with .Params.categories }}
-    {{ $category = index . 0 }}
+  {{ $categoryTerms := .GetTerms "categories" }}
+  {{ $formatTerms := .GetTerms "formats" }}
+  {{ $tagTerms := .GetTerms "tags" }}
+  {{ if and .Params.categories (eq (len $categoryTerms) 0) }}
+    {{ errorf "Article category taxonomy did not resolve for %s" .RelPermalink }}
   {{ end }}
-  {{ if or $category .Params.entryType }}
-    <div class="article-context" aria-label="{{ i18n "huikai.article_context" }}">
-      {{ with $category }}<span class="article-context-chip">{{ . }}</span>{{ end }}
-      {{ with .Params.entryType }}<span class="article-context-chip">{{ . }}</span>{{ end }}
-    </div>
+  {{ if and .Params.entryType (eq (len $formatTerms) 0) }}
+    {{ errorf "Article format taxonomy did not resolve for %s (entryType=%v)" .RelPermalink .Params.entryType }}
+  {{ end }}
+  {{ if and .Params.tags (eq (len $tagTerms) 0) }}
+    {{ errorf "Article tag taxonomy did not resolve for %s" .RelPermalink }}
+  {{ end }}
+  {{ if or $categoryTerms $formatTerms $tagTerms }}
+    <nav class="article-context not-prose" aria-label="{{ i18n "huikai.article_context" }}">
+      {{ range $categoryTerms }}
+        <a class="article-context-chip" data-discovery-kind="category" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+      {{ end }}
+      {{ range $formatTerms }}
+        <a class="article-context-chip" data-discovery-kind="format" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+      {{ end }}
+      {{ range $tagTerms }}
+        <a class="article-context-chip" data-discovery-kind="tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+      {{ end }}
+    </nav>
   {{ end }}
 
   {{ with .Description }}
