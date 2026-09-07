@@ -8,6 +8,7 @@ showComments: true
 commentKey: "notion:23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
 categories: ["學習與閱讀"]
 entryType: "推薦／整理"
+formats: ["推薦／整理"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-CN"

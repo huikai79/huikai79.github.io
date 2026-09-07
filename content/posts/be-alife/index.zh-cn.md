@@ -8,6 +8,7 @@ showComments: true
 commentKey: "notion:2367a59e-0439-807a-8de1-c7050f44183e"
 categories: ["創作與實驗"]
 entryType: "推薦／整理"
+formats: ["推薦／整理"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-CN"

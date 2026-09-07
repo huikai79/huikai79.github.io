@@ -8,6 +8,7 @@ showComments: true
 commentKey: "notion:23c7a59e-0439-8054-a78d-c8e89090963e"
 categories: ["AI 與數位工具"]
 entryType: "推薦／整理"
+formats: ["推薦／整理"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-CN"

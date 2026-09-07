@@ -8,6 +8,7 @@ showComments: true
 commentKey: "notion:3d37a59e-0439-80d0-86d7-fc494a529fca"
 categories: ["教育"]
 entryType: "推薦／整理"
+formats: ["推薦／整理"]
 contentVisibility: "Public"
 homePlacement: "None"
 contentLanguage: "zh-TW"
