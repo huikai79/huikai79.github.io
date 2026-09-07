@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +11,7 @@ spec = importlib.util.spec_from_file_location("media_budget_contract", CONTRACT)
 if spec is None or spec.loader is None:
     raise RuntimeError("Unable to load media-budget-contract.py")
 module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
 spec.loader.exec_module(module)
 
 
@@ -18,7 +20,8 @@ def mib(value: int) -> str:
 
 
 def main() -> None:
-    audit = module.audit_media(ROOT / "content" / "posts")
+    posts_root = ROOT / "content" / "posts"
+    audit = module.audit_media(posts_root)
     for warning in audit.warnings:
         print(f"::warning::{warning}")
     if audit.errors:
@@ -28,7 +31,7 @@ def main() -> None:
 
     largest = sorted(audit.files, key=lambda item: (-item.size, item.path.as_posix()))[:5]
     summary = ", ".join(
-        f"{item.path.relative_to(ROOT / 'content' / 'posts').as_posix()}={mib(item.size)}"
+        f"{item.path.relative_to(posts_root).as_posix()}={mib(item.size)}"
         for item in largest
     ) or "none"
     print(
