@@ -1,9 +1,10 @@
 {
-  "version": 1,
-  "generatorHash": "21043de5cbac8493605c4226f2b187020f04004d91148553f3f5cea56146286f",
+  "version": 2,
+  "generatorHash": "ecf3cd059b923aa6b59d485da049ed62fbfde31a9039de14bbc302b9c9da2af1",
   "pages": {
     "2367a59e-0439-807a-8de1-c7050f44183e": {
       "slug": "be-alife",
+      "bundlePath": "be-alife",
       "language": "zh-CN",
       "translationGroup": "be-alife",
       "contentFile": "index.zh-cn.md",
@@ -13,6 +14,7 @@
     },
     "23b7a59e-0439-80a6-9852-c373b03994f5": {
       "slug": "How-you-know",
+      "bundlePath": "How-you-know",
       "language": "zh-CN",
       "translationGroup": "How-you-know",
       "contentFile": "index.zh-cn.md",
@@ -22,6 +24,7 @@
     },
     "23b7a59e-0439-80b4-a5d8-e495f79d0ec7": {
       "slug": "Writing-and-speaking",
+      "bundlePath": "Writing-and-speaking",
       "language": "zh-CN",
       "translationGroup": "Writing-and-speaking",
       "contentFile": "index.zh-cn.md",
@@ -31,15 +34,17 @@
     },
     "23b7a59e-0439-81d2-b926-cb11c044d7e9": {
       "slug": "how-to-make-wealth",
+      "bundlePath": "how-to-make-wealth",
       "language": "zh-TW",
       "translationGroup": "how-to-make-wealth",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-07T02:00:00.000Z",
-      "bundleHash": "a7cc31bba833244fa569b3c7261bcbf8861afb90b2ca0950c2f2a1e6a02f7b35",
+      "lastEditedTime": "2026-09-07T03:06:00.000Z",
+      "bundleHash": "518d11e22d5a4fc301ebbc99d3a1d80e90eb2f9ffe8d89764709148744d794e9",
       "presentationFingerprint": "d1b702e85b3c37d205110df08fcf6bef4a7e54c78790c71802a2c8e818203116"
     },
     "23c7a59e-0439-8054-a78d-c8e89090963e": {
       "slug": "Writes-and-Write-Nots",
+      "bundlePath": "Writes-and-Write-Nots",
       "language": "zh-CN",
       "translationGroup": "Writes-and-Write-Nots",
       "contentFile": "index.zh-cn.md",
@@ -49,6 +54,7 @@
     },
     "3d37a59e-0439-80d0-86d7-fc494a529fca": {
       "slug": "daxuepeiyangchuangyezhe",
+      "bundlePath": "daxuepeiyangchuangyezhe",
       "language": "zh-TW",
       "translationGroup": "daxuepeiyangchuangyezhe",
       "contentFile": "index.md",

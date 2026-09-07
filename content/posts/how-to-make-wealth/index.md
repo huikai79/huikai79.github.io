@@ -20,12 +20,6 @@ images: ["cover.jpg"]
 [embed]()
 
 
-## 如何創造財富
-
-
-**想創辦新創公司？** 可以向 [Y Combinator](http://ycombinator.com/apply.html) 申請投資。
-
-
 **2004 年 5 月**
 
 
@@ -2126,9 +2120,3 @@ Adam Smith 在《國富論》（_Wealth of Nations_, v:i）裡提到，有些政
 **（a）其實有。** 工業革命本身只是連續一系列革命中的其中一次。
 
 - *（b）因為中世紀城市裡的壟斷和行會規範，一開始抑制了新生產方式的發展。
-
-[本文留言](http://reddit.com/info?id=20775)
-
-- [俄文翻譯](http://the-notebook.org/26/01/2006/kak-stat-bogatyim/)
-- [阿拉伯文翻譯](https://tldrarabiccontents.blogspot.com/2020/01/blog-post_16.html)
-- [西班牙文翻譯](http://www.liberalismo.org/articulo/359/)
