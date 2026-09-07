@@ -15,6 +15,10 @@ import {
   normalizeSyncMode,
   productionMetadataMissing
 } from "./scripts/notion-content-contract.mjs";
+import {
+  assignArticleBundlePaths,
+  manifestBundlePath
+} from "./scripts/article-bundle-contract.mjs";
 
 /* ---------- 基本設定 ---------- */
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
@@ -27,7 +31,7 @@ const STAGING_DIR = `content/.posts-staging-${process.pid}`;
 const BACKUP_DIR = `content/.posts-backup-${process.pid}`;
 const REPORT_FILE = ".notion-sync-report.json";
 const MANIFEST_FILE = ".notion-sync-manifest.json";
-const MANIFEST_VERSION = 1;
+const MANIFEST_VERSION = 2;
 const ALLOW_EMPTY = process.env.ALLOW_EMPTY_NOTION_SYNC === "true";
 const SYNC_MODE = normalizeSyncMode(process.env.NOTION_SYNC_MODE || "legacy");
 const filter = buildNotionFilter(SYNC_MODE);
@@ -43,6 +47,7 @@ const yamlString = value => JSON.stringify(String(value));
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const candidateLanguage = candidate => candidate.editorial.language || "zh-TW";
 const candidateContentFile = candidate => contentFilename(candidateLanguage(candidate));
+const candidateBundlePath = candidate => candidate.bundlePath;
 
 async function pathExists(target) {
   try {
@@ -79,7 +84,8 @@ async function generatorHash() {
   for (const source of [
     new URL(import.meta.url),
     new URL("./scripts/notion-video-transformer.mjs", import.meta.url),
-    new URL("./scripts/notion-content-contract.mjs", import.meta.url)
+    new URL("./scripts/notion-content-contract.mjs", import.meta.url),
+    new URL("./scripts/article-bundle-contract.mjs", import.meta.url)
   ]) {
     hash.update(await fs.readFile(source));
     hash.update("\0");
@@ -206,8 +212,6 @@ function normalizeMarkdownBody(markdown) {
       return [];
     }
 
-    // The article page template owns the single document H1. Notion body H1s
-    // are content headings, so demote them to H2 instead of rendering a second H1.
     if (!inFence && /^#\s+/.test(line)) {
       return [line.replace(/^#\s+/, "## ")];
     }
@@ -281,8 +285,6 @@ async function collectPublishedPages() {
 }
 
 function validatePages(pages) {
-  const seenSlugs = new Map();
-
   const validated = pages.map(page => {
     const p = page.properties;
     const title = p.Title?.title?.map(item => item.plain_text).join("") ?? "";
@@ -306,15 +308,24 @@ function validatePages(pages) {
       throw new Error(`Selected page ${page.id} 缺少必要欄位：${missing.join(", ")}`);
     }
 
-    if (seenSlugs.has(slug)) {
-      throw new Error(`同步文章 slug 重複：${slug}（${seenSlugs.get(slug)} / ${page.id}）`);
-    }
-    seenSlugs.set(slug, page.id);
-
     return { page, title, slug, date, tags, lastEditedTime, editorial };
   });
 
-  return validated.sort((a, b) => a.slug.localeCompare(b.slug));
+  const bundlePaths = assignArticleBundlePaths(validated.map(candidate => ({
+    pageId: candidate.page.id,
+    slug: candidate.slug,
+    language: candidateLanguage(candidate),
+    translationGroup: candidate.editorial.translationGroup || "",
+    translationStatus: candidate.editorial.translationStatus || ""
+  })));
+
+  return validated
+    .map(candidate => ({ ...candidate, bundlePath: bundlePaths.get(candidate.page.id) }))
+    .sort((a, b) => (
+      a.bundlePath.localeCompare(b.bundlePath) ||
+      candidateLanguage(a).localeCompare(candidateLanguage(b)) ||
+      a.page.id.localeCompare(b.page.id)
+    ));
 }
 
 async function reuseDecision(candidate, manifestState) {
@@ -325,6 +336,9 @@ async function reuseDecision(candidate, manifestState) {
   const previous = manifestState.manifest.pages?.[candidate.page.id];
   if (!previous) return { reuse: false, reason: "new-page" };
   if (previous.slug !== candidate.slug) return { reuse: false, reason: "slug-changed" };
+  if (manifestBundlePath(previous) !== candidateBundlePath(candidate)) {
+    return { reuse: false, reason: "bundle-path-changed" };
+  }
   if (previous.lastEditedTime !== candidate.lastEditedTime) {
     return { reuse: false, reason: "notion-edited" };
   }
@@ -333,7 +347,7 @@ async function reuseDecision(candidate, manifestState) {
   }
   if (!previous.bundleHash) return { reuse: false, reason: "missing-bundle-hash" };
 
-  const oldBundle = path.join(OUT_DIR, candidate.slug);
+  const oldBundle = path.join(OUT_DIR, candidateBundlePath(candidate));
   if (!(await pathExists(path.join(oldBundle, candidateContentFile(candidate))))) {
     return { reuse: false, reason: "bundle-missing" };
   }
@@ -349,10 +363,9 @@ async function reuseDecision(candidate, manifestState) {
 async function buildArticle(candidate) {
   const { page, title, slug, date, tags } = candidate;
   const full = await notion.pages.retrieve({ page_id: page.id });
-  const bundle = path.join(STAGING_DIR, slug);
+  const bundle = path.join(STAGING_DIR, candidateBundlePath(candidate));
   await fs.mkdir(bundle, { recursive: true });
 
-  /* 封面：只要 Notion 有指定，就必須成功本地化 */
   let coverField = "";
   const coverUrl = full.cover?.external?.url || full.cover?.file?.url || "";
   if (coverUrl) {
@@ -363,7 +376,6 @@ async function buildArticle(candidate) {
     console.log("🖼️  封面", file);
   }
 
-  /* icon：emoji 直接保存；遠端圖片必須成功本地化 */
   let iconField = "";
   if (full.icon?.type === "emoji") {
     iconField = full.icon.emoji;
@@ -378,7 +390,6 @@ async function buildArticle(candidate) {
     }
   }
 
-  /* Notion → Markdown；文章 H1 由 Hugo template 擁有，再把內文圖片本地化 */
   const mdBlocks = await n2m.pageToMarkdown(page.id);
   let mdBody = n2m.toMarkdownString(mdBlocks).parent.replace(
     /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})\S*/g,
@@ -392,7 +403,6 @@ async function buildArticle(candidate) {
     : null;
   const description = productionFields?.description || plainTextSummary(mdBody);
 
-  /* Front matter. The closing delimiter must remain on its own line. */
   const front = [
     "---",
     `title: ${yamlString(title)}`,
@@ -414,7 +424,7 @@ async function buildArticle(candidate) {
 
   const contentFile = candidateContentFile(candidate);
   await fs.writeFile(path.join(bundle, contentFile), `${front}\n\n${mdBody}\n`);
-  console.log("📄  重建", `${slug}/${contentFile}`);
+  console.log("📄  重建", `${candidateBundlePath(candidate)}/${contentFile} -> ${candidateLanguage(candidate)}/posts/${slug}`);
   return directoryHash(bundle);
 }
 
@@ -449,6 +459,7 @@ function stablePagesObject(entries) {
 function manifestEntry(candidate, bundleHash) {
   return {
     slug: candidate.slug,
+    bundlePath: candidateBundlePath(candidate),
     language: candidateLanguage(candidate),
     translationGroup: candidate.editorial.translationGroup || "",
     contentFile: candidateContentFile(candidate),
@@ -467,7 +478,6 @@ async function sync() {
   await fs.rm(BACKUP_DIR, { recursive: true, force: true });
 
   try {
-    /* 1. 只抓 database snapshot，先驗證欄位與唯一 slug */
     const pages = await collectPublishedPages();
     const candidates = validatePages(pages);
     const currentGeneratorHash = await generatorHash();
@@ -500,11 +510,10 @@ async function sync() {
       for (const plan of plans) {
         const { candidate, decision } = plan;
         nextPages.set(candidate.page.id, manifestEntry(candidate, decision.bundleHash));
-        console.log("♻️  沿用", `${candidate.slug}/${candidateContentFile(candidate)}`);
+        console.log("♻️  沿用", `${candidateBundlePath(candidate)}/${candidateContentFile(candidate)}`);
       }
       console.log(`⚡ 所有 ${SYNC_MODE} 模式文章均未變更，略過 Markdown 與媒體重新下載`);
     } else {
-      /* 2. 需要變更時才建立 staging snapshot */
       await fs.mkdir(STAGING_DIR, { recursive: true });
       await writeSectionIndexes(STAGING_DIR);
 
@@ -513,20 +522,19 @@ async function sync() {
         let bundleHash;
 
         if (decision.reuse) {
-          const source = path.join(OUT_DIR, candidate.slug);
-          const target = path.join(STAGING_DIR, candidate.slug);
+          const source = path.join(OUT_DIR, candidateBundlePath(candidate));
+          const target = path.join(STAGING_DIR, candidateBundlePath(candidate));
           await fs.cp(source, target, { recursive: true });
           bundleHash = decision.bundleHash;
-          console.log("♻️  沿用", `${candidate.slug}/${candidateContentFile(candidate)}`);
+          console.log("♻️  沿用", `${candidateBundlePath(candidate)}/${candidateContentFile(candidate)}`);
         } else {
-          console.log(`🔄 需要重建 ${candidate.slug}：${decision.reason}`);
+          console.log(`🔄 需要重建 ${candidateBundlePath(candidate)}：${decision.reason}`);
           bundleHash = await buildArticle(candidate);
         }
 
         nextPages.set(candidate.page.id, manifestEntry(candidate, bundleHash));
       }
 
-      /* 3. staging 完整成功後才替換正式輸出 */
       await replaceOutput();
     }
 
@@ -535,7 +543,6 @@ async function sync() {
       throw new Error(`同步數量不一致：selected=${candidates.length}, written=${written}`);
     }
 
-    /* 4. manifest 必須 deterministic，無變更時 Git 不應產生差異 */
     const nextManifest = {
       version: MANIFEST_VERSION,
       generatorHash: currentGeneratorHash,
@@ -543,7 +550,6 @@ async function sync() {
     };
     await fs.writeFile(MANIFEST_FILE, `${JSON.stringify(nextManifest, null, 2)}\n`);
 
-    /* 5. report 提供 CI 與 Actions Summary 使用，不加入 Git */
     const report = {
       status: "complete",
       mode: SYNC_MODE,
@@ -558,6 +564,7 @@ async function sync() {
       pages: plans.map(plan => ({
         pageId: plan.candidate.page.id,
         slug: plan.candidate.slug,
+        bundlePath: candidateBundlePath(plan.candidate),
         language: candidateLanguage(plan.candidate),
         translationGroup: plan.candidate.editorial.translationGroup || "",
         contentFile: candidateContentFile(plan.candidate),

@@ -65,6 +65,16 @@ def front_matter_scalar(index_path: Path, key: str) -> str:
     return ""
 
 
+def manifest_bundle_path(entry: dict[str, object], page_id: str) -> str:
+    slug = str(entry.get("slug", "")).strip()
+    bundle_path = str(entry.get("bundlePath", slug)).strip() or slug
+    if not bundle_path:
+        fail(f"manifest entry has no bundlePath/slug: {page_id}")
+    if bundle_path in {".", ".."} or "/" in bundle_path or "\\" in bundle_path:
+        fail(f"manifest entry has unsafe bundlePath {bundle_path!r}: {page_id}")
+    return bundle_path
+
+
 def collect_home_candidates(
     manifest_pages: dict[str, dict[str, object]],
     language: str,
@@ -87,7 +97,8 @@ def collect_home_candidates(
             continue
 
         content_file = str(entry.get("contentFile", "index.md")).strip() or "index.md"
-        resolved_path = f"posts/{slug}"
+        bundle_path = manifest_bundle_path(entry, page_id)
+        resolved_path = f"posts/{bundle_path}"
         source_dir = ROOT / "content" / resolved_path
         index_path = source_dir / content_file
         if not index_path.is_file():
@@ -106,6 +117,9 @@ def collect_home_candidates(
         if not covers:
             fail(f"{placement} article is not homepage-eligible because it has no local cover: {resolved_path}")
 
+        # Runtime path is the Hugo content lookup path, not the public slug.
+        # Public URLs remain governed by front matter `slug` and are verified
+        # separately from the internal bundle directory.
         item = {
             "pageId": page_id,
             "path": resolved_path,

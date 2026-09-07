@@ -7,6 +7,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+from article_routing import routes
+
 ROOT = Path(__file__).resolve().parents[1]
 POSTS = ROOT / "content" / "posts"
 REPORT = ROOT / ".notion-sync-report.json"
@@ -28,7 +30,11 @@ def source_contract() -> None:
     legacy_count = 0
     gateway_count = 0
 
-    for index in sorted(POSTS.glob("*/index.md")):
+    for route in routes():
+        index = route.source
+        if not index.is_file():
+            fail(f"Routed video source is missing: {route.source}")
+            continue
         text = index.read_text(encoding="utf-8", errors="strict")
         ordinary_mp4 = LOCAL_MP4_LINK_RE.findall(text)
         if strict_after_sync and ordinary_mp4:
@@ -104,22 +110,20 @@ def rendered_contract(public: Path) -> None:
     source_gateway = 0
     rendered_videos = 0
 
-    for index in sorted(POSTS.glob("*/index.md")):
+    for route in routes():
+        index = route.source
+        if not index.is_file():
+            fail(f"Routed video source is missing: {index}")
+            continue
         source = index.read_text(encoding="utf-8", errors="strict")
         legacy = LEGACY_VIDEO_SHORTCODE_RE.findall(source)
         gateway = NOTION_VIDEO_SHORTCODE_RE.findall(source)
         source_legacy += len(legacy)
         source_gateway += len(gateway)
 
-        html = public / "posts" / index.parent.name.lower() / "index.html"
+        html = route.rendered(public)
         if not html.is_file():
-            candidates = [
-                p for p in (public / "posts").glob("*/index.html")
-                if p.parent.name.lower() == index.parent.name.lower()
-            ]
-            html = candidates[0] if candidates else html
-        if not html.is_file():
-            fail(f"Rendered article missing for video verification: {index.parent.name}")
+            fail(f"Rendered article missing for video verification: {route.language}:{route.slug}")
             continue
 
         parser = VideoParser()
@@ -130,7 +134,7 @@ def rendered_contract(public: Path) -> None:
         expected_total = len(legacy) + len(gateway)
         if len(parser.videos) != expected_total:
             fail(
-                f"Rendered/source video count mismatch for {index.parent.name}: "
+                f"Rendered/source video count mismatch for {route.language}:{route.slug}: "
                 f"rendered={len(parser.videos)}, source={expected_total}"
             )
             continue
@@ -139,12 +143,12 @@ def rendered_contract(public: Path) -> None:
         local_videos = [video for video in parser.videos if not video["endpoint"]]
         if len(gateway_videos) != len(gateway):
             fail(
-                f"Rendered gateway video count mismatch for {index.parent.name}: "
+                f"Rendered gateway video count mismatch for {route.language}:{route.slug}: "
                 f"rendered={len(gateway_videos)}, source={len(gateway)}"
             )
         if len(local_videos) != len(legacy):
             fail(
-                f"Rendered legacy video count mismatch for {index.parent.name}: "
+                f"Rendered legacy video count mismatch for {route.language}:{route.slug}: "
                 f"rendered={len(local_videos)}, source={len(legacy)}"
             )
 

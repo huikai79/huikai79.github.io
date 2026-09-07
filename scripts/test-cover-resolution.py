@@ -48,7 +48,7 @@ def run(script: Path, site_root: Path, *, strict: bool = False) -> subprocess.Co
 def write_fixture(root: Path) -> None:
     posts = root / "content" / "posts"
     explicit = posts / "explicit"
-    first = posts / "first-image"
+    first = posts / "first-bundle"
     fallback = posts / "fallback"
     for bundle in (explicit, first, fallback):
         bundle.mkdir(parents=True)
@@ -61,7 +61,7 @@ def write_fixture(root: Path) -> None:
     (explicit / "manual.jpg").write_bytes(b"manual")
 
     (first / "index.md").write_text(
-        '---\ntitle: "First image"\n---\n\n![](image-01.jpg)\n',
+        '---\ntitle: "First image"\nslug: "first-image"\n---\n\n![](image-01.jpg)\n',
         encoding="utf-8",
         newline="\n",
     )
@@ -76,7 +76,12 @@ def write_fixture(root: Path) -> None:
     manifest = {
         "pages": {
             "page-explicit": {"slug": "explicit", "bundleHash": directory_hash(explicit)},
-            "page-first": {"slug": "first-image", "bundleHash": directory_hash(first)},
+            "page-first": {
+                "slug": "first-image",
+                "bundlePath": "first-bundle",
+                "contentFile": "index.md",
+                "bundleHash": directory_hash(first),
+            },
             "page-fallback": {"slug": "fallback", "bundleHash": directory_hash(fallback)},
         }
     }
@@ -98,7 +103,8 @@ def main() -> None:
         write_fixture(site_root)
 
         explicit_index = site_root / "content" / "posts" / "explicit" / "index.md"
-        first_index = site_root / "content" / "posts" / "first-image" / "index.md"
+        first_bundle = site_root / "content" / "posts" / "first-bundle"
+        first_index = first_bundle / "index.md"
         fallback_bundle = site_root / "content" / "posts" / "fallback"
         fallback_index = fallback_bundle / "index.md"
         fallback_png = fallback_bundle / FALLBACK_FILENAME
@@ -109,6 +115,8 @@ def main() -> None:
         report_text = (site_root / ".notion-sync-report.json").read_text(encoding="utf-8")
         if "deterministic-procedural-png" not in report_text:
             raise AssertionError("cover report does not record procedural fallback strategy")
+        if '"bundlePath": "first-bundle"' not in report_text:
+            raise AssertionError("cover report does not preserve internal bundlePath provenance")
 
         if explicit_index.read_bytes() != explicit_before:
             raise AssertionError("explicit cover article was modified")
@@ -133,6 +141,8 @@ def main() -> None:
             raise AssertionError(f"unexpected fallback dimensions: {width}x{height}")
 
         manifest = json.loads((site_root / ".notion-sync-manifest.json").read_text(encoding="utf-8"))
+        if manifest["pages"]["page-first"]["bundleHash"] != directory_hash(first_bundle):
+            raise AssertionError("bundlePath-backed first-image hash was not refreshed")
         if manifest["pages"]["page-fallback"]["bundleHash"] != directory_hash(fallback_bundle):
             raise AssertionError("fallback bundle hash was not refreshed")
 

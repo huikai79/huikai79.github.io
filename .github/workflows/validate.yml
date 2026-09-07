@@ -27,6 +27,9 @@ jobs:
           node scripts/verify-notion-content-contract.mjs
           node scripts/verify-notion-cover-contract.mjs
           node scripts/verify-translation-draft-contract.mjs
+          node scripts/test-article-bundle-contract.mjs
+          node --check scripts/article-bundle-contract.mjs
+          node --check sync.mjs
           node --check scripts/notion-cover-contract.mjs
           node --check scripts/check-notion-publication-contract.mjs
           node --check scripts/check-notion-staged-page.mjs
@@ -52,18 +55,18 @@ jobs:
 
           manifest_count="$(jq -r '.pages | length' .notion-sync-manifest.json)"
           bundle_count=0
-          while IFS=$'\t' read -r slug content_file; do
-            if [ -z "$slug" ] || [ -z "$content_file" ]; then
-              echo "::error::Committed Notion manifest article is missing slug/contentFile"
+          while IFS=$'\t' read -r bundle_path content_file; do
+            if [ -z "$bundle_path" ] || [ -z "$content_file" ]; then
+              echo "::error::Committed Notion manifest article is missing bundlePath/slug/contentFile"
               exit 1
             fi
-            article_source="content/posts/${slug}/${content_file}"
+            article_source="content/posts/${bundle_path}/${content_file}"
             if [ ! -s "$article_source" ]; then
               echo "::error::Committed manifest article source is missing: $article_source"
               exit 1
             fi
             bundle_count=$((bundle_count + 1))
-          done < <(jq -r '.pages[] | [.slug, (.contentFile // "index.md")] | @tsv' .notion-sync-manifest.json)
+          done < <(jq -r '.pages[] | [(.bundlePath // .slug), (.contentFile // "index.md")] | @tsv' .notion-sync-manifest.json)
           test "$bundle_count" -eq "$manifest_count"
 
           if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
@@ -75,13 +78,13 @@ jobs:
         run: |
           python3 scripts/apply-comments-policy.py
           cp .notion-sync-manifest.json /tmp/comments-manifest-a.json
-          jq -r '.pages[] | [.slug, (.contentFile // "index.md")] | @tsv' .notion-sync-manifest.json \
-            | while IFS=$'\t' read -r slug content_file; do printf 'content/posts/%s/%s\0' "$slug" "$content_file"; done \
+          jq -r '.pages[] | [(.bundlePath // .slug), (.contentFile // "index.md")] | @tsv' .notion-sync-manifest.json \
+            | while IFS=$'\t' read -r bundle_path content_file; do printf 'content/posts/%s/%s\0' "$bundle_path" "$content_file"; done \
             | sort -z | xargs -0 -r sha256sum > /tmp/comments-source-a.sha256
           python3 scripts/apply-comments-policy.py
           cmp /tmp/comments-manifest-a.json .notion-sync-manifest.json
-          jq -r '.pages[] | [.slug, (.contentFile // "index.md")] | @tsv' .notion-sync-manifest.json \
-            | while IFS=$'\t' read -r slug content_file; do printf 'content/posts/%s/%s\0' "$slug" "$content_file"; done \
+          jq -r '.pages[] | [(.bundlePath // .slug), (.contentFile // "index.md")] | @tsv' .notion-sync-manifest.json \
+            | while IFS=$'\t' read -r bundle_path content_file; do printf 'content/posts/%s/%s\0' "$bundle_path" "$content_file"; done \
             | sort -z | xargs -0 -r sha256sum > /tmp/comments-source-b.sha256
           cmp /tmp/comments-source-a.sha256 /tmp/comments-source-b.sha256
 
@@ -112,6 +115,7 @@ jobs:
           grep -Fq 'Classify material site change' .github/workflows/sync.yml
           grep -Fq 'bookkeeping state only' .github/workflows/sync.yml
           grep -Fq 'contentFile' .github/workflows/sync.yml
+          grep -Fq 'bundlePath' .github/workflows/sync.yml
           grep -Fq 'content/posts/_index.zh-cn.md' .github/workflows/sync.yml
           grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           grep -Fq 'persist-credentials: false' .github/workflows/sync.yml

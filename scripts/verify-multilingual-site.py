@@ -53,6 +53,13 @@ def expected_content_file(language: str) -> str:
     }.get(language, "")
 
 
+def manifest_bundle_path(entry: dict, page_id: str, slug: str) -> str:
+    bundle_path = str(entry.get("bundlePath", slug)).strip() or slug
+    if bundle_path in {".", ".."} or "/" in bundle_path or "\\" in bundle_path:
+        fail(f"Unsafe routed article bundlePath: {page_id} -> {bundle_path!r}")
+    return bundle_path
+
+
 hugo_config = (ROOT / "config" / "_default" / "hugo.toml").read_text(encoding="utf-8")
 if 'defaultContentLanguage = "zh-TW"' not in hugo_config:
     fail("Traditional Chinese must remain the default content language")
@@ -110,7 +117,6 @@ for href in ("/zh-cn/posts/", "/zh-cn/projects/", "/zh-cn/about/"):
     if href not in simplified_parser.hrefs:
         fail(f"Simplified homepage is missing language-scoped CTA: {href}")
 
-# Translated static pages should be recognized as translation pairs by Hugo/Blowfish.
 for left, right in (
     (PUBLIC / "about" / "index.html", "/zh-cn/about/"),
     (PUBLIC / "projects" / "index.html", "/zh-cn/projects/"),
@@ -119,9 +125,6 @@ for left, right in (
     _, parser = read_html(left, str(left.relative_to(PUBLIC)))
     if right not in parser.hrefs:
         fail(f"Translated page does not expose its Simplified counterpart: {left} -> {right}")
-
-# Homepage Selected/Recent governance is language-specific and is verified in
-# verify-routed-rendered-site.py against the committed bilingual runtime.
 
 expected_indexes = {
     "_index.md": '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\n---\n',
@@ -161,6 +164,7 @@ if not migrated:
 else:
     rendered_expected: set[Path] = set()
     groups: dict[str, list[tuple[str, Path]]] = {}
+    bundle_owners: dict[str, str] = {}
     for page_id, entry in sorted(pages.items()):
         if not isinstance(entry, dict):
             fail(f"Invalid manifest article entry: {page_id}")
@@ -172,13 +176,17 @@ else:
         if not slug or not language or not content_file or not group:
             fail(f"Routed article manifest metadata is incomplete: {page_id}")
             continue
+        bundle_path = manifest_bundle_path(entry, page_id, slug)
+        if bundle_path in bundle_owners:
+            fail(f"Duplicate routed article bundlePath: {bundle_path} -> {bundle_owners[bundle_path]} / {page_id}")
+        bundle_owners[bundle_path] = page_id
         expected_file = expected_content_file(language)
         if not expected_file:
             fail(f"Unsupported routed article language: {page_id} -> {language}")
             continue
         if content_file != expected_file:
             fail(f"Manifest contentFile mismatch: {page_id} -> {content_file}, expected {expected_file}")
-        source = ROOT / "content" / "posts" / slug / content_file
+        source = ROOT / "content" / "posts" / bundle_path / content_file
         if not source.is_file():
             fail(f"Routed source article is missing: {source}")
         source_text = source.read_text(encoding="utf-8", errors="replace") if source.is_file() else ""
