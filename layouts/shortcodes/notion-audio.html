@@ -1,0 +1,53 @@
+{{- $block := .Get "block" -}}
+{{- if not $block -}}
+  {{- errorf "notion-audio shortcode requires block on %s" .Page.RelPermalink -}}
+{{- end -}}
+<div
+  class="notion-audio-shell"
+  data-notion-audio-block="{{ $block }}"
+  data-notion-audio-page="{{ .Page.RelPermalink }}">
+  <audio
+    class="notion-audio"
+    controls
+    controlslist="nodownload noremoteplayback"
+    disableremoteplayback
+    preload="metadata"
+    data-media-endpoint="/media/audio/{{ $block }}?page={{ .Page.RelPermalink | urlquery }}">
+    您的瀏覽器不支援 HTML5 音訊播放。
+  </audio>
+  <noscript>此音訊需要 JavaScript 才能建立短效播放工作階段。</noscript>
+</div>
+<script>
+(() => {
+  const shell = document.currentScript.previousElementSibling;
+  if (!shell || shell.dataset.mediaBooted === "1") return;
+  shell.dataset.mediaBooted = "1";
+  const audio = shell.querySelector("audio[data-media-endpoint]");
+  if (!audio) return;
+
+  const refreshSession = async () => {
+    const response = await fetch("/media/session", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "X-Media-Session": "1" }
+    });
+    if (!response.ok) throw new Error(`media session ${response.status}`);
+  };
+
+  const start = async () => {
+    try {
+      await refreshSession();
+      audio.src = audio.dataset.mediaEndpoint;
+      audio.load();
+      window.setInterval(() => {
+        if (!document.hidden) refreshSession().catch(() => {});
+      }, 5 * 60 * 1000);
+    } catch {
+      shell.dataset.mediaError = "1";
+    }
+  };
+
+  audio.addEventListener("contextmenu", event => event.preventDefault());
+  start();
+})();
+</script>
