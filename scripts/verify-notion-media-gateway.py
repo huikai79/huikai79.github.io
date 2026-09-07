@@ -42,7 +42,7 @@ required_audio_shortcode = [
     'credentials: "same-origin"',
 ]
 required_wrangler = [
-    'name = "huikai-notion-media"',
+    'name = "notion-media-gateway"',
     'workers_dev = false',
     '[secrets]',
     'required = ["NOTION_TOKEN", "MEDIA_SESSION_SECRET"]',
