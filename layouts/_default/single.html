@@ -44,7 +44,7 @@
     {{ errorf "Article tag taxonomy did not resolve for %s" .RelPermalink }}
   {{ end }}
   {{ if or $categoryTerms $formatTerms $tagTerms }}
-    <nav class="article-context" aria-label="{{ i18n "huikai.article_context" }}">
+    <nav class="article-context not-prose" aria-label="{{ i18n "huikai.article_context" }}">
       {{ range $categoryTerms }}
         <a class="article-context-chip" data-discovery-kind="category" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
       {{ end }}
