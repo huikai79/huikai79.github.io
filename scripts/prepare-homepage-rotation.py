@@ -16,6 +16,8 @@ RUNTIME_PATH = ROOT / "data" / "homepage_runtime.toml"
 WEEK_RE = re.compile(r"^(\d{4})-W(\d{2})$")
 HOME_PLACEMENTS = {"None", "Pinned", "Rotation"}
 PRIMARY_LANGUAGE = "zh-TW"
+SECONDARY_LANGUAGE = "zh-CN"
+SUPPORTED_HOMEPAGE_LANGUAGES = (PRIMARY_LANGUAGE, SECONDARY_LANGUAGE)
 
 
 def fail(message: str) -> "None":
@@ -65,6 +67,7 @@ def front_matter_scalar(index_path: Path, key: str) -> str:
 
 def collect_home_candidates(
     manifest_pages: dict[str, dict[str, object]],
+    language: str,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     pinned: list[dict[str, str]] = []
     pool: list[dict[str, str]] = []
@@ -77,10 +80,10 @@ def collect_home_candidates(
             fail(f"manifest entry has no slug: {page_id}")
 
         # Old manifests predate Language and therefore represent the historical
-        # default-language snapshot. New manifests route only declared zh-TW
-        # articles into the primary homepage selection.
-        language = str(entry.get("language", PRIMARY_LANGUAGE)).strip() or PRIMARY_LANGUAGE
-        if language != PRIMARY_LANGUAGE:
+        # default-language snapshot. Secondary-language selection only becomes
+        # active after an entry explicitly declares its language.
+        entry_language = str(entry.get("language", PRIMARY_LANGUAGE)).strip() or PRIMARY_LANGUAGE
+        if entry_language != language:
             continue
 
         content_file = str(entry.get("contentFile", "index.md")).strip() or "index.md"
@@ -119,8 +122,103 @@ def collect_home_candidates(
     return pinned, pool
 
 
+def resolve_language_runtime(
+    manifest_pages: dict[str, dict[str, object]],
+    language: str,
+    selected_cap: int,
+    recent_limit: int,
+    timezone_name: str,
+    epoch_key: str,
+    rotation_key: str,
+    rotation_index: int,
+) -> dict[str, object]:
+    pinned, pool = collect_home_candidates(manifest_pages, language)
+    if len(pinned) > selected_cap:
+        fail(
+            f"{language} Notion Home=Pinned count ({len(pinned)}) exceeds "
+            f"homepage selectedLimit ({selected_cap})"
+        )
+
+    available_rotation_slots = max(0, selected_cap - len(pinned))
+    rotation_slots = min(available_rotation_slots, len(pool))
+    selected_limit = len(pinned) + rotation_slots
+
+    pool_offset = 0
+    rotating: list[dict[str, str]] = []
+    if rotation_slots > 0:
+        pool_offset = (rotation_index * rotation_slots) % len(pool)
+        rotating = [pool[(pool_offset + index) % len(pool)] for index in range(rotation_slots)]
+
+    selected = pinned + rotating
+    if len(selected) != selected_limit:
+        fail(
+            f"{language} resolved Selected count mismatch: "
+            f"expected {selected_limit}, got {len(selected)}"
+        )
+
+    return {
+        "rotationKey": rotation_key,
+        "rotationIndex": rotation_index,
+        "rotationEpoch": epoch_key,
+        "rotationTimezone": timezone_name,
+        "selectedLimitCap": selected_cap,
+        "selectedLimit": selected_limit,
+        "recentLimit": recent_limit,
+        "pinnedSize": len(pinned),
+        "rotationSlots": rotation_slots,
+        "poolSize": len(pool),
+        "poolOffset": pool_offset,
+        "selected": selected,
+    }
+
+
 def toml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
+
+
+def runtime_lines(runtime: dict[str, object], table: str | None = None) -> list[str]:
+    prefix = f"{table}." if table else ""
+    lines: list[str] = []
+    if table:
+        lines.extend([f"[{table}]", ""])
+
+    for key in (
+        "rotationKey",
+        "rotationIndex",
+        "rotationEpoch",
+        "rotationTimezone",
+        "selectedLimitCap",
+        "selectedLimit",
+        "recentLimit",
+        "pinnedSize",
+        "rotationSlots",
+        "poolSize",
+        "poolOffset",
+    ):
+        value = runtime[key]
+        if isinstance(value, str):
+            lines.append(f"{key} = {toml_string(value)}")
+        else:
+            lines.append(f"{key} = {value}")
+    lines.append("")
+
+    selected = runtime.get("selected", [])
+    if not isinstance(selected, list):
+        fail(f"{prefix or 'primary'} selected runtime must be an array")
+    for item in selected:
+        if not isinstance(item, dict):
+            fail(f"{prefix or 'primary'} selected runtime item must be an object")
+        table_name = f"{table}.selected" if table else "selected"
+        lines.extend(
+            [
+                f"[[{table_name}]]",
+                f"pageId = {toml_string(str(item['pageId']))}",
+                f"path = {toml_string(str(item['path']))}",
+                f"source = {toml_string(str(item['source']))}",
+                "",
+            ]
+        )
+    return lines
 
 
 def main() -> None:
@@ -140,12 +238,6 @@ def main() -> None:
     if recent_limit < 1:
         fail("recentLimit must be at least 1")
 
-    pinned, pool = collect_home_candidates(manifest_pages)
-    if len(pinned) > selected_cap:
-        fail(
-            f"Notion Home=Pinned count ({len(pinned)}) exceeds homepage selectedLimit ({selected_cap})"
-        )
-
     requested_key = os.environ.get("HOMEPAGE_ROTATION_KEY", "").strip()
     rotation_key = requested_key or current_rotation_key(timezone_name)
     rotation_monday = week_monday(rotation_key)
@@ -155,51 +247,38 @@ def main() -> None:
         fail("rotation key and epoch do not align to ISO weeks")
     rotation_index = delta_days // 7
 
-    available_rotation_slots = max(0, selected_cap - len(pinned))
-    rotation_slots = min(available_rotation_slots, len(pool))
-    selected_limit = len(pinned) + rotation_slots
-
-    pool_offset = 0
-    rotating: list[dict[str, str]] = []
-    if rotation_slots > 0:
-        pool_offset = (rotation_index * rotation_slots) % len(pool)
-        rotating = [pool[(pool_offset + index) % len(pool)] for index in range(rotation_slots)]
-
-    selected = pinned + rotating
-    if len(selected) != selected_limit:
-        fail(f"resolved Selected count mismatch: expected {selected_limit}, got {len(selected)}")
-
-    lines = [
-        f"rotationKey = {toml_string(rotation_key)}",
-        f"rotationIndex = {rotation_index}",
-        f"rotationEpoch = {toml_string(epoch_key)}",
-        f"rotationTimezone = {toml_string(timezone_name)}",
-        f"selectedLimitCap = {selected_cap}",
-        f"selectedLimit = {selected_limit}",
-        f"recentLimit = {recent_limit}",
-        f"pinnedSize = {len(pinned)}",
-        f"rotationSlots = {rotation_slots}",
-        f"poolSize = {len(pool)}",
-        f"poolOffset = {pool_offset}",
-        "",
-    ]
-    for item in selected:
-        lines.extend(
-            [
-                "[[selected]]",
-                f"pageId = {toml_string(item['pageId'])}",
-                f"path = {toml_string(item['path'])}",
-                f"source = {toml_string(item['source'])}",
-                "",
-            ]
+    runtimes = {
+        language: resolve_language_runtime(
+            manifest_pages,
+            language,
+            selected_cap,
+            recent_limit,
+            timezone_name,
+            epoch_key,
+            rotation_key,
+            rotation_index,
         )
+        for language in SUPPORTED_HOMEPAGE_LANGUAGES
+    }
 
+    lines = runtime_lines(runtimes[PRIMARY_LANGUAGE])
+    lines.extend(runtime_lines(runtimes[SECONDARY_LANGUAGE], "secondary"))
     RUNTIME_PATH.write_text("\n".join(lines), encoding="utf-8")
+
+    summaries: list[str] = []
+    for language in SUPPORTED_HOMEPAGE_LANGUAGES:
+        runtime = runtimes[language]
+        selected = runtime["selected"]
+        assert isinstance(selected, list)
+        summaries.append(
+            f"{language}:pinned={runtime['pinnedSize']},pool={runtime['poolSize']},"
+            f"offset={runtime['poolOffset']},selected="
+            f"{','.join(str(item['path']) for item in selected if isinstance(item, dict))}"
+        )
     print(
-        "Homepage rotation prepared from Notion Home for zh-TW: "
-        f"key={rotation_key}, index={rotation_index}, cap={selected_cap}, "
-        f"pinned={len(pinned)}, pool={len(pool)}, offset={pool_offset}, "
-        f"selected={','.join(item['path'] for item in selected)}"
+        "Homepage rotation prepared from Notion Home by language: "
+        f"key={rotation_key}, index={rotation_index}, cap={selected_cap}; "
+        + "; ".join(summaries)
     )
 
 

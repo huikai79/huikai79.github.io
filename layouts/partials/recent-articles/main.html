@@ -1,18 +1,22 @@
-{{ if and (.Site.Params.homepage.showRecent | default false) (eq .Site.Language.Params.contentRole "primary") }}
+{{ if .Site.Params.homepage.showRecent | default false }}
   {{ $homepage := hugo.Data.homepage }}
-  {{ $runtime := hugo.Data.homepage_runtime }}
+  {{ $runtimeRoot := hugo.Data.homepage_runtime }}
+  {{ $runtime := $runtimeRoot }}
+  {{ if eq (lower .Site.Language.Lang) "zh-cn" }}
+    {{ $runtime = $runtimeRoot.secondary | default dict }}
+  {{ end }}
   {{ $all := where .Site.RegularPages "Type" "posts" }}
   {{ $selectedLimit := 0 }}
   {{ if isset $runtime "selectedLimit" }}
     {{ $selectedLimit = int $runtime.selectedLimit }}
   {{ end }}
-  {{ $recentLimit := $homepage.recentLimit | default 5 }}
+  {{ $recentLimit := $runtime.recentLimit | default ($homepage.recentLimit | default 5) }}
   {{ $selectedItems := $runtime.selected | default (slice) }}
   {{ $selectedPages := slice }}
   {{ $missingSelected := slice }}
 
   {{ if ne (len $selectedItems) $selectedLimit }}
-    {{ errorf "Homepage runtime Selected requires exactly %d items; found %d" $selectedLimit (len $selectedItems) }}
+    {{ errorf "Homepage runtime Selected requires exactly %d items for %s; found %d" $selectedLimit .Site.Language.Lang (len $selectedItems) }}
   {{ end }}
 
   {{ range $selectedItems }}
@@ -25,11 +29,11 @@
   {{ end }}
 
   {{ if gt (len $missingSelected) 0 }}
-    {{ errorf "Homepage runtime Selected references are invalid: %s" (delimit $missingSelected ", ") }}
+    {{ errorf "Homepage runtime Selected references are invalid for %s: %s" .Site.Language.Lang (delimit $missingSelected ", ") }}
   {{ end }}
 
   {{ if ne (len $selectedPages) $selectedLimit }}
-    {{ errorf "Homepage Selected requires exactly %d valid pages; found %d" $selectedLimit (len $selectedPages) }}
+    {{ errorf "Homepage Selected requires exactly %d valid pages for %s; found %d" $selectedLimit .Site.Language.Lang (len $selectedPages) }}
   {{ end }}
 
   {{ if gt $selectedLimit 0 }}
