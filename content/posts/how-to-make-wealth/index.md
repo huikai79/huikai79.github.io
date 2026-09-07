@@ -21,6 +21,9 @@ images: ["cover.jpg"]
 [embed]()
 
 
+{{< notion-audio block="23b7a59e-0439-8006-a923-e6b66af95201" >}}
+
+
 **2004 年 5 月**
 
 
