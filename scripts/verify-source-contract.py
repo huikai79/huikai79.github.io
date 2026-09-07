@@ -33,6 +33,22 @@ def front_matter_value(front_lines: list[str], key: str) -> str | None:
     return None
 
 
+def front_matter_list(front_lines: list[str], key: str) -> list[str] | None:
+    prefix = f"{key}:"
+    for line in front_lines:
+        if not line.startswith(prefix):
+            continue
+        raw = line[len(prefix):].strip()
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(value, list):
+            return None
+        return [str(item) for item in value]
+    return None
+
+
 def completed_cover_resolution() -> bool:
     if not REPORT_PATH.is_file():
         return False
@@ -71,6 +87,12 @@ for path in sources:
 
     front_lines = lines[1:closing] if closing is not None else []
     cover = front_matter_value(front_lines, "cover")
+    entry_type = front_matter_value(front_lines, "entryType")
+    formats = front_matter_list(front_lines, "formats")
+    if entry_type and formats != [entry_type]:
+        problems.append(
+            f"formats taxonomy must mirror entryType exactly: entryType={entry_type!r}, formats={formats!r}"
+        )
     if require_cover and not cover:
         problems.append("cover is missing after completed cover resolution")
 
