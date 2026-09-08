@@ -4,6 +4,7 @@
 
 baseURL = "https://huikai.com.kg/"
 defaultContentLanguage = "zh-TW"
+hasCJKLanguage = true
 
 pluralizeListTitles = false
 
