@@ -146,7 +146,13 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
 
 [fathomAnalytics]
 
+# Umami remains intentionally inactive until a real `websiteid` is supplied.
+# These options are safe readiness defaults documented by Blowfish v3:
+# - only run the tracker on the production domain;
+# - do not add automatic track-event attributes to links/buttons.
 [umamiAnalytics]
+  dataDomains = "huikai.com.kg"
+  enableTrackEvent = false
 
 [selineAnalytics]
 
