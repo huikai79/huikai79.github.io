@@ -77,6 +77,8 @@
   {{ partial "article-pagination.html" . }}
   {{ partial "related.html" . }}
 </div>
-{{ partial "article-comments.html" . }}
+<div class="article-footer mx-auto w-full max-w-3xl px-4">
+  {{ partial "article-comments.html" . }}
+</div>
 
 {{ end }}
