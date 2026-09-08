@@ -4,6 +4,8 @@ description: "把 Notion 内容同步为 Hugo 页面，并通过 Blowfish 与 Gi
 layout: "simple"
 weight: 10
 showBreadcrumbs: false
+showDate: false
+showReadingTime: false
 ---
 
 这是这个网站持续维护的发布系统，也是一个长期工程项目。
