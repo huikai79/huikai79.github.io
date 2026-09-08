@@ -31,8 +31,8 @@ disableThemePreloader = true
 images = ["social-default.png"]
 
 highlightCurrentMenuArea = true
-# smartTOC = true
-# smartTOCHideUnfocusedChildren = true
+smartTOC = true
+smartTOCHideUnfocusedChildren = true
 
 fingerprintAlgorithm = "sha512" # Valid values are "sha512" (default), "sha384", "sha256"
 
@@ -82,7 +82,7 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showPagination = true
   invertPagination = false
   showReadingTime = true
-  showTableOfContents = false
+  showTableOfContents = true
   showRelatedContent = true
   relatedContentLimit = 5
   showTaxonomies = false
