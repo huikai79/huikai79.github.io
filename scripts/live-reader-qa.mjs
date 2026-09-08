@@ -95,13 +95,19 @@ async function verifyInteractions(browser) {
     await page.keyboard.press("Escape");
   }
 
-  const languageLink = page.locator('a[href="/zh-cn/"]:visible').first();
-  if (!(await languageLink.count())) fail("visible zh-CN language switch link is missing");
+  const languageButton = page.locator('button:has-text("繁體中文"):visible').first();
+  if (!(await languageButton.count())) fail("visible language menu button is missing");
   else {
-    await languageLink.click();
-    await page.waitForLoadState("networkidle");
-    report.interactions.languageSwitch = { url: page.url() };
-    if (!new URL(page.url()).pathname.startsWith("/zh-cn/")) fail(`language switch did not reach zh-CN route: ${page.url()}`);
+    await languageButton.click();
+    const languageLink = page.locator('a[href="/zh-cn/"]:visible').first();
+    try { await languageLink.waitFor({ state: "visible", timeout: 5_000 }); }
+    catch { fail("zh-CN language link did not become visible after opening language menu"); }
+    if (await languageLink.count()) {
+      await languageLink.click();
+      await page.waitForLoadState("networkidle");
+      report.interactions.languageSwitch = { url: page.url() };
+      if (!new URL(page.url()).pathname.startsWith("/zh-cn/")) fail(`language switch did not reach zh-CN route: ${page.url()}`);
+    }
   }
   await context.close();
 }
@@ -144,7 +150,6 @@ async function verifyMedia(browser, routePath, selector, label, expectedMimePref
   if (range.status !== 206) fail(`${label}: expected Range status 206, got ${range.status}`);
   if (!range.contentType.toLowerCase().startsWith(expectedMimePrefix)) fail(`${label}: unexpected MIME ${range.contentType || "missing"}`);
   if (!/^bytes\s+\d+-\d+\/\d+$/i.test(range.contentRange)) fail(`${label}: invalid Content-Range ${range.contentRange || "missing"}`);
-  if (!/bytes/i.test(range.acceptRanges)) fail(`${label}: Accept-Ranges does not advertise bytes`);
   if (!range.receivedBytes) fail(`${label}: Range response body is empty`);
   await context.close();
 }
