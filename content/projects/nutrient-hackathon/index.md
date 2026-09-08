@@ -4,6 +4,8 @@ description: "一次圍繞證據、人工確認與可驗證 Demo 的 Hackathon �
 layout: "simple"
 weight: 20
 showBreadcrumbs: false
+showDate: false
+showReadingTime: false
 ---
 
 這是一次參加 **Nutrient DWS Challenge** 後整理出來的專案實踐。
