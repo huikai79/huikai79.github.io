@@ -1,7 +1,7 @@
 ---
-title: "澄心而遊"
+title: "澄心之遊"
 heroCaption: "HUIKAI"
-heroLead: "思考 AI、学习、阅读与生活，记录那些值得长期保留的东西。"
+heroLead: "记录那些值得长期保留的价值。"
 heroButtons:
   - label: "查看文章"
     url: "/zh-cn/posts/"
@@ -11,4 +11,4 @@ heroButtons:
     url: "/zh-cn/about/"
 ---
 
-从视觉设计、教育，到 AI 与数字工具，这里记录作品、实验与思考。
+澄心之遊，游而澄心；在所见、所学、所历之间，让杂质慢慢沉下，留下值得回望的自己与价值。

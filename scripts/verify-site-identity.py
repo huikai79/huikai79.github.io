@@ -77,18 +77,24 @@ home_source = read(ROOT / "content" / "_index.md", "Homepage source")
 about_source = read(ROOT / "content" / "about" / "index.md", "About source")
 manifest_source = read(ROOT / "static" / "site.webmanifest", "Web app manifest")
 
-expected_description = "HUIKAI 是莊輝愷的個人網站，記錄 AI、學習、閱讀、視覺設計、教育與數位工具相關的文章、作品、實驗與思考。"
+expected_description = "HUIKAI 是莊輝愷的個人網站。澄心之遊，記錄那些值得長期保留的價值，也留下理解如何改變。"
 if 'title = "HUIKAI"' not in language_config:
     fail("Primary site title must use the HUIKAI brand")
 if expected_description not in language_config:
     fail("Site description is not aligned with the HUIKAI positioning")
-for forbidden in ("生活分享｜AI 學習｜讀書筆記｜影視心得", "記錄生活分享、AI 學習、讀書筆記與影視心得"):
+for forbidden in (
+    "生活分享｜AI 學習｜讀書筆記｜影視心得",
+    "記錄生活分享、AI 學習、讀書筆記與影視心得",
+    "AI｜學習｜閱讀｜視覺設計｜教育｜數位工具",
+):
     if forbidden in language_config:
         fail(f"Legacy positioning remains in language metadata: {forbidden}")
 if 'pageRef = "about"' not in menu_config or 'name = "關於"' not in menu_config:
     fail("Main navigation does not include the About page")
-if 'title: "澄心而遊"' not in home_source or 'heroCaption: "HUIKAI"' not in home_source:
-    fail("Homepage source must present HUIKAI with the 澄心而遊 spirit line")
+if 'title: "澄心之遊"' not in home_source or 'heroCaption: "HUIKAI"' not in home_source:
+    fail("Homepage source must present HUIKAI with the 澄心之遊 spirit line")
+if 'heroLead: "記錄那些值得長期保留的價值。"' not in home_source:
+    fail("Homepage source must use the settled HUIKAI value statement")
 if 'label: "查看文章"' not in home_source or 'url: "/posts/"' not in home_source:
     fail("Homepage primary article CTA source contract is missing")
 if 'label: "關於我"' not in home_source or 'url: "/about/"' not in home_source:
@@ -108,10 +114,14 @@ about = read(PUBLIC / "about" / "index.html", "Rendered About page")
 if home:
     parser = parse(home)
     ctas = {(href.rstrip("/") or "/", text) for href, text in parser.anchors}
-    if parser.h1 != ["澄心而遊"]:
-        fail(f"Homepage must render exactly one H1 named 澄心而遊; found {parser.h1}")
+    if parser.h1 != ["澄心之遊"]:
+        fail(f"Homepage must render exactly one H1 named 澄心之遊; found {parser.h1}")
     if "HUIKAI" not in home:
         fail("Rendered homepage is missing the HUIKAI brand")
+    if "記錄那些值得長期保留的價值" not in home:
+        fail("Rendered homepage is missing the settled HUIKAI value statement")
+    if "遊而澄心" not in home:
+        fail("Rendered homepage is missing the 澄心之遊 interpretation")
     if ("/posts", "查看文章") not in ctas:
         fail("Rendered homepage is missing the 查看文章 CTA")
     if ("/about", "關於我") not in ctas:
@@ -124,9 +134,11 @@ if about:
     if parser.h1 != ["關於"]:
         fail(f"About page must render exactly one H1 named 關於; found {parser.h1}")
     for text in (
-        "視覺設計、教育、AI 與數位工具",
-        "文章、作品、實驗與思考",
-        "長期可讀和容易維護",
+        "HUIKAI 是我長期留下內容、思考與生命痕跡的地方",
+        "遊而澄心",
+        "回答過去的自己",
+        "理解如何改變",
+        "那是一場相遇",
     ):
         if text not in about:
             fail(f"About page is missing expected positioning text: {text}")
@@ -138,4 +150,4 @@ if ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Site identity verification: PASS (HUIKAI + 澄心而遊, author identity preserved in About/author surfaces)")
+print("Site identity verification: PASS (HUIKAI + 澄心之遊, author identity preserved in About/author surfaces)")
