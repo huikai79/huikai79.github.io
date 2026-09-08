@@ -36,6 +36,9 @@ enableEmoji = true
 
 [outputs]
   home = ["HTML", "RSS", "JSON"]
+  section = ["HTML"]
+  taxonomy = ["HTML"]
+  term = ["HTML"]
 
 [related]
   threshold = 80
