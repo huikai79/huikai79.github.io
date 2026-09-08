@@ -1,5 +1,5 @@
 ---
-title: "该写与不该写"
+title: "該寫與不該寫"
 date: "2025-07-26"
 slug: "Writes-and-Write-Nots"
 description: "當 AI 能替人完成大量寫作，真正稀缺的可能不再是產出文字，而是仍願意透過寫作逼自己思考的人；寫作若等同於思考，放棄寫作也可能意味著放棄一部分思考能力。"
@@ -11,7 +11,7 @@ entryType: "推薦／整理"
 formats: ["推薦／整理"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
-contentLanguage: "zh-CN"
+contentLanguage: "zh-TW"
 translationKey: "Writes-and-Write-Nots"
 cover: "cover.jpg"
 icon: "📝"

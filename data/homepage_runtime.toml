@@ -3,12 +3,17 @@ rotationIndex = 1
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
-selectedLimit = 2
+selectedLimit = 3
 recentLimit = 5
 pinnedSize = 0
-rotationSlots = 2
-poolSize = 2
-poolOffset = 0
+rotationSlots = 3
+poolSize = 4
+poolOffset = 3
+
+[[selected]]
+pageId = "23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
+path = "posts/Writing-and-speaking"
+source = "rotationPool"
 
 [[selected]]
 pageId = "3d07a59e-0439-8048-ae89-da587d3ba5d0"
@@ -27,22 +32,17 @@ rotationIndex = 1
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
-selectedLimit = 3
+selectedLimit = 2
 recentLimit = 5
 pinnedSize = 1
-rotationSlots = 2
-poolSize = 3
-poolOffset = 2
+rotationSlots = 1
+poolSize = 1
+poolOffset = 0
 
 [[secondary.selected]]
 pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
 path = "posts/How-you-know"
 source = "pinned"
-
-[[secondary.selected]]
-pageId = "23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
-path = "posts/Writing-and-speaking"
-source = "rotationPool"
 
 [[secondary.selected]]
 pageId = "2367a59e-0439-807a-8de1-c7050f44183e"

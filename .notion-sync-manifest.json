@@ -25,11 +25,11 @@
     "23b7a59e-0439-80b4-a5d8-e495f79d0ec7": {
       "slug": "Writing-and-speaking",
       "bundlePath": "Writing-and-speaking",
-      "language": "zh-CN",
+      "language": "zh-TW",
       "translationGroup": "Writing-and-speaking",
-      "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-07T00:53:00.000Z",
-      "bundleHash": "1545a87325ea8375e99b2d4e1727f1938da09915d9b57348574ba4ca0d5ec744",
+      "contentFile": "index.md",
+      "lastEditedTime": "2026-09-08T04:45:00.000Z",
+      "bundleHash": "945d1c161e24f660a3545a40edc09ab4f318646b1a94cc409261dbf2fe8cbaba",
       "presentationFingerprint": "fa5d69b688de04244026be7ce8d750478cc2ad79dca5c80dd06ceab48fd7ffa1"
     },
     "23b7a59e-0439-81d2-b926-cb11c044d7e9": {
@@ -45,11 +45,11 @@
     "23c7a59e-0439-8054-a78d-c8e89090963e": {
       "slug": "Writes-and-Write-Nots",
       "bundlePath": "Writes-and-Write-Nots",
-      "language": "zh-CN",
+      "language": "zh-TW",
       "translationGroup": "Writes-and-Write-Nots",
-      "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-07T00:54:00.000Z",
-      "bundleHash": "fe3e1f648ac7992df9fcc0bb3b765458a7def6347c2ce46b2517c7438058de72",
+      "contentFile": "index.md",
+      "lastEditedTime": "2026-09-08T04:54:00.000Z",
+      "bundleHash": "3c8353d4b806c264111c71015af033fc08c6d1128675738275e9b36b84dbdc48",
       "presentationFingerprint": "48bc466de7cab159311eb82176b0ccabd5b188132ff01eaa0eb698469c80e53a"
     },
     "3d07a59e-0439-8048-ae89-da587d3ba5d0": {
