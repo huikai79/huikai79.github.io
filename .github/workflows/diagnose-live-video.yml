@@ -29,23 +29,28 @@ jobs:
             "$page_url" \
             --output /tmp/page.html
 
-          block_id="$(grep -oE 'data-notion-video-block="[0-9a-fA-F-]{36}"' /tmp/page.html \
-            | head -n 1 \
-            | sed -E 's/.*="([0-9a-fA-F-]{36})"/\1/')"
+          block_marker="$(grep -m1 -oE 'data-notion-video-block="[0-9a-fA-F-]{36}"' /tmp/page.html || true)"
+          block_id="$(printf '%s' "$block_marker" | sed -E 's/.*="([0-9a-fA-F-]{36})"/\1/')"
           if ! printf '%s' "$block_id" | grep -Eq '^[0-9a-fA-F-]{36}$'; then
             echo "::error::Published article does not expose a valid Notion video block marker"
             exit 1
           fi
 
-          curl --fail-with-body --silent --show-error \
+          session_status="$(curl --silent --show-error \
             --max-time 20 \
             --request POST \
             --header "Origin: ${site_origin}" \
             --header "Sec-Fetch-Site: same-origin" \
             --header "X-Media-Session: 1" \
             --cookie-jar /tmp/cookies.txt \
-            "${site_origin}/media/session" \
-            --output /dev/null
+            --output /tmp/session.body \
+            --write-out '%{http_code}' \
+            "${site_origin}/media/session")"
+          echo "Production media session status: ${session_status:-missing}"
+          test "$session_status" = "204" || {
+            echo "::error::Production media session bootstrap did not return HTTP 204"
+            exit 1
+          }
 
           media_url="${site_origin}/media/video/${block_id}?page=%2Fposts%2Ffirst-hackathon%2F"
           curl --silent --show-error \
