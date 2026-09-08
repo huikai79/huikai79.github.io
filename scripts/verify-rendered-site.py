@@ -240,7 +240,7 @@ if home:
         fail("Homepage Twitter image metadata is missing")
     if "HUIKAI" not in home:
         fail("Landing hero caption is missing")
-    if "思考 AI、學習、閱讀與生活" not in home:
+    if "記錄那些值得長期保留的價值" not in home:
         fail("Landing hero positioning text is missing")
 
     hero_ctas = [
