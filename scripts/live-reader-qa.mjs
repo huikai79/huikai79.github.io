@@ -16,7 +16,7 @@ const ROUTES = [
 const VIEWPORTS = [["desktop", 1440, 1000], ["mobile", 390, 844]];
 const SCHEMES = ["light", "dark"];
 const failures = [];
-const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), pages: [], interactions: {}, media: {}, alignment: {} };
+const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), pages: [], interactions: {}, media: {}, alignment: {}, layout: {} };
 
 function fail(message) {
   failures.push(message);
@@ -145,9 +145,67 @@ async function verifyComments(browser) {
   const scriptCount = await page.locator('script[src^="https://giscus.app/client.js"]').count();
   let iframeLoaded = false;
   try { await page.locator("iframe.giscus-frame").waitFor({ state: "attached", timeout: 10_000 }); iframeLoaded = true; } catch {}
-  report.interactions.comments = { giscusScriptCount: scriptCount, iframeLoaded };
+  const geometry = await page.evaluate(() => {
+    const comments = document.querySelector(".giscus-comments");
+    const commentsOuter = comments?.closest(".article-footer");
+    const candidates = [...document.querySelectorAll("main .article-footer")].filter(element => element !== commentsOuter);
+    const reference = candidates.at(-1);
+    if (!commentsOuter || !reference) return null;
+    const commentsRect = commentsOuter.getBoundingClientRect();
+    const referenceRect = reference.getBoundingClientRect();
+    return {
+      commentsLeft: commentsRect.left,
+      commentsRight: commentsRect.right,
+      referenceLeft: referenceRect.left,
+      referenceRight: referenceRect.right,
+      leftDelta: Math.abs(commentsRect.left - referenceRect.left),
+      rightDelta: Math.abs(commentsRect.right - referenceRect.right),
+    };
+  });
+  report.interactions.comments = { giscusScriptCount: scriptCount, iframeLoaded, geometry };
   if (scriptCount !== 1) fail("public article does not expose exactly one Giscus client script");
+  if (!geometry) fail("comments layout: unable to measure Giscus/article-footer alignment");
+  else if (geometry.leftDelta > 2 || geometry.rightDelta > 2)
+    fail(`comments layout: Giscus container differs from article footer by left=${geometry.leftDelta.toFixed(2)}px right=${geometry.rightDelta.toFixed(2)}px`);
   await context.close();
+}
+
+async function verifyFooterLayout(browser) {
+  for (const [viewportName, width, height] of [["desktop", 1200, 900], ["mobile", 390, 844]]) {
+    const context = await browser.newContext({ viewport: { width, height } });
+    const page = await context.newPage();
+    await page.goto(`${BASE_URL}/posts/first-hackathon/`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+    const geometry = await page.evaluate(() => {
+      const row = document.querySelector("#site-footer > div");
+      const copyright = row?.querySelector("p");
+      const nav = row?.querySelector("nav");
+      if (!row || !copyright || !nav) return null;
+      const rowStyle = getComputedStyle(row);
+      const copyrightRect = copyright.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      return {
+        flexDirection: rowStyle.flexDirection,
+        copyrightLeft: copyrightRect.left,
+        copyrightTop: copyrightRect.top,
+        copyrightRight: copyrightRect.right,
+        navLeft: navRect.left,
+        navTop: navRect.top,
+        navRight: navRect.right,
+        verticalDelta: Math.abs(copyrightRect.top - navRect.top),
+      };
+    });
+    report.layout[`footer-${viewportName}`] = geometry;
+    if (!geometry) fail(`footer/${viewportName}: unable to measure copyright/menu layout`);
+    else if (viewportName === "desktop") {
+      if (geometry.flexDirection !== "row") fail(`footer/desktop: expected row layout, got ${geometry.flexDirection}`);
+      if (geometry.navLeft <= geometry.copyrightRight) fail("footer/desktop: site-log link is not positioned to the right of copyright");
+      if (geometry.verticalDelta > 4) fail(`footer/desktop: copyright/menu top edges differ by ${geometry.verticalDelta.toFixed(2)}px`);
+    } else {
+      if (geometry.flexDirection !== "column") fail(`footer/mobile: expected column layout, got ${geometry.flexDirection}`);
+      if (geometry.navTop < geometry.copyrightTop) fail("footer/mobile: site-log link appears before copyright");
+    }
+    await context.close();
+  }
 }
 
 async function verifyMedia(browser, routePath, selector, label, expectedMimePrefix) {
@@ -193,6 +251,7 @@ async function main() {
     await verifyListAlignment(browser, "/projects/", "projects");
     await verifyInteractions(browser);
     await verifyComments(browser);
+    await verifyFooterLayout(browser);
     await verifyMedia(browser, "/posts/how-to-make-wealth/", "audio.notion-audio", "audio", "audio/");
     await verifyMedia(browser, "/posts/first-hackathon/", "video.notion-video", "video", "video/");
   } finally { await browser.close(); }
@@ -200,7 +259,7 @@ async function main() {
   report.failures = failures;
   await fs.writeFile(path.join(OUT_DIR, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
   if (failures.length) { console.error(`Live reader QA: FAIL (${failures.length} issue(s))`); process.exit(1); }
-  console.log(`Live reader QA: PASS (${report.pages.length} rendered states + alignment + interactions + media)`);
+  console.log(`Live reader QA: PASS (${report.pages.length} rendered states + alignment + layout + interactions + media)`);
 }
 
 main().catch(async error => {
