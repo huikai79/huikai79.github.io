@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -74,27 +75,43 @@ language_config = read(ROOT / "config" / "_default" / "languages.zh-TW.toml", "L
 menu_config = read(ROOT / "config" / "_default" / "menus.zh-TW.toml", "Menu config")
 home_source = read(ROOT / "content" / "_index.md", "Homepage source")
 about_source = read(ROOT / "content" / "about" / "index.md", "About source")
+manifest_source = read(ROOT / "static" / "site.webmanifest", "Web app manifest")
 
-expected_description = "莊輝愷的個人網站，記錄 AI、學習、閱讀、視覺設計、教育與數位工具相關的文章、作品、實驗與思考。"
+expected_description = "HUIKAI 是莊輝愷的個人網站，記錄 AI、學習、閱讀、視覺設計、教育與數位工具相關的文章、作品、實驗與思考。"
+if 'title = "HUIKAI"' not in language_config:
+    fail("Primary site title must use the HUIKAI brand")
 if expected_description not in language_config:
-    fail("Site description is not aligned with the current homepage positioning")
+    fail("Site description is not aligned with the HUIKAI positioning")
 for forbidden in ("生活分享｜AI 學習｜讀書筆記｜影視心得", "記錄生活分享、AI 學習、讀書筆記與影視心得"):
     if forbidden in language_config:
         fail(f"Legacy positioning remains in language metadata: {forbidden}")
 if 'pageRef = "about"' not in menu_config or 'name = "關於"' not in menu_config:
     fail("Main navigation does not include the About page")
+if 'title: "澄心而遊"' not in home_source or 'heroCaption: "HUIKAI"' not in home_source:
+    fail("Homepage source must present HUIKAI with the 澄心而遊 spirit line")
 if 'label: "查看文章"' not in home_source or 'url: "/posts/"' not in home_source:
     fail("Homepage primary article CTA source contract is missing")
 if 'label: "關於我"' not in home_source or 'url: "/about/"' not in home_source:
     fail("Homepage secondary About CTA source contract is missing")
 if 'layout: "simple"' not in about_source:
     fail("About page must explicitly use Blowfish native simple layout")
+if manifest_source:
+    try:
+        manifest = json.loads(manifest_source)
+        if manifest.get("name") != "HUIKAI" or manifest.get("short_name") != "HUIKAI":
+            fail("Web app manifest identity must use HUIKAI")
+    except json.JSONDecodeError as error:
+        fail(f"Web app manifest is invalid JSON: {error}")
 
 home = read(PUBLIC / "index.html", "Rendered homepage")
 about = read(PUBLIC / "about" / "index.html", "Rendered About page")
 if home:
     parser = parse(home)
     ctas = {(href.rstrip("/") or "/", text) for href, text in parser.anchors}
+    if parser.h1 != ["澄心而遊"]:
+        fail(f"Homepage must render exactly one H1 named 澄心而遊; found {parser.h1}")
+    if "HUIKAI" not in home:
+        fail("Rendered homepage is missing the HUIKAI brand")
     if ("/posts", "查看文章") not in ctas:
         fail("Rendered homepage is missing the 查看文章 CTA")
     if ("/about", "關於我") not in ctas:
@@ -121,4 +138,4 @@ if ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Site identity verification: PASS")
+print("Site identity verification: PASS (HUIKAI + 澄心而遊, author identity preserved in About/author surfaces)")

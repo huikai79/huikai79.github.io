@@ -104,10 +104,10 @@ if traditional_parser.lang != "zh-TW":
     fail(f"Traditional homepage lang mismatch: {traditional_parser.lang!r}")
 if simplified_parser.lang != "zh-CN":
     fail(f"Simplified homepage lang mismatch: {simplified_parser.lang!r}")
-if "莊輝愷" not in traditional or "思考 AI、學習、閱讀與生活" not in traditional:
-    fail("Traditional homepage identity/copy is incomplete")
-if "庄辉恺" not in simplified or "思考 AI、学习、阅读与生活" not in simplified:
-    fail("Simplified homepage identity/copy is incomplete")
+if "HUIKAI" not in traditional or "澄心而遊" not in traditional or "思考 AI、學習、閱讀與生活" not in traditional:
+    fail("Traditional homepage brand/copy is incomplete")
+if "HUIKAI" not in simplified or "澄心而遊" not in simplified or "思考 AI、学习、阅读与生活" not in simplified:
+    fail("Simplified homepage brand/copy is incomplete")
 
 if not any(href.rstrip("/") == "/zh-cn" for href in traditional_parser.hrefs):
     fail("Traditional homepage does not expose the native Simplified Chinese translation link")
