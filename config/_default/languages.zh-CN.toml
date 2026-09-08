@@ -2,7 +2,7 @@ disabled = false
 locale = "zh-CN"
 label = "简体"
 weight = 2
-title = "庄辉恺"
+title = "HUIKAI"
 
 [params]
   displayName = "简体"
@@ -12,7 +12,7 @@ title = "庄辉恺"
   rtl = false
   dateFormat = "2006年1月2日"
   logo = "https://avatars.githubusercontent.com/u/185808855?v=4&size=16"
-  description = "庄辉恺的个人网站，记录 AI、学习、阅读、视觉设计、教育与数字工具相关的文章、作品、实验与思考。"
+  description = "HUIKAI 是庄辉恺的个人网站，记录 AI、学习、阅读、视觉设计、教育与数字工具相关的文章、作品、实验与思考。"
   copyright = "© 2026 庄辉恺。保留所有权利。"
 
 [params.author]
