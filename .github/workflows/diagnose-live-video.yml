@@ -29,8 +29,8 @@ jobs:
             "$page_url" \
             --output /tmp/page.html
 
-          block_marker="$(grep -m1 -oE 'data-notion-video-block="[0-9a-fA-F-]{36}"' /tmp/page.html || true)"
-          block_id="$(printf '%s' "$block_marker" | sed -E 's/.*="([0-9a-fA-F-]{36})"/\1/')"
+          block_marker="$(grep -m1 -oE 'data-notion-video-block=("[0-9a-fA-F-]{36}"|'"'"'[0-9a-fA-F-]{36}'"'"'|[0-9a-fA-F-]{36})' /tmp/page.html || true)"
+          block_id="$(printf '%s' "$block_marker" | grep -oE '[0-9a-fA-F-]{36}' || true)"
           if ! printf '%s' "$block_id" | grep -Eq '^[0-9a-fA-F-]{36}$'; then
             echo "::error::Published article does not expose a valid Notion video block marker"
             exit 1
