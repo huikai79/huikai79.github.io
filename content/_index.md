@@ -1,5 +1,5 @@
 ---
-title: "莊輝愷"
+title: "澄心而遊"
 heroCaption: "HUIKAI"
 heroLead: "思考 AI、學習、閱讀與生活，記錄那些值得長期保留的東西。"
 heroButtons:
