@@ -65,8 +65,8 @@ if 'defaultContentLanguage = "zh-TW"' not in hugo_config:
     fail("Traditional Chinese must remain the default content language")
 
 for config_name, expected in (
-    ("languages.zh-TW.toml", ('displayName = "繁體中文"', 'htmlCode = "zh-TW"', 'contentRole = "primary"')),
-    ("languages.zh-CN.toml", ('displayName = "简体中文"', 'htmlCode = "zh-CN"', 'contentRole = "secondary"')),
+    ("languages.zh-TW.toml", ('label = "繁體"', 'displayName = "繁體"', 'htmlCode = "zh-TW"', 'contentRole = "primary"')),
+    ("languages.zh-CN.toml", ('label = "简体"', 'displayName = "简体"', 'htmlCode = "zh-CN"', 'contentRole = "secondary"')),
 ):
     path = ROOT / "config" / "_default" / config_name
     if not path.is_file():

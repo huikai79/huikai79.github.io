@@ -5,7 +5,7 @@ showBreadcrumbs: false
 showSummary: true
 groupByYear: false
 cardView: true
-cardViewScreenWidth: true
+cardViewScreenWidth: false
 orderByWeight: true
 ---
 

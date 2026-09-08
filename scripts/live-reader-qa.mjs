@@ -8,7 +8,7 @@ const BASE_URL = (process.env.LIVE_SITE_URL || "https://huikai.com.kg").replace(
 const EXPECTED_SHA = (process.env.EXPECTED_SOURCE_SHA || "").trim();
 const OUT_DIR = path.resolve(process.env.LIVE_QA_OUTPUT || "live-reader-qa");
 const ROUTES = [
-  ["home", "/"], ["posts", "/posts/"], ["explore", "/explore/"],
+  ["home", "/"], ["posts", "/posts/"], ["projects", "/projects/"], ["explore", "/explore/"],
   ["about", "/about/"], ["site-log", "/site-log/"],
   ["hackathon-video", "/posts/first-hackathon/"],
   ["audio-article", "/posts/how-to-make-wealth/"],
@@ -16,7 +16,7 @@ const ROUTES = [
 const VIEWPORTS = [["desktop", 1440, 1000], ["mobile", 390, 844]];
 const SCHEMES = ["light", "dark"];
 const failures = [];
-const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), pages: [], interactions: {}, media: {} };
+const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), pages: [], interactions: {}, media: {}, alignment: {} };
 
 function fail(message) {
   failures.push(message);
@@ -65,6 +65,26 @@ async function pageSnapshot(browser, routeName, routePath, viewportName, width, 
   await context.close();
 }
 
+async function verifyListAlignment(browser, routePath, label) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
+  const geometry = await page.evaluate(() => {
+    const heading = document.querySelector("main h1");
+    const card = document.querySelector("main .article-link--card");
+    if (!heading || !card) return null;
+    return {
+      headingLeft: heading.getBoundingClientRect().left,
+      cardLeft: card.getBoundingClientRect().left,
+      delta: Math.abs(heading.getBoundingClientRect().left - card.getBoundingClientRect().left),
+    };
+  });
+  report.alignment[label] = geometry;
+  if (!geometry) fail(`${label}: unable to measure list heading/card alignment`);
+  else if (geometry.delta > 2) fail(`${label}: heading/card left edges differ by ${geometry.delta.toFixed(2)}px`);
+  await context.close();
+}
+
 async function verifyInteractions(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
@@ -95,7 +115,7 @@ async function verifyInteractions(browser) {
     await page.keyboard.press("Escape");
   }
 
-  const languageButton = page.locator('button:has-text("繁體中文"):visible').first();
+  const languageButton = page.locator('button:has-text("繁體"):visible').first();
   if (!(await languageButton.count())) fail("visible language menu button is missing");
   else {
     await languageButton.click();
@@ -163,6 +183,8 @@ async function main() {
     for (const [routeName, routePath] of ROUTES)
       for (const [viewportName, width, height] of VIEWPORTS)
         for (const scheme of SCHEMES) await pageSnapshot(browser, routeName, routePath, viewportName, width, height, scheme);
+    await verifyListAlignment(browser, "/posts/", "posts");
+    await verifyListAlignment(browser, "/projects/", "projects");
     await verifyInteractions(browser);
     await verifyComments(browser);
     await verifyMedia(browser, "/posts/how-to-make-wealth/", "audio.notion-audio", "audio", "audio/");
@@ -172,7 +194,7 @@ async function main() {
   report.failures = failures;
   await fs.writeFile(path.join(OUT_DIR, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
   if (failures.length) { console.error(`Live reader QA: FAIL (${failures.length} issue(s))`); process.exit(1); }
-  console.log(`Live reader QA: PASS (${report.pages.length} rendered states + interactions + media)`);
+  console.log(`Live reader QA: PASS (${report.pages.length} rendered states + alignment + interactions + media)`);
 }
 
 main().catch(async error => {
