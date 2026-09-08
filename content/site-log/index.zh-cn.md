@@ -11,7 +11,7 @@ showComments: false
 showRelatedContent: false
 showPagination: false
 sharingLinks: []
-_build:
+build:
   list: never
   render: always
 ---
