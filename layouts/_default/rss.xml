@@ -9,7 +9,7 @@
 {{- end -}}
 {{- $feedTitle := .Title -}}
 {{- if .IsHome -}}
-  {{- $feedTitle = cond (eq .Site.Language.Lang "zh-CN") "文章" "文章" -}}
+  {{- $feedTitle = "文章" -}}
 {{- end -}}
 {{- $feedDescription := .Description | default .Site.Params.description -}}
 {{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
@@ -19,7 +19,7 @@
     <link>{{ .Permalink }}</link>
     <description>{{ $feedDescription | html }}</description>
     <generator>Hugo {{ hugo.Version }}</generator>
-    <language>{{ .Site.Language.LanguageCode }}</language>
+    <language>{{ .Site.Language.Locale }}</language>
     {{- with .OutputFormats.Get "RSS" }}
     <atom:link href="{{ .Permalink }}" rel="self" type="application/rss+xml" />
     {{- end }}
