@@ -23,3 +23,8 @@
   name = "關於"
   pageRef = "about"
   weight = 50
+
+[[footer]]
+  name = "網站紀錄"
+  pageRef = "site-log"
+  weight = 90
