@@ -102,6 +102,11 @@ jobs:
             echo "Managed cover optimization dependency install skipped."
           fi
 
+      - name: Localize multilingual page resources
+        run: |
+          python3 scripts/localize-multilingual-page-resources.py
+          python3 scripts/localize-multilingual-page-resources.py --check
+
       - name: Persist Notion cover and icon fingerprints
         run: node scripts/finalize-notion-presentation-fingerprints.mjs /tmp/notion-publication-contract.json
 
@@ -145,6 +150,8 @@ jobs:
             echo "::error::Oversized managed JPEG covers remain after the optimization stage"
             exit 1
           fi
+
+          python3 scripts/localize-multilingual-page-resources.py --check
 
           if find content -maxdepth 1 -type d \( -name '.posts-staging-*' -o -name '.posts-backup-*' \) | grep -q .; then
             echo "::error::Notion sync staging/backup directory leaked after completion"
