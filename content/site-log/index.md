@@ -29,6 +29,8 @@ build:
 - 完成文章 Category、Type、Tag、Explore 與站內搜尋入口。
 - 完成 zh-TW／zh-CN 語言路由、舊網址 alias 與翻譯治理基礎。
 - 完成 Social Preview／Open Graph 與文章社群分享。
+- 完成文章 Hero cover 與 Social Preview 圖片來源分離；Hero 可保留 SVG，社群預覽仍維持 1200×630 raster 契約。
+- 完成既有 Tag URL identity 保留與語言別顯示名稱；正體站可顯示正體名稱，同時不破壞歷史 taxonomy URL。
 - 完成 Giscus 留言，並讓留言主題同步網站亮／暗模式。
 - 完成 Notion 圖片、封面、媒體容量與檔案預算治理。
 - 完成 Notion Audio Gateway；正式頁面可播放並支援 Range request。
@@ -50,7 +52,5 @@ build:
 
 - 取得 Umami Website ID 後正式啟用 Analytics，再以真實讀者資料決定後續 UX 調整。
 - 壓縮目前超過 media warning threshold 的舊封面，降低 repository 與 build 的媒體負擔。
-- 整理 legacy 簡體 Tag 與未來 canonical taxonomy 的顯示名稱／URL 策略。
 - 逐篇決定哪些 Test 內容值得修訂後轉成正式文章，不批次公開。
-- 進一步分離文章 Hero cover 與 1200×630 Social Preview 圖片來源，讓 SVG／raster 使用情境更清楚。
 - 隨正式內容增加，定期做一次桌機／手機、亮／暗模式與主要瀏覽器的讀者端回歸檢查。
