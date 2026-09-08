@@ -138,7 +138,7 @@ for route in article_routes:
             "data-category": str(giscus.get("category", "")), "data-category-id": str(giscus.get("categoryId", "")),
             "data-mapping": "specific", "data-term": expected_key, "data-strict": "1",
             "data-reactions-enabled": "1", "data-emit-metadata": "0",
-            "data-lang": route.language,
+            "data-theme": "preferred_color_scheme", "data-lang": route.language,
         }
         for key, expected_value in expected_attrs.items():
             actual = script.get(key, "")
@@ -146,6 +146,8 @@ for route in article_routes:
                 fail(f"Rendered giscus attribute mismatch for {label}: {key}={actual!r}, expected {expected_value!r}")
         if container.get("data-comment-key", "") != expected_key:
             fail(f"Rendered giscus container key mismatch for {label}")
+        if container.get("data-theme-sync", "") != "html-class":
+            fail(f"Rendered giscus theme-sync marker mismatch for {label}")
     elif parsed.giscus_scripts or parsed.comment_containers:
         fail(f"giscus leaked into a disabled article: {label}")
 
