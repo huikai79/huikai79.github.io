@@ -1,0 +1,88 @@
+name: "Diagnose live Notion video"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/diagnose-live-video.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-video-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify production video gateway end to end
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          site_origin="https://huikai.com.kg"
+          page_path="/posts/first-hackathon/"
+          page_url="${site_origin}${page_path}"
+
+          curl --fail-with-body --silent --show-error --location \
+            --max-time 20 \
+            "$page_url" \
+            --output /tmp/page.html
+
+          block_id="$(grep -oE 'data-notion-video-block="[0-9a-fA-F-]{36}"' /tmp/page.html \
+            | head -n 1 \
+            | sed -E 's/.*="([0-9a-fA-F-]{36})"/\1/')"
+          if ! printf '%s' "$block_id" | grep -Eq '^[0-9a-fA-F-]{36}$'; then
+            echo "::error::Published article does not expose a valid Notion video block marker"
+            exit 1
+          fi
+
+          curl --fail-with-body --silent --show-error \
+            --max-time 20 \
+            --request POST \
+            --header "Origin: ${site_origin}" \
+            --header "Sec-Fetch-Site: same-origin" \
+            --header "X-Media-Session: 1" \
+            --cookie-jar /tmp/cookies.txt \
+            "${site_origin}/media/session" \
+            --output /dev/null
+
+          media_url="${site_origin}/media/video/${block_id}?page=%2Fposts%2Ffirst-hackathon%2F"
+          curl --silent --show-error \
+            --max-time 30 \
+            --header "Referer: ${page_url}" \
+            --header "Sec-Fetch-Site: same-origin" \
+            --header "Range: bytes=0-0" \
+            --cookie /tmp/cookies.txt \
+            --dump-header /tmp/video.headers \
+            --output /tmp/video.body \
+            "$media_url"
+
+          status="$(awk 'toupper($1) ~ /^HTTP\// {code=$2} END {print code}' /tmp/video.headers)"
+          content_type="$(awk -F': *' 'tolower($1)=="content-type" {gsub("\r", "", $2); value=$2} END {print value}' /tmp/video.headers)"
+          content_range="$(awk -F': *' 'tolower($1)=="content-range" {gsub("\r", "", $2); value=$2} END {print value}' /tmp/video.headers)"
+          body_size="$(wc -c < /tmp/video.body | tr -d ' ')"
+
+          echo "Production video status: ${status:-missing}"
+          echo "Production video Content-Type: ${content_type:-missing}"
+          echo "Production video Content-Range: ${content_range:-missing}"
+          echo "Production video first-range bytes received: ${body_size}"
+
+          test "$status" = "206" || {
+            echo "::error::Production video gateway did not return HTTP 206 for a Range request"
+            exit 1
+          }
+          printf '%s' "$content_type" | grep -Eqi '^video/' || {
+            echo "::error::Production video gateway did not return a browser video MIME type"
+            exit 1
+          }
+          printf '%s' "$content_range" | grep -Eqi '^bytes 0-0/[0-9]+$' || {
+            echo "::error::Production video gateway did not return a valid Content-Range"
+            exit 1
+          }
+          test "$body_size" = "1" || {
+            echo "::error::Production video gateway did not honor the one-byte Range request"
+            exit 1
+          }
+
+          echo "Production Notion video gateway smoke test: PASS"
