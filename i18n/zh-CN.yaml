@@ -1,3 +1,6 @@
+global:
+  language: "简体"
+
 huikai:
   reading_time:
     one: "阅读约 {{ .Count }} 分钟"
