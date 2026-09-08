@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ERRORS: list[str] = []
 LANGUAGE_PREFIXES = {"zh-TW": "", "zh-CN": "zh-cn"}
 TAXONOMIES = ("categories", "formats", "tags")
+TAXONOMY_KINDS = {"categories": "category", "formats": "format", "tags": "tag"}
 # Preserve historical taxonomy identities/URLs while allowing reader-facing
 # labels to follow the active language. These identities already exist in
 # production and must not be silently renamed by display-only cleanup.
@@ -123,23 +124,34 @@ def language_root(language: str) -> Path:
 
 
 def expected_term_paths(root: Path, taxonomy: str) -> set[str]:
-    directory = root / taxonomy
-    if not directory.is_dir():
-        return set()
-    result: set[str] = set()
-    for page in directory.glob("*/index.html"):
-        # Hugo can emit translated/historical term shells with no content in
-        # the active language. Explore intentionally lists active terms only,
-        # so those empty shells must not be required as navigation entries.
-        parser = PageParser()
-        parser.feed(page.read_text(encoding="utf-8", errors="replace"))
-        parser.close()
-        article_prefix = "/posts/" if root == PUBLIC else f"/{root.relative_to(PUBLIC).as_posix()}/posts/"
-        if not any(normalized_path(href).startswith(article_prefix) for href in parser.hrefs):
+    kind = TAXONOMY_KINDS.get(taxonomy)
+    if not kind:
+        raise ValueError(f"Unsupported taxonomy: {taxonomy}")
+
+    prefix = "" if root == PUBLIC else root.relative_to(PUBLIC).as_posix().strip("/")
+    language = next(
+        (lang for lang, language_prefix in LANGUAGE_PREFIXES.items() if language_prefix == prefix),
+        None,
+    )
+    if language is None:
+        raise ValueError(f"Unable to resolve language for taxonomy root: {root}")
+
+    active: set[str] = set()
+    for route in routes():
+        if route.language != language:
             continue
-        relative = page.parent.relative_to(PUBLIC).as_posix()
-        result.add("/" + relative.lower().strip("/") + "/")
-    return result
+        rendered = route.rendered(PUBLIC)
+        if not rendered.is_file():
+            continue
+        parser = PageParser()
+        parser.feed(rendered.read_text(encoding="utf-8", errors="replace"))
+        parser.close()
+        active.update(
+            normalized_path(href)
+            for link_kind, href in parser.discovery_links
+            if link_kind == kind
+        )
+    return active
 
 
 def all_json_strings(value: object) -> list[str]:
@@ -219,6 +231,9 @@ for language, language_routes in by_language.items():
             if not terms:
                 fail(f"{language} taxonomy produced no active term pages: {taxonomy}")
             for expected in terms:
+                target = PUBLIC / expected.strip("/") / "index.html"
+                if not target.is_file():
+                    fail(f"{language} active {taxonomy} term page is missing: {expected}")
                 if expected not in explore_paths:
                     fail(f"{language} Explore page is missing {taxonomy} term: {expected}")
         posts_path = f"/{prefix}/posts/" if prefix else "/posts/"
