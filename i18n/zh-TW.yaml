@@ -1,6 +1,9 @@
 global:
   language: "繁體"
 
+error:
+  404_home: "回到首頁"
+
 huikai:
   reading_time:
     one: "閱讀約 {{ .Count }} 分鐘"
