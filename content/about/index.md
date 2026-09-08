@@ -3,6 +3,7 @@ title: "關於"
 layout: "simple"
 description: "關於莊輝愷，以及這個網站持續記錄什麼。"
 showBreadcrumbs: false
+sharingLinks: []
 ---
 
 我是莊輝愷。我的關注橫跨視覺設計、教育、AI 與數位工具。

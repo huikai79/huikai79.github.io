@@ -31,8 +31,8 @@ if not head_hook.is_file():
     fail("404 metadata hook is missing")
 else:
     hook = head_hook.read_text(encoding="utf-8")
-    if 'eq .RelPermalink "/404.html"' not in hook:
-        fail("404 metadata hook must be scoped only to /404.html")
+    if 'strings.HasSuffix .RelPermalink "/404.html"' not in hook:
+        fail("404 metadata hook must cover every localized /404.html while remaining path-scoped")
     if 'name="robots" content="noindex,follow"' not in hook:
         fail("404 metadata hook must emit noindex,follow")
 
@@ -78,23 +78,29 @@ class HeadParser(HTMLParser):
             self.h1_text.append(data)
 
 
-# Rendered 404 contract.
-page404 = PUBLIC / "404.html"
-if not page404.is_file():
-    fail("Rendered 404.html is missing")
-else:
+def verify_404(relative: str, heading: str) -> None:
+    page404 = PUBLIC / relative
+    if not page404.is_file():
+        fail(f"Rendered {relative} is missing")
+        return
+
     parser = HeadParser()
     parser.feed(page404.read_text(encoding="utf-8", errors="replace"))
     parser.close()
     normalized_robots = [value.replace(" ", "").lower() for value in parser.robots]
     if normalized_robots.count("noindex,follow") != 1:
-        fail(f"404 must contain exactly one robots noindex,follow meta tag: {parser.robots}")
-    if len(parser.canonicals) != 1 or not parser.canonicals[0].endswith("/404.html"):
-        fail(f"404 canonical metadata is invalid: {parser.canonicals}")
+        fail(f"{relative} must contain exactly one robots noindex,follow meta tag: {parser.robots}")
+    if len(parser.canonicals) != 1 or not parser.canonicals[0].endswith(f"/{relative}"):
+        fail(f"{relative} canonical metadata is invalid: {parser.canonicals}")
     if parser.h1_count != 1:
-        fail(f"404 must render exactly one H1; found {parser.h1_count}")
-    if "找不到網頁" not in " ".join(parser.h1_text):
-        fail("404 visible heading is not localized")
+        fail(f"{relative} must render exactly one H1; found {parser.h1_count}")
+    if heading not in " ".join(parser.h1_text):
+        fail(f"{relative} visible heading is not localized")
+
+
+# Rendered localized 404 contract.
+verify_404("404.html", "找不到網頁")
+verify_404("zh-cn/404.html", "找不到网页")
 
 if ERRORS:
     for error in ERRORS:

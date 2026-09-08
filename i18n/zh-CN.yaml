@@ -1,6 +1,9 @@
 global:
   language: "简体"
 
+error:
+  404_home: "返回首页"
+
 huikai:
   reading_time:
     one: "阅读约 {{ .Count }} 分钟"

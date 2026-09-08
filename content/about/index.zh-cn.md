@@ -3,6 +3,7 @@ title: "关于"
 layout: "simple"
 description: "关于庄辉恺，以及这个网站持续记录什么。"
 showBreadcrumbs: false
+sharingLinks: []
 ---
 
 我是庄辉恺。我的关注横跨视觉设计、教育、AI 与数字工具。
