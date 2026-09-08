@@ -7,7 +7,7 @@ echo "Hugo / Go runtime"
 hugo version
 go version
 
-python3 -m py_compile scripts/optimize-managed-covers.py
+python3 -m py_compile scripts/optimize-managed-covers.py scripts/localize-multilingual-page-resources.py
 node scripts/test-notion-video-transformer.mjs
 node scripts/test-notion-audio-transformer.mjs
 node workers/notion-media-gateway/test-paths.mjs
@@ -18,6 +18,8 @@ python3 scripts/localize-notion-media.py
 python3 scripts/verify-media-budget.py
 python3 scripts/test-cover-resolution.py
 python3 scripts/resolve-article-covers.py
+python3 scripts/localize-multilingual-page-resources.py
+python3 scripts/localize-multilingual-page-resources.py --check
 python3 scripts/test-discovery-taxonomy-contract.py
 if [ "${STRICT_CONTENT:-0}" != "1" ]; then
   # PR/local builds may start from the last committed production snapshot. The
