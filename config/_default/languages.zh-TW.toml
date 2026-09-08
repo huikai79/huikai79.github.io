@@ -2,7 +2,7 @@ disabled = false
 locale = "zh-TW"
 label = "繁體"
 weight = 1
-title = "莊輝愷"
+title = "HUIKAI"
 
 [params]
   displayName = "繁體"
@@ -12,7 +12,7 @@ title = "莊輝愷"
   rtl = false
   dateFormat = "2006年1月2日"
   logo = "https://avatars.githubusercontent.com/u/185808855?v=4&size=16"
-  description = "莊輝愷的個人網站，記錄 AI、學習、閱讀、視覺設計、教育與數位工具相關的文章、作品、實驗與思考。"
+  description = "HUIKAI 是莊輝愷的個人網站，記錄 AI、學習、閱讀、視覺設計、教育與數位工具相關的文章、作品、實驗與思考。"
   copyright = "© 2026 莊輝愷。保留所有權利。"
 
 [params.author]
