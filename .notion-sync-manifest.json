@@ -52,6 +52,16 @@
       "bundleHash": "fe3e1f648ac7992df9fcc0bb3b765458a7def6347c2ce46b2517c7438058de72",
       "presentationFingerprint": "48bc466de7cab159311eb82176b0ccabd5b188132ff01eaa0eb698469c80e53a"
     },
+    "3d07a59e-0439-8048-ae89-da587d3ba5d0": {
+      "slug": "first-Hackathon",
+      "bundlePath": "first-Hackathon",
+      "language": "zh-TW",
+      "translationGroup": "nutrient-hackathon-after",
+      "contentFile": "index.md",
+      "lastEditedTime": "2026-09-07T16:44:00.000Z",
+      "bundleHash": "88c34ed53de9b5b03d944392c31165742a079268d202f7ed5e6fbc84a609b4b8",
+      "presentationFingerprint": "6538cc93a05ff67f52e92a704997f2204f6e09865dd0065676276a0c9cf11ee6"
+    },
     "3d37a59e-0439-80d0-86d7-fc494a529fca": {
       "slug": "daxuepeiyangchuangyezhe",
       "bundlePath": "daxuepeiyangchuangyezhe",

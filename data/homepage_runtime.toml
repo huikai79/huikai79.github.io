@@ -3,12 +3,17 @@ rotationIndex = 1
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
-selectedLimit = 1
+selectedLimit = 2
 recentLimit = 5
 pinnedSize = 0
-rotationSlots = 1
-poolSize = 1
+rotationSlots = 2
+poolSize = 2
 poolOffset = 0
+
+[[selected]]
+pageId = "3d07a59e-0439-8048-ae89-da587d3ba5d0"
+path = "posts/first-Hackathon"
+source = "rotationPool"
 
 [[selected]]
 pageId = "23b7a59e-0439-81d2-b926-cb11c044d7e9"
