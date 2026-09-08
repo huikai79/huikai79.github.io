@@ -165,7 +165,7 @@ body {
   width: 100%;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .article-reading-layout.has-toc {
     grid-template-columns: minmax(14rem, 1fr) minmax(0, 80ch) minmax(14rem, 1fr);
     align-items: start;
