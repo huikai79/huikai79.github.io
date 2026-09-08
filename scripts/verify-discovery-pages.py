@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ERRORS: list[str] = []
 LANGUAGE_PREFIXES = {"zh-TW": "", "zh-CN": "zh-cn"}
 TAXONOMIES = ("categories", "formats", "tags")
+TAXONOMY_KINDS = {"categories": "category", "formats": "format", "tags": "tag"}
 # Preserve historical taxonomy identities/URLs while allowing reader-facing
 # labels to follow the active language. These identities already exist in
 # production and must not be silently renamed by display-only cleanup.
@@ -123,7 +124,8 @@ def language_root(language: str) -> Path:
 
 
 def expected_term_paths(root: Path, taxonomy: str) -> set[str]:
-    if taxonomy not in TAXONOMIES:
+    kind = TAXONOMY_KINDS.get(taxonomy)
+    if not kind:
         raise ValueError(f"Unsupported taxonomy: {taxonomy}")
 
     prefix = "" if root == PUBLIC else root.relative_to(PUBLIC).as_posix().strip("/")
@@ -138,10 +140,17 @@ def expected_term_paths(root: Path, taxonomy: str) -> set[str]:
     for route in routes():
         if route.language != language:
             continue
-        front = front_matter(route.source.read_text(encoding="utf-8", errors="strict"))
-        for term in front_list(front, taxonomy):
-            base = f"/{prefix}/{taxonomy}/{term}/" if prefix else f"/{taxonomy}/{term}/"
-            active.add(normalized_path(base))
+        rendered = route.rendered(PUBLIC)
+        if not rendered.is_file():
+            continue
+        parser = PageParser()
+        parser.feed(rendered.read_text(encoding="utf-8", errors="replace"))
+        parser.close()
+        active.update(
+            normalized_path(href)
+            for link_kind, href in parser.discovery_links
+            if link_kind == kind
+        )
     return active
 
 
