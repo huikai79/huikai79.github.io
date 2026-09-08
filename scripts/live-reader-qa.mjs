@@ -115,9 +115,12 @@ async function verifyInteractions(browser) {
     await page.keyboard.press("Escape");
   }
 
-  const languageButton = page.locator('button:has-text("繁體"):visible').first();
+  const languageButton = page.locator(".translation button:visible").first();
   if (!(await languageButton.count())) fail("visible language menu button is missing");
   else {
+    const traditionalLabel = (await languageButton.innerText()).trim();
+    report.interactions.languageLabels = { traditional: traditionalLabel };
+    if (traditionalLabel !== "繁體") fail(`Traditional language button label mismatch: ${traditionalLabel || "EMPTY"}`);
     await languageButton.click();
     const languageLink = page.locator('a[href="/zh-cn/"]:visible').first();
     try { await languageLink.waitFor({ state: "visible", timeout: 5_000 }); }
@@ -125,7 +128,10 @@ async function verifyInteractions(browser) {
     if (await languageLink.count()) {
       await languageLink.click();
       await page.waitForLoadState("networkidle");
+      const simplifiedLabel = (await page.locator(".translation button:visible").first().innerText()).trim();
+      report.interactions.languageLabels.simplified = simplifiedLabel;
       report.interactions.languageSwitch = { url: page.url() };
+      if (simplifiedLabel !== "简体") fail(`Simplified language button label mismatch: ${simplifiedLabel || "EMPTY"}`);
       if (!new URL(page.url()).pathname.startsWith("/zh-cn/")) fail(`language switch did not reach zh-CN route: ${page.url()}`);
     }
   }
