@@ -8,10 +8,15 @@ const env = {
 };
 const blockId = "23b7a59e-0439-8006-a923-e6b66af95201";
 const unknownAudioBlockId = "23b7a59e-0439-8006-a923-e6b66af95202";
+const videoBlockId = "3d27a59e-0439-80d9-a6c5-f293186a10e0";
+const unknownVideoBlockId = "3d27a59e-0439-80d9-a6c5-f293186a10e1";
 const pagePath = "/posts/how-to-make-wealth/";
+const videoPagePath = "/posts/first-hackathon/";
 const siteOrigin = "https://huikai.com.kg";
 const wavUrl = "https://signed.example.test/%E5%89%B5%E9%80%A0%E8%B2%A1%E5%AF%8C%E4%B9%8B%E9%81%93.wav?token=short-lived";
 const unknownAudioUrl = "https://signed.example.test/audio-object?token=unknown-extension";
+const mp4Url = "https://signed.example.test/1000228164.mp4?token=short-lived";
+const unknownVideoUrl = "https://signed.example.test/video-object?token=unknown-extension";
 
 const sessionResponse = await worker.fetch(new Request(`${siteOrigin}/media/session`, {
   method: "POST",
@@ -133,6 +138,82 @@ try {
     }
   ), env);
   assert.equal(unknownAudioMime.status, 502, "bare audio MIME without a recognized filename extension must fail closed");
+
+  globalThis.fetch = async (input, init = {}) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url === `${siteOrigin}${videoPagePath}`) {
+      return new Response(`<div data-notion-video-block="${videoBlockId}"></div>`, {
+        status: 200,
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+    if (url === `https://api.notion.com/v1/blocks/${videoBlockId}`) {
+      return new Response(JSON.stringify({
+        type: "video",
+        video: { type: "file", file: { url: mp4Url } }
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    if (url === mp4Url) {
+      assert.equal(init.headers.get("Range"), "bytes=0-1023", "video Range header must be forwarded upstream");
+      return new Response(new Uint8Array([1, 2, 3, 4]), {
+        status: 206,
+        headers: {
+          "Content-Type": "video",
+          "Content-Length": "4",
+          "Content-Range": "bytes 0-3/4",
+          "Accept-Ranges": "bytes"
+        }
+      });
+    }
+    throw new Error(`unexpected fetch in video MIME test: ${url}`);
+  };
+
+  const videoResponse = await worker.fetch(new Request(
+    `${siteOrigin}/media/video/${videoBlockId}?page=${encodeURIComponent(videoPagePath)}`,
+    {
+      headers: {
+        Referer: `${siteOrigin}${videoPagePath}`,
+        "Sec-Fetch-Site": "same-origin",
+        Cookie: cookie,
+        Range: "bytes=0-1023"
+      }
+    }
+  ), env);
+  assert.equal(videoResponse.status, 206, "authorized published video must preserve partial-content status");
+  assert.equal(videoResponse.headers.get("Content-Type"), "video/mp4", "bare video MIME from the published .mp4 signed URL must normalize to video/mp4");
+  assert.equal(videoResponse.headers.get("Content-Range"), "bytes 0-3/4");
+
+  globalThis.fetch = async input => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url === `${siteOrigin}${videoPagePath}`) {
+      return new Response(`<div data-notion-video-block="${unknownVideoBlockId}"></div>`, { status: 200 });
+    }
+    if (url === `https://api.notion.com/v1/blocks/${unknownVideoBlockId}`) {
+      return new Response(JSON.stringify({
+        type: "video",
+        video: { type: "file", file: { url: unknownVideoUrl } }
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    if (url === unknownVideoUrl) {
+      return new Response(new Uint8Array([1, 2, 3, 4]), {
+        status: 206,
+        headers: { "Content-Type": "video" }
+      });
+    }
+    throw new Error(`unexpected fetch in unknown video extension test: ${url}`);
+  };
+
+  const unknownVideoMime = await worker.fetch(new Request(
+    `${siteOrigin}/media/video/${unknownVideoBlockId}?page=${encodeURIComponent(videoPagePath)}`,
+    {
+      headers: {
+        Referer: `${siteOrigin}${videoPagePath}`,
+        "Sec-Fetch-Site": "same-origin",
+        Cookie: cookie
+      }
+    }
+  ), env);
+  assert.equal(unknownVideoMime.status, 502, "bare video MIME without a recognized filename extension must fail closed");
 
   globalThis.fetch = async input => {
     const url = typeof input === "string" ? input : input.url;

@@ -20,6 +20,16 @@ const AUDIO_MIME_BY_EXTENSION = new Map([
   [".midi", "audio/midi"],
   [".wma", "audio/x-ms-wma"]
 ]);
+const VIDEO_MIME_BY_EXTENSION = new Map([
+  [".avi", "video/x-msvideo"],
+  [".m4v", "video/x-m4v"],
+  [".mov", "video/quicktime"],
+  [".mp4", "video/mp4"],
+  [".mpeg", "video/mpeg"],
+  [".mpg", "video/mpeg"],
+  [".ogv", "video/ogg"],
+  [".webm", "video/webm"]
+]);
 
 function base64Url(bytes) {
   let binary = "";
@@ -159,7 +169,7 @@ function extensionFromFilename(value) {
   return match ? match[1] : "";
 }
 
-function inferAudioMimeType(upstreamUrl, contentDisposition) {
+function inferMediaMimeType(mediaType, upstreamUrl, contentDisposition) {
   const candidates = [];
   try {
     candidates.push(new URL(upstreamUrl).pathname.split("/").pop() || "");
@@ -168,9 +178,10 @@ function inferAudioMimeType(upstreamUrl, contentDisposition) {
   }
   candidates.push(filenameFromContentDisposition(contentDisposition));
 
+  const mimeByExtension = mediaType === "video" ? VIDEO_MIME_BY_EXTENSION : AUDIO_MIME_BY_EXTENSION;
   for (const candidate of candidates) {
     const extension = extensionFromFilename(candidate);
-    const mime = AUDIO_MIME_BY_EXTENSION.get(extension);
+    const mime = mimeByExtension.get(extension);
     if (mime) return mime;
   }
   return "";
@@ -178,8 +189,8 @@ function inferAudioMimeType(upstreamUrl, contentDisposition) {
 
 function normalizeUpstreamContentType(mediaType, contentType, upstreamUrl, contentDisposition) {
   if (contentType.startsWith(`${mediaType}/`)) return contentType;
-  if (mediaType === "audio" && contentType === "audio") {
-    return inferAudioMimeType(upstreamUrl, contentDisposition);
+  if (contentType === mediaType && ["audio", "video"].includes(mediaType)) {
+    return inferMediaMimeType(mediaType, upstreamUrl, contentDisposition);
   }
   return "";
 }
