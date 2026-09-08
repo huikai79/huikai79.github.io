@@ -128,6 +128,15 @@ def expected_term_paths(root: Path, taxonomy: str) -> set[str]:
         return set()
     result: set[str] = set()
     for page in directory.glob("*/index.html"):
+        # Hugo can emit translated/historical term shells with no content in
+        # the active language. Explore intentionally lists active terms only,
+        # so those empty shells must not be required as navigation entries.
+        parser = PageParser()
+        parser.feed(page.read_text(encoding="utf-8", errors="replace"))
+        parser.close()
+        article_prefix = "/posts/" if root == PUBLIC else f"/{root.relative_to(PUBLIC).as_posix()}/posts/"
+        if not any(normalized_path(href).startswith(article_prefix) for href in parser.hrefs):
+            continue
         relative = page.parent.relative_to(PUBLIC).as_posix()
         result.add("/" + relative.lower().strip("/") + "/")
     return result
@@ -208,7 +217,7 @@ for language, language_routes in by_language.items():
         for taxonomy in TAXONOMIES:
             terms = expected_term_paths(root, taxonomy)
             if not terms:
-                fail(f"{language} taxonomy produced no term pages: {taxonomy}")
+                fail(f"{language} taxonomy produced no active term pages: {taxonomy}")
             for expected in terms:
                 if expected not in explore_paths:
                     fail(f"{language} Explore page is missing {taxonomy} term: {expected}")
@@ -227,7 +236,9 @@ for language, language_routes in by_language.items():
                 f"identity={identity!r}, expected_label={display_label!r}"
             )
         expected_url = f"/{prefix}/tags/{identity}/" if prefix else f"/tags/{identity}/"
-        if normalized_path(expected_url) not in expected_term_paths(root, "tags"):
+        # Historical term pages may be intentionally empty in one language;
+        # their URL/label contract is verified independently of Explore.
+        if not (root / "tags" / identity / "index.html").is_file():
             fail(f"Historical tag URL disappeared: {expected_url}")
 
     search_path = root / "index.json"
