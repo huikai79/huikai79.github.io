@@ -90,4 +90,34 @@ jobs:
             exit 1
           }
 
+          curl --fail-with-body --silent --show-error \
+            --max-time 60 \
+            --header "Referer: ${page_url}" \
+            --header "Sec-Fetch-Site: same-origin" \
+            --cookie /tmp/cookies.txt \
+            --output /tmp/video.mp4 \
+            "$media_url"
+
+          command -v ffprobe >/dev/null 2>&1 || {
+            echo "::error::ffprobe is unavailable on the GitHub runner"
+            exit 1
+          }
+
+          duration="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/video.mp4)"
+          video_codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 /tmp/video.mp4)"
+          audio_codec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1:nk=1 /tmp/video.mp4 || true)"
+
+          echo "Production video duration: ${duration:-missing}"
+          echo "Production video codec: ${video_codec:-missing}"
+          echo "Production audio codec: ${audio_codec:-none}"
+
+          awk -v d="$duration" 'BEGIN { exit !(d > 0) }' || {
+            echo "::error::Production MP4 does not expose a positive media duration"
+            exit 1
+          }
+          printf '%s' "$video_codec" | grep -Eqi '^(h264|vp9|av1)$' || {
+            echo "::error::Production MP4 video codec is not in the expected browser-compatible set"
+            exit 1
+          }
+
           echo "Production Notion video gateway smoke test: PASS"
