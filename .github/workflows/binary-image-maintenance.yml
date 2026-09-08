@@ -1,0 +1,73 @@
+name: "Binary image maintenance"
+
+on:
+  push:
+    branches:
+      - feature/binary-maintenance-live-qa-20260908
+    paths:
+      - '.github/workflows/binary-image-maintenance.yml'
+      - 'scripts/optimize-large-covers.sh'
+      - 'content/posts/Writing-and-speaking/cover.jpg'
+      - 'content/posts/How-you-know/cover.jpg'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: binary-image-maintenance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  optimize:
+    if: ${{ !contains(github.event.head_commit.message || '', '[binary-maintenance]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout binary source branch
+        uses: actions/checkout@v7
+        with:
+          ref: feature/binary-maintenance-live-qa-20260908
+          fetch-depth: 0
+
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          identify -version
+
+      - name: Optimize guarded oversized covers
+        run: bash scripts/optimize-large-covers.sh
+
+      - name: Verify only expected binary targets changed
+        run: |
+          changed="$(git diff --name-only)"
+          printf '%s\n' "$changed"
+          unexpected="$(printf '%s\n' "$changed" | grep -v -E '^(content/posts/Writing-and-speaking/cover\.jpg|content/posts/How-you-know/cover\.jpg)$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "::error::Unexpected file changes:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Upload optimization evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: binary-image-maintenance-${{ github.sha }}
+          path: binary-image-maintenance/report.tsv
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Commit optimized binary assets to maintenance branch
+        run: |
+          if git diff --quiet -- content/posts/Writing-and-speaking/cover.jpg content/posts/How-you-know/cover.jpg; then
+            echo "No oversized binary assets require changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/posts/Writing-and-speaking/cover.jpg content/posts/How-you-know/cover.jpg
+          git commit -m "Optimize oversized article covers [binary-maintenance]"
+          git push origin HEAD:feature/binary-maintenance-live-qa-20260908
