@@ -182,3 +182,64 @@ jobs:
               echo "Cloudflare cache: **NOT_CONFIGURED**"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+  live-reader-qa:
+    runs-on: ubuntu-latest
+    needs:
+      - guard
+      - deploy
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      LIVE_SITE_URL: https://huikai.com.kg
+      EXPECTED_SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
+      LIVE_QA_OUTPUT: live-reader-qa
+    steps:
+      - name: Checkout exact QA script source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.guard.outputs.source_sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: false
+
+      - name: Install pinned Playwright runtime
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Wait for exact production lineage
+        env:
+          SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
+        run: |
+          for attempt in $(seq 1 12); do
+            actual="$(curl --fail --silent --show-error --location --max-time 15 "https://huikai.com.kg/source-commit.txt" || true)"
+            actual="$(printf '%s' "$actual" | tr -d '\r\n')"
+            if [ "$actual" = "$SOURCE_SHA" ]; then
+              echo "Production lineage reached exact source SHA: $SOURCE_SHA"
+              exit 0
+            fi
+            echo "Production edge not ready yet (attempt $attempt/12; got ${actual:-NO_RESPONSE})"
+            sleep 5
+          done
+          echo "::error::Production edge did not expose expected source SHA $SOURCE_SHA"
+          exit 1
+
+      - name: Run live reader QA against production
+        run: node scripts/live-reader-qa.mjs
+
+      - name: Upload live QA evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: live-reader-qa-${{ env.EXPECTED_SOURCE_SHA }}
+          path: live-reader-qa/
+          retention-days: 14
+          if-no-files-found: warn
