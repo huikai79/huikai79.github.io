@@ -13,7 +13,7 @@ permissions:
 jobs:
   live-video-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Verify production video gateway end to end
         shell: bash
@@ -98,10 +98,10 @@ jobs:
             --output /tmp/video.mp4 \
             "$media_url"
 
-          command -v ffprobe >/dev/null 2>&1 || {
-            echo "::error::ffprobe is unavailable on the GitHub runner"
-            exit 1
-          }
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg >/dev/null
+          fi
 
           duration="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/video.mp4)"
           video_codec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 /tmp/video.mp4)"
