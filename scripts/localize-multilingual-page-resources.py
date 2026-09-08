@@ -11,8 +11,15 @@ from article_routing import MANIFEST, routes
 
 DEFAULT_LANGUAGE = "zh-TW"
 LANGUAGE_TOKENS = {"zh-CN": "zh-cn", "en": "en"}
-MANAGED_NAME = re.compile(r"^(cover|icon|image-\d+)(?:\.(zh-cn|en))?(\.[A-Za-z0-9]+)$", re.IGNORECASE)
-REFERENCE = re.compile(r"(?<![A-Za-z0-9_./-])((?:cover|icon|image-\d+)\.[A-Za-z0-9]+)(?![A-Za-z0-9_.-])", re.IGNORECASE)
+RESOURCE_STEM = r"(?:cover|cover-fallback|social-preview|icon|image-\d+)"
+MANAGED_NAME = re.compile(
+    rf"^({RESOURCE_STEM})(?:\.(zh-cn|en))?(\.[A-Za-z0-9]+)$",
+    re.IGNORECASE,
+)
+REFERENCE = re.compile(
+    rf"(?<![A-Za-z0-9_./-])(({RESOURCE_STEM})\.[A-Za-z0-9]+)(?![A-Za-z0-9_.-])",
+    re.IGNORECASE,
+)
 
 
 def directory_hash(directory: Path) -> str:
@@ -36,6 +43,10 @@ def qualified_name(name: str, token: str) -> str:
             raise RuntimeError(f"Page resource language mismatch: {name} vs {token}")
         return name
     return f"{stem}.{token}{extension}"
+
+
+def referenced_names(text: str) -> set[str]:
+    return {match.group(1) for match in REFERENCE.finditer(text)}
 
 
 def process_route(route, *, check: bool) -> bool:
@@ -69,7 +80,7 @@ def process_route(route, *, check: bool) -> bool:
         replacements[path.name] = target_name
         changed = True
 
-    for old_name in sorted(set(REFERENCE.findall(text))):
+    for old_name in sorted(referenced_names(text)):
         target_name = qualified_name(old_name, token)
         if target_name == old_name:
             continue
@@ -98,7 +109,7 @@ def process_route(route, *, check: bool) -> bool:
         route.source.write_text(text, encoding="utf-8")
 
     verified = route.source.read_text(encoding="utf-8")
-    leftovers = sorted(set(REFERENCE.findall(verified)))
+    leftovers = sorted(referenced_names(verified))
     if leftovers:
         raise RuntimeError(
             f"Unqualified {route.language} page-resource references remain in {route.source}: {leftovers}"
