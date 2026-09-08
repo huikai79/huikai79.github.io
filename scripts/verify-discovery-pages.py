@@ -14,6 +14,20 @@ ROOT = Path(__file__).resolve().parents[1]
 ERRORS: list[str] = []
 LANGUAGE_PREFIXES = {"zh-TW": "", "zh-CN": "zh-cn"}
 TAXONOMIES = ("categories", "formats", "tags")
+# Preserve historical taxonomy identities/URLs while allowing reader-facing
+# labels to follow the active language. These identities already exist in
+# production and must not be silently renamed by display-only cleanup.
+EXPECTED_TAG_LABELS = {
+    "zh-TW": {
+        "创业": "創業",
+        "好文推荐": "好文推薦",
+        "技术学习": "技術學習",
+    },
+    "zh-CN": {
+        "创业": "创业",
+        "好文推荐": "好文推荐",
+    },
+}
 
 
 def fail(message: str) -> None:
@@ -34,6 +48,7 @@ class PageParser(HTMLParser):
         self.classes: set[str] = set()
         self.discovery_taxonomies: set[str] = set()
         self.discovery_links: list[tuple[str, str]] = []
+        self.text_content: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = {key.lower(): value or "" for key, value in attrs}
@@ -46,6 +61,11 @@ class PageParser(HTMLParser):
             kind = data.get("data-discovery-kind", "")
             if kind:
                 self.discovery_links.append((kind, data["href"]))
+
+    def handle_data(self, data: str) -> None:
+        text = data.strip()
+        if text:
+            self.text_content.append(text)
 
 
 def parse_page(path: Path, label: str) -> PageParser | None:
@@ -195,6 +215,20 @@ for language, language_routes in by_language.items():
         posts_path = f"/{prefix}/posts/" if prefix else "/posts/"
         if normalized_path(posts_path) not in explore_paths:
             fail(f"{language} Explore page must link back to the language-scoped posts index")
+
+    for identity, display_label in EXPECTED_TAG_LABELS.get(language, {}).items():
+        tag_page = root / "tags" / identity / "index.html"
+        tag_parser = parse_page(tag_page, f"{language} tag identity:{identity}")
+        if tag_parser is None:
+            continue
+        if display_label not in tag_parser.text_content:
+            fail(
+                f"{language} tag display label drifted without changing the historical identity: "
+                f"identity={identity!r}, expected_label={display_label!r}"
+            )
+        expected_url = f"/{prefix}/tags/{identity}/" if prefix else f"/tags/{identity}/"
+        if normalized_path(expected_url) not in expected_term_paths(root, "tags"):
+            fail(f"Historical tag URL disappeared: {expected_url}")
 
     search_path = root / "index.json"
     if not search_path.is_file() or search_path.stat().st_size == 0:
