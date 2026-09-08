@@ -1,5 +1,5 @@
 ---
-title: "庄辉恺"
+title: "澄心而遊"
 heroCaption: "HUIKAI"
 heroLead: "思考 AI、学习、阅读与生活，记录那些值得长期保留的东西。"
 heroButtons:
