@@ -5,7 +5,6 @@
 
 [[main]]
   name = "文章"
-  pre = "blogger"
   pageRef = "posts"
   weight = 20
 
