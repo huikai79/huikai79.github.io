@@ -23,12 +23,10 @@ class Parser(HTMLParser):
         self.classes: set[str] = set()
         self.scroll_label = ""
         self.article_heading_count = 0
-        self.article_depth: int | None = None
-        self.depth = 0
+        self.in_article_main = False
         self.text: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self.depth += 1
         data = {key.lower(): value or "" for key, value in attrs}
         classes = set(data.get("class", "").split())
         self.classes.update(classes)
@@ -39,8 +37,8 @@ class Parser(HTMLParser):
         if data.get("id") == "scroll-to-top":
             self.scroll_label = data.get("aria-label", "")
         if tag.lower() == "article" and "article-main" in classes:
-            self.article_depth = self.depth
-        if self.article_depth is not None and tag.lower() in {"h2", "h3", "h4"}:
+            self.in_article_main = True
+        elif self.in_article_main and tag.lower() in {"h2", "h3", "h4"}:
             self.article_heading_count += 1
 
     def handle_data(self, data: str) -> None:
@@ -49,9 +47,8 @@ class Parser(HTMLParser):
             self.text.append(stripped)
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "article" and self.article_depth == self.depth:
-            self.article_depth = None
-        self.depth = max(0, self.depth - 1)
+        if tag.lower() == "article" and self.in_article_main:
+            self.in_article_main = False
 
 
 def parse(path: Path) -> Parser:
