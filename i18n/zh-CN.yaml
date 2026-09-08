@@ -9,6 +9,7 @@ huikai:
     one: "阅读约 {{ .Count }} 分钟"
     other: "阅读约 {{ .Count }} 分钟"
   article_context: "文章信息"
+  back_to_top: "回到顶部"
   home_selected: "精选"
   home_recent: "最近"
   explore_categories: "按分类探索"
