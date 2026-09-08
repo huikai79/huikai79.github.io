@@ -3,19 +3,19 @@ title: "你是怎么知道的"
 date: "2025-07-26T02:00:00.000+08:00"
 slug: "How-you-know"
 description: "閱讀與經歷留下的，不只是可被回憶的細節，而是持續塑造判斷與理解的心智模型；正因為每個生命階段都會重新「編譯」經驗，重要的書也值得一讀再讀。"
-tags: ["好文推荐"]
+tags: []
 showComments: true
 commentKey: "notion:23b7a59e-0439-80a6-9852-c373b03994f5"
-categories: ["學習與閱讀"]
-entryType: "推薦／整理"
-formats: ["推薦／整理"]
+categories: ["學習"]
+entryType: "文章"
+formats: ["文章"]
 contentVisibility: "Public"
 homePlacement: "Pinned"
 contentLanguage: "zh-CN"
 translationKey: "How-you-know"
-cover: "cover.jpg"
+cover: "cover.zh-cn.jpg"
 icon: "🤔"
-images: ["cover.jpg"]
+images: ["cover.zh-cn.jpg"]
 ---
 
 我至少读过两遍维拉杜安的《第四次十字军亲历记》，或许还有第三遍。然而若要把记得的一切写下来，怕是连一页纸都写不满。把这种情况乘以几百本书，当我望向书架时不免心生惶惑：既然能留下的如此有限，读书还有什么意义？

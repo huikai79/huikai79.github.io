@@ -3,12 +3,12 @@ title: "Nutrient Hackathon 比賽之後"
 date: "2026-09-04"
 slug: "first-Hackathon"
 description: "參加 Nutrient DWS Challenge 後，我重新思考 Sponsor 技術整合、可驗證 Demo、公開證明與技術保護之間的界線，也重新整理 Hackathon 作品從開發、揭露到提交的工作方式。"
-tags: ["技术学习"]
+tags: ["AI", "Hackathon"]
 showComments: true
 commentKey: "notion:3d07a59e-0439-8048-ae89-da587d3ba5d0"
-categories: ["創作與實驗"]
-entryType: "實驗紀錄"
-formats: ["實驗紀錄"]
+categories: ["科技"]
+entryType: "紀錄"
+formats: ["紀錄"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-TW"

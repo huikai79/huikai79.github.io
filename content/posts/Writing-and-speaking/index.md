@@ -3,12 +3,12 @@ title: "寫作與演講"
 date: "2025-07-25"
 slug: "Writing-and-speaking"
 description: "寫作讓人有時間把想法想深、想準；演講則更依賴即時表現、情緒與觀眾互動。兩者各有力量，但若目標是產生與保存思想，寫作仍有不可替代的優勢。"
-tags: ["好文推荐"]
+tags: ["寫作"]
 showComments: true
 commentKey: "notion:23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
-categories: ["學習與閱讀"]
-entryType: "推薦／整理"
-formats: ["推薦／整理"]
+categories: ["創作"]
+entryType: "文章"
+formats: ["文章"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-TW"

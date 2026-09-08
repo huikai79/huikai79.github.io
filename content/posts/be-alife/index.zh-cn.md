@@ -3,19 +3,19 @@ title: "如何活着"
 date: "2025-07-22"
 slug: "be-alife"
 description: "新創公司最常見的死亡原因不是瞬間耗盡資源，而是在低潮中停止前進；持續溝通、迭代、專注並避免為自己準備退路，是讓團隊活下來的核心。"
-tags: ["创业", "好文推荐"]
+tags: ["創業"]
 showComments: true
 commentKey: "notion:2367a59e-0439-807a-8de1-c7050f44183e"
-categories: ["創作與實驗"]
-entryType: "推薦／整理"
-formats: ["推薦／整理"]
+categories: ["學習"]
+entryType: "文章"
+formats: ["文章"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-CN"
 translationKey: "be-alife"
-cover: "cover.jpg"
+cover: "cover.zh-cn.jpg"
 icon: "☀️"
-images: ["cover.jpg"]
+images: ["cover.zh-cn.jpg"]
 ---
 
 你想创办一家新创公司吗？那你必须知道：如果你能避免死亡，就能致富。这听起来像笑话，但确实反映了多数新创公司的现况。

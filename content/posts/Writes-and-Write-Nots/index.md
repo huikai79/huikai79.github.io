@@ -3,12 +3,12 @@ title: "該寫與不該寫"
 date: "2025-07-26"
 slug: "Writes-and-Write-Nots"
 description: "當 AI 能替人完成大量寫作，真正稀缺的可能不再是產出文字，而是仍願意透過寫作逼自己思考的人；寫作若等同於思考，放棄寫作也可能意味著放棄一部分思考能力。"
-tags: ["好文推荐"]
+tags: ["AI", "寫作"]
 showComments: true
 commentKey: "notion:23c7a59e-0439-8054-a78d-c8e89090963e"
-categories: ["AI 與數位工具"]
-entryType: "推薦／整理"
-formats: ["推薦／整理"]
+categories: ["創作"]
+entryType: "文章"
+formats: ["文章"]
 contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-TW"

@@ -3,12 +3,12 @@ title: "大學該如何培養創業者"
 date: "2026-09-06"
 slug: "daxuepeiyangchuangyezhe"
 description: "大學培養創業者的關鍵，不是多開幾門創業課，而是讓學生深入掌握能創造事物的能力、相信創業可行，並保留足夠的時間自主發展自己的專案。"
-tags: ["好文推荐", "创业"]
+tags: ["教育", "創業"]
 showComments: true
 commentKey: "notion:3d37a59e-0439-80d0-86d7-fc494a529fca"
-categories: ["教育"]
-entryType: "推薦／整理"
-formats: ["推薦／整理"]
+categories: ["學習"]
+entryType: "文章"
+formats: ["文章"]
 contentVisibility: "Public"
 homePlacement: "None"
 contentLanguage: "zh-TW"
