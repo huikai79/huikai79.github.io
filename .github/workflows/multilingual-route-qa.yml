@@ -1,0 +1,113 @@
+name: "Multilingual route integrity QA"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/multilingual-route-qa.yml"
+      - "scripts/live-multilingual-route-qa.mjs"
+      - "scripts/build-and-verify.sh"
+      - "scripts/language_route_alias_contract.py"
+      - "scripts/write-language-route-aliases.py"
+      - "scripts/verify-language-route-aliases.py"
+      - "scripts/verify-multilingual-site.py"
+      - "scripts/verify-multilingual-seo.py"
+      - "content/posts/**"
+      - "config/_default/languages*.toml"
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "Deploy exact main commit to GitHub Pages"
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multilingual-route-qa-${{ github.event_name }}-${{ github.event.workflow_run.id || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MULTILINGUAL_QA_OUTPUT: live-multilingual-route-qa
+      PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+    steps:
+      - name: Checkout exact QA source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Setup Go for candidate build
+        if: github.event_name != 'workflow_run'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo for candidate build
+        if: github.event_name != 'workflow_run'
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: 0.165.0
+          extended: true
+
+      - name: Build candidate snapshot
+        if: github.event_name != 'workflow_run'
+        run: |
+          bash scripts/build-and-verify.sh public
+          printf '%s\n' "$GITHUB_SHA" > public/source-commit.txt
+
+      - name: Serve candidate snapshot locally
+        if: github.event_name != 'workflow_run'
+        run: |
+          python3 -m http.server 4174 --directory public >/tmp/multilingual-route-http.log 2>&1 &
+          for _ in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/ >/dev/null; then
+              echo "LIVE_SITE_URL=http://127.0.0.1:4174" >> "$GITHUB_ENV"
+              echo "EXPECTED_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/multilingual-route-http.log || true
+          echo "::error::Candidate multilingual QA server did not become ready"
+          exit 1
+
+      - name: Target exact production deployment
+        if: github.event_name == 'workflow_run'
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "LIVE_SITE_URL=https://huikai.com.kg" >> "$GITHUB_ENV"
+          echo "EXPECTED_SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+
+      - name: Install pinned browser runtime
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify direct routes and article language round-trip
+        run: node scripts/live-multilingual-route-qa.mjs
+
+      - name: Upload multilingual route evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: multilingual-route-qa-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          path: live-multilingual-route-qa/
+          retention-days: 30
+          if-no-files-found: warn
