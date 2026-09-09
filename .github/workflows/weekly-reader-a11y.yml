@@ -8,6 +8,11 @@ on:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
       - "assets/css/custom.css"
+      - "config/_default/params.toml"
+      - "content/_index.md"
+      - "content/_index.zh-cn.md"
+      - "content/posts/_index.md"
+      - "content/posts/_index.zh-cn.md"
   push:
     branches:
       - main
@@ -15,6 +20,11 @@ on:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
       - "assets/css/custom.css"
+      - "config/_default/params.toml"
+      - "content/_index.md"
+      - "content/_index.zh-cn.md"
+      - "content/posts/_index.md"
+      - "content/posts/_index.zh-cn.md"
   workflow_dispatch:
   schedule:
     - cron: '30 2 * * 1'
