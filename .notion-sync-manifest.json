@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatorHash": "149594bdbad481ee5f46d15537c9106fd09b1c5a5d72b5bd5df79d8484222351",
+  "generatorHash": "ddf4a9041748da0c834240d68dd39831a70433802f63c77389981066b40e27f2",
   "pages": {
     "2367a59e-0439-807a-8de1-c7050f44183e": {
       "slug": "be-alife",
@@ -8,7 +8,7 @@
       "language": "zh-CN",
       "translationGroup": "be-alife",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-08T17:46:00.000Z",
+      "lastEditedTime": "2026-09-09T00:31:00.000Z",
       "bundleHash": "8d0a6cdc90ae1ced09f53944b9e537e234019e432b7234ed65789d3d64f00020",
       "presentationFingerprint": "4a3f0e444c1b240def225fbac5ab5f607970d71d3ff53f57ead2eba129fe3b7d"
     },
