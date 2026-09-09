@@ -201,6 +201,23 @@ body {
   width: 100%;
 }
 
+/* Blowfish switches its TOC partial to the expanded desktop variant at lg
+   (1024px), while this site's two-column reading layout intentionally starts
+   at 1280px. Keep the compact disclosure variant until the sidebar exists. */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .article-toc #TOCView {
+    display: none !important;
+  }
+
+  .article-toc .toc-inside {
+    display: block !important;
+  }
+
+  .article-toc .toc-inside > summary {
+    display: list-item !important;
+  }
+}
+
 @media (min-width: 1280px) {
   .article-reading-layout.has-toc {
     grid-template-columns: minmax(0, 80ch) minmax(12rem, 18rem);
@@ -221,14 +238,24 @@ body {
     margin: 0;
     padding: 0 0 0 1rem;
     justify-self: start;
+    align-self: start;
+    position: sticky;
+    top: 2.5rem;
   }
 
   .article-toc-inner {
-    position: sticky;
-    top: 2.5rem;
+    width: 100%;
+  }
+
+  /* Let Blowfish own the scrollable TOC viewport; the site-level wrapper only
+     owns grid placement and sticky positioning. */
+  .article-toc #TOCView {
     max-height: calc(100vh - 5rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  }
+
+  .article-toc #TableOfContents {
+    font-size: 0.875rem;
+    line-height: 1.5;
   }
 }
 
