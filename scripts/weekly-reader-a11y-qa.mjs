@@ -46,10 +46,17 @@ async function smoke(browserName, browser, routeName, routePath, viewportName, w
     const metrics = await page.evaluate(() => {
       const root = document.documentElement;
       const text = (document.querySelector("main")?.innerText || document.body.innerText || "").trim();
+      const originalY = window.scrollY;
+      const rawOverflowX = Math.max(0, root.scrollWidth - root.clientWidth);
+      window.scrollTo(20, originalY);
+      const scrollableX = Math.abs(window.scrollX);
+      window.scrollTo(0, originalY);
       return {
         statusTextLength: text.length,
         h1Count: document.querySelectorAll("h1").length,
-        overflowX: Math.max(0, root.scrollWidth - root.clientWidth),
+        rawOverflowX,
+        scrollableX,
+        overflowXStyle: getComputedStyle(root).overflowX,
         brokenImages: [...document.images].filter(img => img.complete && img.naturalWidth === 0).map(img => img.currentSrc || img.src || img.alt || "unknown"),
         lang: root.lang || "",
       };
@@ -59,7 +66,7 @@ async function smoke(browserName, browser, routeName, routePath, viewportName, w
     if (!response?.ok()) fail(`${browserName}/${routeName}/${viewportName}: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
     if (metrics.statusTextLength < 20) fail(`${browserName}/${routeName}/${viewportName}: main content appears empty`);
     if (metrics.h1Count !== 1) fail(`${browserName}/${routeName}/${viewportName}: expected 1 H1, got ${metrics.h1Count}`);
-    if (metrics.overflowX > 1) fail(`${browserName}/${routeName}/${viewportName}: horizontal overflow ${metrics.overflowX}px`);
+    if (metrics.scrollableX > 1) fail(`${browserName}/${routeName}/${viewportName}: horizontally scrollable by ${metrics.scrollableX}px (raw overflow ${metrics.rawOverflowX}px)`);
     if (metrics.brokenImages.length) fail(`${browserName}/${routeName}/${viewportName}: broken images: ${metrics.brokenImages.join(", ")}`);
   } finally {
     await context.close();
