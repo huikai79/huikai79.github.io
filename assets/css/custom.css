@@ -45,14 +45,27 @@ body {
     align-items: center;
   }
 
-  #appearance-switcher,
-  #search-button {
+  #appearance-switcher {
     width: 2rem;
     height: 2rem;
     min-width: 2rem;
     min-height: 2rem;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Blowfish's search control contains both the icon and keyboard hint.
+     Preserve its native content-sized width instead of forcing a square. */
+  #search-button {
+    width: auto;
+    min-width: max-content;
+    min-height: 2rem;
+    height: auto;
+    white-space: nowrap;
+  }
+
+  #search-shortcut-hint {
+    white-space: nowrap;
   }
 }
 
@@ -160,12 +173,18 @@ body {
 .article-reading-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
+  justify-content: center;
+  align-items: start;
 }
 
-.article-reading-layout .article-main {
+.article-reading-content {
   grid-column: 1;
   grid-row: 2;
+  width: 100%;
+  max-width: 80ch;
+  min-width: 0;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .article-toc {
@@ -175,7 +194,7 @@ body {
   max-width: 80ch;
   padding-left: 1rem;
   padding-right: 1rem;
-  margin-bottom: 1rem;
+  margin: 0 auto 1rem;
 }
 
 .article-toc-inner {
@@ -184,22 +203,23 @@ body {
 
 @media (min-width: 1280px) {
   .article-reading-layout.has-toc {
-    grid-template-columns: minmax(14rem, 1fr) minmax(0, 80ch) minmax(14rem, 1fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 80ch) minmax(12rem, 18rem);
+    column-gap: 2rem;
+    justify-content: center;
   }
 
-  .article-reading-layout .article-main {
+  .article-reading-layout.has-toc .article-reading-content {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .article-reading-layout.has-toc .article-toc {
     grid-column: 2;
     grid-row: 1;
-  }
-
-  .article-reading-layout .article-toc {
-    grid-column: 3;
-    grid-row: 1;
-    width: min(100%, 18rem);
-    max-width: none;
+    width: 100%;
+    max-width: 18rem;
     margin: 0;
-    padding: 0 1rem 0 2rem;
+    padding: 0 0 0 1rem;
     justify-self: start;
   }
 
@@ -214,6 +234,7 @@ body {
 
 /* ----------------- Article content only ----------------- */
 .article-main {
+  width: 100%;
   max-width: 80ch !important;
   margin-left: auto;
   margin-right: auto;
