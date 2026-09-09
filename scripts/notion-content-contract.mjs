@@ -57,6 +57,11 @@ function relationIds(property) {
 }
 
 export function extractEditorialFields(properties = {}) {
+  const translationSourceIds = relationIds(properties["Translation Source"]);
+  const explicitTranslationStatus = selectValue(properties["Translation Status"]);
+  const explicitTranslationGroup = richTextValue(properties["Translation Group"]);
+  const slug = richTextValue(properties.slug);
+
   return {
     visibility: selectValue(properties.Visibility),
     category: selectValue(properties.Category),
@@ -64,10 +69,10 @@ export function extractEditorialFields(properties = {}) {
     summary: richTextValue(properties.Summary),
     homePlacement: selectValue(properties.Home),
     language: selectValue(properties.Language),
-    translationGroup: richTextValue(properties["Translation Group"]),
+    translationGroup: explicitTranslationGroup || slug,
     translateTo: multiSelectValues(properties["Translate To"]),
-    translationStatus: selectValue(properties["Translation Status"]),
-    translationSourceIds: relationIds(properties["Translation Source"]),
+    translationStatus: explicitTranslationStatus || (translationSourceIds.length === 0 ? "Source" : ""),
+    translationSourceIds,
     translationSourceRevision: richTextValue(properties["Translation Source Revision"]),
     translationEngine: richTextValue(properties["Translation Engine"])
   };

@@ -40,6 +40,17 @@ function richTextValue(property) {
   return property?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
 }
 
+function sourceWithEffectiveGroup(source, group) {
+  if (richTextValue(source.properties?.["Translation Group"])) return source;
+  return {
+    ...source,
+    properties: {
+      ...(source.properties ?? {}),
+      "Translation Group": { rich_text: [{ plain_text: group }] }
+    }
+  };
+}
+
 async function queryAll(filter) {
   const results = [];
   let cursor;
@@ -125,10 +136,10 @@ async function appendChildren(pageId, blocks) {
   }
 }
 
-async function createDraft({ source, targetLanguage, translated }) {
+async function createDraft({ source, group, targetLanguage, translated }) {
   const engine = `openai:${model}`;
   const properties = draftProperties({
-    source,
+    source: sourceWithEffectiveGroup(source, group),
     targetLanguage,
     translatedTitle: translated.title,
     translatedSummary: translated.summary,
@@ -148,8 +159,6 @@ async function createDraft({ source, targetLanguage, translated }) {
     const children = translated.blocks.map(writableBlock);
     await appendChildren(created.id, children);
   } catch (error) {
-    // The page was created by this invocation and is not a valid draft without
-    // its complete body. Roll it back instead of leaving a partial review item.
     try {
       await notion.pages.update({ page_id: created.id, archived: true });
     } catch (rollbackError) {
@@ -167,7 +176,7 @@ const sources = await queryAll({
   and: [
     { property: "status", status: { equals: "Published" } },
     { property: "Visibility", select: { equals: "Public" } },
-    { property: "Translation Status", select: { equals: "Source" } }
+    { property: "Translate To", multi_select: { is_not_empty: true } }
   ]
 });
 
@@ -266,7 +275,7 @@ for (const sourceStub of sources) {
         segments: collected.segments
       });
       const translated = applyTranslations({ title, summary, blocks }, translatedResponse);
-      const result = await createDraft({ source, targetLanguage, translated });
+      const result = await createDraft({ source, group, targetLanguage, translated });
       report.generated.push({
         sourcePageId: source.id,
         pageId: result.pageId,
