@@ -83,6 +83,7 @@ fi
 
 python3 scripts/verify-social-preview.py "$PUBLIC_DIR"
 python3 scripts/verify-discovery-pages.py "$PUBLIC_DIR"
+python3 scripts/verify-taxonomy-localization.py "$PUBLIC_DIR"
 python3 scripts/verify-video-rendering.py rendered "$PUBLIC_DIR"
 python3 scripts/verify-audio-rendering.py rendered "$PUBLIC_DIR"
 python3 scripts/verify-article-nativeization.py "$PUBLIC_DIR"
