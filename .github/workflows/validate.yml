@@ -135,7 +135,7 @@ jobs:
           require_fixed 'Apply comments policy' .github/workflows/sync.yml
           require_fixed 'Classify material site change' .github/workflows/sync.yml
           require_fixed 'Notion synchronization completed without a deployment-worthy site change' .github/workflows/sync.yml
-          require_fixed 'notion-publication-contract-${{ github.run_id }}' .github/workflows/sync.yml
+          require_fixed 'name: notion-publication-contract-' .github/workflows/sync.yml
           require_fixed 'contentFile' .github/workflows/sync.yml
           require_fixed 'bundlePath' .github/workflows/sync.yml
           require_fixed 'content/posts/_index.zh-cn.md' .github/workflows/sync.yml
@@ -150,7 +150,7 @@ jobs:
           require_fixed "cron: '5 0 * * 1'" .github/workflows/notion-publication-health.yml
           require_fixed "timezone: 'Asia/Kuala_Lumpur'" .github/workflows/notion-publication-health.yml
           require_fixed "NOTION_CONTRACT_NONBLOCKING: '1'" .github/workflows/notion-publication-health.yml
-          require_fixed 'notion-publication-health-${{ github.run_id }}' .github/workflows/notion-publication-health.yml
+          require_fixed 'name: notion-publication-health-' .github/workflows/notion-publication-health.yml
           require_fixed 'actions/workflows/sync.yml/dispatches' .github/workflows/notion-publication-health.yml
           require_fixed 'production state remains untouched' .github/workflows/notion-publication-health.yml
 
