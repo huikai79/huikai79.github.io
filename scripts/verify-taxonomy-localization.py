@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -38,6 +37,11 @@ ZH_CN_LABELS: dict[str, dict[str, str]] = {
         "好文推荐": "好文推荐",
         "技术学习": "技术学习",
     },
+}
+SINGULAR_TO_PLURAL = {
+    "category": "categories",
+    "format": "formats",
+    "tag": "tags",
 }
 
 
@@ -77,22 +81,34 @@ class ReaderParser(HTMLParser):
         self.h1_parts: list[str] = []
         self._h1_depth = 0
         self._active_link: dict[str, object] | None = None
+        self._explore_name_depth = 0
         self._taxonomy_sections: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = {key.lower(): value or "" for key, value in attrs}
+        classes = set(data.get("class", "").split())
         if tag.lower() == "h1":
             self._h1_depth += 1
         if tag.lower() == "section":
             self._taxonomy_sections.append(data.get("data-discovery-taxonomy", ""))
+        if (
+            tag.lower() == "span"
+            and "explore-topic-name" in classes
+            and self._active_link is not None
+            and self._active_link.get("target") == "explore"
+        ):
+            self._explore_name_depth += 1
         if tag.lower() != "a" or not data.get("href"):
             return
-        classes = set(data.get("class", "").split())
         kind = data.get("data-discovery-kind", "")
         if kind:
+            plural = SINGULAR_TO_PLURAL.get(kind)
+            if plural is None:
+                ERRORS.append(f"Unknown article discovery taxonomy kind: {kind}")
+                plural = kind
             self._active_link = {
                 "target": "article",
-                "kind": kind + "s" if not kind.endswith("s") else kind,
+                "kind": plural,
                 "href": data["href"],
                 "parts": [],
             }
@@ -109,6 +125,8 @@ class ReaderParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag.lower() == "h1" and self._h1_depth:
             self._h1_depth -= 1
+        if tag.lower() == "span" and self._explore_name_depth:
+            self._explore_name_depth -= 1
         if tag.lower() == "a" and self._active_link is not None:
             target = str(self._active_link["target"])
             record = (
@@ -121,16 +139,21 @@ class ReaderParser(HTMLParser):
             else:
                 self.explore_links.append(record)
             self._active_link = None
+            self._explore_name_depth = 0
         if tag.lower() == "section" and self._taxonomy_sections:
             self._taxonomy_sections.pop()
 
     def handle_data(self, data: str) -> None:
         if self._h1_depth:
             self.h1_parts.append(data)
-        if self._active_link is not None:
-            parts = self._active_link["parts"]
-            if isinstance(parts, list):
-                parts.append(data)
+        if self._active_link is None:
+            return
+        target = str(self._active_link["target"])
+        if target == "explore" and not self._explore_name_depth:
+            return
+        parts = self._active_link["parts"]
+        if isinstance(parts, list):
+            parts.append(data)
 
     @property
     def h1(self) -> str:
