@@ -1,0 +1,105 @@
+name: "Weekly cross-browser reader accessibility QA"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/weekly-reader-a11y.yml"
+      - "scripts/weekly-reader-a11y-qa.mjs"
+      - "assets/css/custom.css"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/weekly-reader-a11y.yml"
+      - "scripts/weekly-reader-a11y-qa.mjs"
+      - "assets/css/custom.css"
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * 1'
+      timezone: 'Asia/Kuala_Lumpur'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-reader-a11y-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cross-browser-a11y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      WEEKLY_QA_OUTPUT: weekly-reader-a11y-qa
+      PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+    steps:
+      - name: Checkout QA source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Setup Go for candidate build
+        if: github.event_name != 'schedule'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo for candidate build
+        if: github.event_name != 'schedule'
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: 0.165.0
+          extended: true
+
+      - name: Build candidate snapshot for PR or main push
+        if: github.event_name != 'schedule'
+        run: |
+          bash scripts/build-and-verify.sh public
+          printf '%s\n' "$GITHUB_SHA" > public/source-commit.txt
+
+      - name: Serve candidate snapshot locally
+        if: github.event_name != 'schedule'
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/weekly-reader-a11y-http.log 2>&1 &
+          echo $! >/tmp/weekly-reader-a11y-http.pid
+          for _ in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null; then
+              echo "LIVE_SITE_URL=http://127.0.0.1:4173" >> "$GITHUB_ENV"
+              echo "EXPECTED_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+              echo "Candidate reader surface ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/weekly-reader-a11y-http.log || true
+          echo "::error::Candidate reader surface did not become ready"
+          exit 1
+
+      - name: Target production for scheduled audit
+        if: github.event_name == 'schedule'
+        run: echo "LIVE_SITE_URL=https://huikai.com.kg" >> "$GITHUB_ENV"
+
+      - name: Install pinned cross-browser accessibility runtime
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0 axe-core@4.13.0
+          npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run cross-browser accessibility QA
+        run: node scripts/weekly-reader-a11y-qa.mjs
+
+      - name: Upload cross-browser accessibility evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: weekly-reader-a11y-${{ github.sha }}
+          path: weekly-reader-a11y-qa/
+          retention-days: 30
+          if-no-files-found: warn

@@ -1,10 +1,7 @@
 /* ----------------- Layout safety ----------------- */
-html {
-  overflow-x: clip;
-}
-
+html,
 body {
-  overflow-x: visible;
+  overflow-x: clip;
 }
 
 /* ----------------- Full-width article hero ----------------- */
@@ -37,6 +34,26 @@ body {
 
 @media (min-width: 1024px) {
   .post-cover { height: 30vh; }
+}
+
+/* ----------------- Desktop navigation target sizing ----------------- */
+@media (min-width: 768px) {
+  header nav a,
+  header nav button {
+    min-height: 2rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  #appearance-switcher,
+  #search-button {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* ----------------- Homepage editorial Recent list ----------------- */
@@ -316,7 +333,11 @@ body {
   margin-bottom: 0.1rem;
   font-size: 0.72rem;
   font-weight: 600;
-  color: rgb(var(--color-neutral-500, 115 115 115));
+  color: rgb(var(--color-neutral-600, 82 82 82));
+}
+
+.dark .author-label {
+  color: rgb(var(--color-neutral-300, 212 212 212));
 }
 
 .author-name {
