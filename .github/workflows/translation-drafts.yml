@@ -44,13 +44,15 @@ jobs:
           node scripts/verify-translation-draft-contract.mjs
           node --check scripts/generate-translation-drafts.mjs
 
-      - name: Preflight or create missing Notion translation drafts
+      - name: Preflight translation plan or create manually approved drafts
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_TRANSLATION_MODEL: gpt-5.6-luna
-          TRANSLATION_APPLY: ${{ (github.event_name == 'workflow_run' || inputs.apply) && '1' || '0' }}
+          # Sync-triggered runs are observability/preflight only. Paid model use
+          # and Notion writes require an explicit workflow_dispatch apply=true.
+          TRANSLATION_APPLY: ${{ github.event_name == 'workflow_dispatch' && inputs.apply && '1' || '0' }}
           TRANSLATION_REPORT_PATH: /tmp/notion-translation-drafts.json
         run: node scripts/generate-translation-drafts.mjs
 
