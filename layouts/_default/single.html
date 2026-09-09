@@ -23,7 +23,7 @@
 
 <section class="article-reading-layout{{ if $showToc }} has-toc{{ end }} mt-8">
   {{ if $showToc }}
-    <aside class="article-toc not-prose" aria-label="{{ i18n "article.table_of_contents" }}">
+    <aside class="article-toc toc not-prose print:hidden" aria-label="{{ i18n "article.table_of_contents" }}">
       <div class="article-toc-inner">
         {{ partial "toc.html" . }}
       </div>
