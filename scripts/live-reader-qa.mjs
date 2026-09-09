@@ -36,9 +36,9 @@ async function ensureTheme(page, colorScheme, label) {
   const desiredDark = colorScheme === "dark";
   let actualDark = await page.locator("html").evaluate(el => el.classList.contains("dark"));
   if (actualDark !== desiredDark) {
-    const switcher = page.locator("#appearance-switcher");
+    const switcher = page.locator("#appearance-switcher:visible, #appearance-switcher-mobile:visible").first();
     if (!(await switcher.count())) {
-      fail(`${label}: appearance switcher missing while requesting ${colorScheme}`);
+      fail(`${label}: visible appearance switcher missing while requesting ${colorScheme}`);
       return actualDark;
     }
     await switcher.click();
