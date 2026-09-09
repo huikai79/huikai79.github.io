@@ -8,6 +8,7 @@ hugo version
 go version
 
 python3 -m py_compile scripts/optimize-managed-covers.py scripts/localize-multilingual-page-resources.py
+python3 scripts/test-language-route-alias-contract.py
 node scripts/test-notion-video-transformer.mjs
 node scripts/test-notion-audio-transformer.mjs
 node workers/notion-media-gateway/test-paths.mjs
@@ -93,8 +94,9 @@ python3 scripts/verify-reader-completeness.py "$PUBLIC_DIR"
 python3 scripts/verify-reader-navigation.py "$PUBLIC_DIR"
 python3 scripts/verify-rss-integrity.py "$PUBLIC_DIR"
 
-# Preserve already-public root article URLs when an article is routed into a
-# non-default language. Generate aliases only after canonical pages pass all
-# normal verification so redirect shells are never mistaken for articles.
+# Preserve historical root article URLs only when no real default-language
+# article owns that route. The final verifier runs after this mutation and
+# guards both redirect aliases and every canonical zh-TW article against
+# overwrite/noindex/canonical drift.
 python3 scripts/write-language-route-aliases.py "$PUBLIC_DIR"
 python3 scripts/verify-language-route-aliases.py "$PUBLIC_DIR"
