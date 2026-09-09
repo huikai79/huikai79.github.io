@@ -234,6 +234,9 @@ jobs:
       - name: Run live reader QA against production
         run: node scripts/live-reader-qa.mjs
 
+      - name: Verify live TOC responsive and sticky behavior
+        run: node scripts/verify-toc-behavior.mjs
+
       - name: Upload live QA evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
