@@ -95,7 +95,7 @@ if 'title: "澄心之遊"' not in home_source or 'heroCaption: "HUIKAI"' not in 
     fail("Homepage source must present HUIKAI with the 澄心之遊 spirit line")
 if 'heroLead: "記錄那些值得長期保留的價值。"' not in home_source:
     fail("Homepage source must use the settled HUIKAI value statement")
-if 'label: "查看文章"' not in home_source or 'url: "/posts/"' not in home_source:
+if 'label: "閱讀文章"' not in home_source or 'url: "/posts/"' not in home_source:
     fail("Homepage primary article CTA source contract is missing")
 if 'label: "關於我"' not in home_source or 'url: "/about/"' not in home_source:
     fail("Homepage secondary About CTA source contract is missing")
@@ -122,8 +122,8 @@ if home:
         fail("Rendered homepage is missing the settled HUIKAI value statement")
     if "遊而澄心" not in home:
         fail("Rendered homepage is missing the 澄心之遊 interpretation")
-    if ("/posts", "查看文章") not in ctas:
-        fail("Rendered homepage is missing the 查看文章 CTA")
+    if ("/posts", "閱讀文章") not in ctas:
+        fail("Rendered homepage is missing the 閱讀文章 CTA")
     if ("/about", "關於我") not in ctas:
         fail("Rendered homepage is missing the 關於我 CTA")
     if parser.description != expected_description:
