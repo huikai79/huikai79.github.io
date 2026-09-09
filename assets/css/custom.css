@@ -257,6 +257,13 @@ body {
     font-size: 0.875rem;
     line-height: 1.5;
   }
+
+  /* Keep the typography visually subordinate while preserving accessible
+     pointer targets for every TOC entry. */
+  .article-toc #TableOfContents a {
+    display: block;
+    padding-block: 0.25rem;
+  }
 }
 
 /* ----------------- Article content only ----------------- */
