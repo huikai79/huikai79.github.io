@@ -2,16 +2,6 @@
   "version": 2,
   "generatorHash": "ddf4a9041748da0c834240d68dd39831a70433802f63c77389981066b40e27f2",
   "pages": {
-    "2347a59e-0439-8034-933b-c7d224735498": {
-      "slug": "FreeResource-1",
-      "bundlePath": "FreeResource-1",
-      "language": "zh-CN",
-      "translationGroup": "FreeResource-1",
-      "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-09T16:52:00.000Z",
-      "bundleHash": "ece894149c8f8033b706f310763aaa069a191898aa2e9c35a6ee148c37e5a770",
-      "presentationFingerprint": "aa03b804fef189dc522657071d8bbbcc34429cc1b10ad4f4edbe9e0112e64655"
-    },
     "2367a59e-0439-807a-8de1-c7050f44183e": {
       "slug": "be-alife",
       "bundlePath": "be-alife",
