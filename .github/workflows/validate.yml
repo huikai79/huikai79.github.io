@@ -28,6 +28,7 @@ jobs:
           node scripts/verify-notion-cover-contract.mjs
           node scripts/verify-translation-draft-contract.mjs
           node scripts/test-article-bundle-contract.mjs
+          node scripts/test-main-release-contract.mjs
           node --check scripts/article-bundle-contract.mjs
           node --check sync.mjs
           node --check scripts/notion-cover-contract.mjs
@@ -35,6 +36,8 @@ jobs:
           node --check scripts/check-notion-staged-page.mjs
           node --check scripts/check-sync-deletion-quarantine.mjs
           node --check scripts/generate-translation-drafts.mjs
+          node --check scripts/live-reader-qa.mjs
+          node --check scripts/verify-comments-integration.mjs
 
           printf '%s\n' '{"status":"complete","published":14,"deleted":["one"]}' > /tmp/deletion-safe.json
           node scripts/check-sync-deletion-quarantine.mjs /tmp/deletion-safe.json
@@ -100,41 +103,72 @@ jobs:
       - name: Verify production workflow safety contracts
         run: |
           python3 scripts/verify-action-sha-pinning.py
+
           grep -Fq 'Production deployment is restricted to main' .github/workflows/deploy.yml
           grep -Fq 'Deployment lineage mismatch' .github/workflows/deploy.yml
           grep -Fq 'main moved after deployment dispatch' .github/workflows/deploy.yml
           grep -Fq 'public/source-commit.txt' .github/workflows/deploy.yml
+          grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           if grep -Fq 'public/.source-commit' .github/workflows/deploy.yml; then
             echo "::error::Pages lineage marker must not be hidden because upload-pages-artifact excludes hidden files"
             exit 1
           fi
+          if grep -Eq '^  (push|schedule):' .github/workflows/deploy.yml; then
+            echo "::error::Production deploy workflow must only be entered through an explicit exact-SHA dispatch"
+            exit 1
+          fi
+
           grep -Fq 'Notion synchronization is restricted to main' .github/workflows/sync.yml
           grep -Fq 'Verify publication contract without writing production content' .github/workflows/sync.yml
           grep -Fq 'NOTION_SYNC_MODE: production' .github/workflows/sync.yml
           grep -Fq 'Enforce deletion quarantine' .github/workflows/sync.yml
           grep -Fq 'Apply comments policy' .github/workflows/sync.yml
           grep -Fq 'Classify material site change' .github/workflows/sync.yml
-          grep -Fq 'bookkeeping state only' .github/workflows/sync.yml
+          grep -Fq 'Notion synchronization completed without a deployment-worthy site change' .github/workflows/sync.yml
+          grep -Fq 'notion-publication-contract-${{ github.run_id }}' .github/workflows/sync.yml
           grep -Fq 'contentFile' .github/workflows/sync.yml
           grep -Fq 'bundlePath' .github/workflows/sync.yml
           grep -Fq 'content/posts/_index.zh-cn.md' .github/workflows/sync.yml
-          grep -Fq 'persist-credentials: false' .github/workflows/deploy.yml
           grep -Fq 'persist-credentials: false' .github/workflows/sync.yml
-          grep -Fq "cron: '5 0 * * 1'" .github/workflows/sync.yml
-          grep -Fq "timezone: 'Asia/Kuala_Lumpur'" .github/workflows/sync.yml
-          grep -Fq 'EVENT_SCHEDULE' .github/workflows/sync.yml
           grep -Fq 'data/homepage_runtime.toml' .github/workflows/sync.yml
+          if grep -Eq '^  schedule:' .github/workflows/sync.yml; then
+            echo "::error::Periodic polling belongs to publication health, not the mutation-capable synchronization workflow"
+            exit 1
+          fi
+
+          grep -Fq "cron: '*/20 * * * *'" .github/workflows/notion-publication-health.yml
+          grep -Fq "cron: '5 0 * * 1'" .github/workflows/notion-publication-health.yml
+          grep -Fq "timezone: 'Asia/Kuala_Lumpur'" .github/workflows/notion-publication-health.yml
+          grep -Fq "NOTION_CONTRACT_NONBLOCKING: '1'" .github/workflows/notion-publication-health.yml
+          grep -Fq 'notion-publication-health-${{ github.run_id }}' .github/workflows/notion-publication-health.yml
+          grep -Fq 'actions/workflows/sync.yml/dispatches' .github/workflows/notion-publication-health.yml
+          grep -Fq 'production state remains untouched' .github/workflows/notion-publication-health.yml
+
+          grep -Fq 'Classify code-only release eligibility' .github/workflows/main-code-release.yml
+          grep -Fq 'STRICT_CONTENT' .github/workflows/main-code-release.yml
+          grep -Fq 'main moved before code-only deployment dispatch' .github/workflows/main-code-release.yml
+          grep -Fq 'actions/workflows/deploy.yml/dispatches' .github/workflows/main-code-release.yml
+          grep -Fq 'persist-credentials: false' .github/workflows/main-code-release.yml
+          grep -Fq 'content/posts/' scripts/main-release-contract.mjs
+          grep -Fq 'notion-sync-owned' scripts/main-release-contract.mjs
+
           grep -Fq 'semantic cover required before production publication' scripts/check-notion-publication-contract.mjs
+          grep -Fq 'NOTION_CONTRACT_NONBLOCKING' scripts/check-notion-publication-contract.mjs
+          grep -Fq 'notionUrl' scripts/check-notion-publication-contract.mjs
           grep -Fq 'publicationReady' scripts/check-notion-staged-page.mjs
           grep -Fq 'Translation Status' scripts/notion-content-contract.mjs
+
+          grep -Fq 'verify-comments-integration.mjs' .github/workflows/weekly-reader-a11y.yml
+          grep -Fq 'layouts/partials/comments.html' .github/workflows/weekly-reader-a11y.yml
+          grep -Fq 'waitUntil: "domcontentloaded"' scripts/live-reader-qa.mjs
+          if grep -Fq 'waitUntil: "networkidle"' scripts/live-reader-qa.mjs; then
+            echo "::error::Live reader QA must use component readiness rather than global network-idle waits"
+            exit 1
+          fi
+
           grep -Fq 'OPENAI_API_KEY' .github/workflows/translation-drafts.yml
           grep -Fq 'TRANSLATION_APPLY' .github/workflows/translation-drafts.yml
           grep -Fq 'default: false' .github/workflows/translation-drafts.yml
-
-          if grep -Eq '^  (push|schedule):' .github/workflows/deploy.yml; then
-            echo "::error::Production deploy workflow must only be entered through an explicit exact-SHA dispatch"
-            exit 1
-          fi
           if grep -Eq '^  (push|schedule):' .github/workflows/translation-drafts.yml; then
             echo "::error::Paid translation draft generation must remain manually gated until explicitly authorized"
             exit 1
