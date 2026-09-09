@@ -18,6 +18,7 @@ const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
 const mode = process.argv[2] || "production";
 const reportPath = process.argv[3] || "/tmp/notion-publication-contract.json";
+const nonBlocking = process.env.NOTION_CONTRACT_NONBLOCKING === "1";
 
 if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
@@ -55,23 +56,37 @@ const familyMembers = new Map();
 const failures = [];
 const rows = [];
 
+function notionPageUrl(page) {
+  if (page?.url) return page.url;
+  const compact = String(page?.id || "").replaceAll("-", "");
+  return compact ? `https://www.notion.so/${compact}` : "";
+}
+
+function pageLabel(page, title) {
+  const url = notionPageUrl(page);
+  const name = title || "Untitled";
+  return `${name} [${page.id}]${url ? ` ${url}` : ""}`;
+}
+
 for (const page of pages) {
   const props = page.properties ?? {};
   const title = props.Title?.title?.map(item => item.plain_text).join("").trim() ?? "";
   const rawSlug = props.slug?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
   const slug = rawSlug.replace(/[^a-zA-Z0-9-_]/g, "-");
   const editorial = extractEditorialFields(props);
+  const label = pageLabel(page, title);
+  const notionUrl = notionPageUrl(page);
   let coverPlan = null;
   let presentationFingerprint = null;
 
-  if (!title) failures.push(`${page.id}: missing Title`);
-  if (!slug) failures.push(`${page.id}: missing slug`);
+  if (!title) failures.push(`${label}: missing Title`);
+  if (!slug) failures.push(`${label}: missing slug`);
 
   const routeKey = `${editorial.language}\0${slug}`;
   if (slug && editorial.language) {
     if (routeKeys.has(routeKey)) {
       failures.push(
-        `${page.id}: duplicate language route ${editorial.language}/${slug} with ${routeKeys.get(routeKey)}`
+        `${label}: duplicate language route ${editorial.language}/${slug} with ${routeKeys.get(routeKey)}`
       );
     } else {
       routeKeys.set(routeKey, page.id);
@@ -82,7 +97,7 @@ for (const page of pages) {
     const previousGroup = slugFamilies.get(slug);
     if (previousGroup && previousGroup !== editorial.translationGroup) {
       failures.push(
-        `${page.id}: shared slug ${slug} crosses Translation Groups ` +
+        `${label}: shared slug ${slug} crosses Translation Groups ` +
         `${previousGroup} / ${editorial.translationGroup}`
       );
     } else {
@@ -92,24 +107,24 @@ for (const page of pages) {
 
   if (editorial.translationGroup) {
     const members = familyMembers.get(editorial.translationGroup) ?? [];
-    members.push({ pageId: page.id, slug, ...editorial });
+    members.push({ pageId: page.id, title, notionUrl, slug, ...editorial });
     familyMembers.set(editorial.translationGroup, members);
   }
 
   if (editorial.visibility === "Public") {
     const missing = productionMetadataMissing(editorial);
     if (missing.length) {
-      failures.push(`${page.id}: missing production metadata: ${missing.join(", ")}`);
+      failures.push(`${label}: missing production metadata: ${missing.join(", ")}`);
     }
     const translationIssues = productionTranslationIssues(editorial);
     for (const issue of translationIssues) {
-      failures.push(`${page.id}: translation governance: ${issue}`);
+      failures.push(`${label}: translation governance: ${issue}`);
     }
 
     const previous = manifest?.pages?.[page.id];
     if (previous?.slug && previous.slug !== slug) {
       failures.push(
-        `${page.id}: public slug change blocked: ${previous.slug} -> ${slug}. ` +
+        `${label}: public slug change blocked: ${previous.slug} -> ${slug}. ` +
         `Use an explicitly reviewed alias/migration plan before changing a public URL.`
       );
     }
@@ -131,7 +146,7 @@ for (const page of pages) {
 
     if (mode === "production" && !coverPlan.ready) {
       failures.push(
-        `${page.id}: semantic cover required before production publication. ` +
+        `${label}: semantic cover required before production publication. ` +
         `Set a Notion page cover or add an article image; generic procedural fallback is not publication-grade.`
       );
     }
@@ -139,6 +154,7 @@ for (const page of pages) {
 
   rows.push({
     pageId: page.id,
+    notionUrl,
     title,
     slug,
     lastEditedTime: page.last_edited_time ?? "",
@@ -153,8 +169,8 @@ for (const [group, members] of familyMembers) {
   for (const member of members) {
     if (byLanguage.has(member.language)) {
       failures.push(
-        `${member.pageId}: Translation Group ${group} contains duplicate language ${member.language} ` +
-        `with ${byLanguage.get(member.language)}`
+        `${member.title || member.pageId} [${member.pageId}]${member.notionUrl ? ` ${member.notionUrl}` : ""}: ` +
+        `Translation Group ${group} contains duplicate language ${member.language} with ${byLanguage.get(member.language)}`
       );
     } else {
       byLanguage.set(member.language, member.pageId);
@@ -172,7 +188,8 @@ for (const [group, members] of familyMembers) {
       for (const member of members.filter(item => item.translationStatus === "Approved")) {
         if (member.translationSourceIds.length !== 1 || member.translationSourceIds[0] !== sourceId) {
           failures.push(
-            `${member.pageId}: Approved translation in ${group} must relate to canonical Source ${sourceId}`
+            `${member.title || member.pageId} [${member.pageId}]${member.notionUrl ? ` ${member.notionUrl}` : ""}: ` +
+            `Approved translation in ${group} must relate to canonical Source ${sourceId}`
           );
         }
       }
@@ -183,6 +200,7 @@ for (const [group, members] of familyMembers) {
 const report = {
   status: failures.length ? "blocked" : "pass",
   mode,
+  nonBlocking,
   count: rows.length,
   productionCount: rows.filter(row => row.visibility === "Public").length,
   coverReadyCount: rows.filter(row => row.coverPlan?.ready === true).length,
@@ -195,13 +213,22 @@ const report = {
 await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 
 if (failures.length) {
-  for (const failure of failures) console.error(`::error::${failure}`);
-  throw new Error(`Notion publication contract blocked: ${failures.length} issue(s)`);
+  for (const failure of failures) {
+    if (nonBlocking) console.warn(`::warning::${failure}`);
+    else console.error(`::error::${failure}`);
+  }
+  if (!nonBlocking) {
+    throw new Error(`Notion publication contract blocked: ${failures.length} issue(s)`);
+  }
+  console.log(
+    `Notion publication health: BLOCKED but non-blocking ` +
+    `(mode=${mode}, issues=${failures.length}, report=${reportPath})`
+  );
+} else {
+  console.log(
+    `Notion publication contract: PASS ` +
+    `(mode=${mode}, pages=${rows.length}, public=${report.productionCount}, ` +
+    `families=${report.translationFamilyCount}, coverReady=${report.coverReadyCount}, ` +
+    `semanticNeeded=${report.semanticCoverNeededCount}, report=${reportPath})`
+  );
 }
-
-console.log(
-  `Notion publication contract: PASS ` +
-  `(mode=${mode}, pages=${rows.length}, public=${report.productionCount}, ` +
-  `families=${report.translationFamilyCount}, coverReady=${report.coverReadyCount}, ` +
-  `semanticNeeded=${report.semanticCoverNeededCount}, report=${reportPath})`
-);
