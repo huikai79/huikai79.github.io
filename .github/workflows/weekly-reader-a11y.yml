@@ -70,7 +70,7 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory public >/tmp/weekly-reader-a11y-http.log 2>&1 &
           echo $! >/tmp/weekly-reader-a11y-http.pid
-          for attempt in $(seq 1 20); do
+          for _ in $(seq 1 20); do
             if curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null; then
               echo "LIVE_SITE_URL=http://127.0.0.1:4173" >> "$GITHUB_ENV"
               echo "EXPECTED_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
