@@ -5,10 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
-  schedule:
-    - cron: '*/20 * * * *'
-    - cron: '5 0 * * 1'
-      timezone: 'Asia/Kuala_Lumpur'
+    inputs:
+      trigger_source:
+        description: "Synchronization caller: manual, health, manual-health, or weekly-presentation"
+        required: false
+        default: "manual"
+        type: string
 
 permissions:
   contents: write
@@ -74,6 +76,35 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node scripts/check-notion-publication-contract.mjs production /tmp/notion-publication-contract.json
+
+      - name: Summarize publication contract evidence
+        if: ${{ always() }}
+        run: |
+          if [ ! -s /tmp/notion-publication-contract.json ]; then
+            echo "Publication contract report was not produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## Publication contract"
+            echo ""
+            echo "Status: **$(jq -r '.status' /tmp/notion-publication-contract.json)**"
+            echo "Production rows: **$(jq -r '.productionCount' /tmp/notion-publication-contract.json)**"
+            echo ""
+            if [ "$(jq -r '.status' /tmp/notion-publication-contract.json)" != "pass" ]; then
+              echo "### Blocking issues"
+              echo ""
+              jq -r '.failures[] | "- " + .' /tmp/notion-publication-contract.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload publication contract evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: notion-publication-contract-${{ github.run_id }}
+          path: /tmp/notion-publication-contract.json
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Invalidate bundles when Notion cover or icon changed
         run: node scripts/prepare-notion-presentation-fingerprints.mjs /tmp/notion-publication-contract.json /tmp/notion-presentation-fingerprints.json
@@ -176,14 +207,14 @@ jobs:
         id: presentation
         env:
           EVENT_NAME: ${{ github.event_name }}
-          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          TRIGGER_SOURCE: ${{ inputs.trigger_source }}
         run: |
           refresh=0
-          if [ "$EVENT_NAME" != "schedule" ] || [ "$EVENT_SCHEDULE" = "5 0 * * 1" ]; then
+          if [ "$EVENT_NAME" = "push" ] || [ "$TRIGGER_SOURCE" = "manual" ] || [ "$TRIGGER_SOURCE" = "manual-health" ] || [ "$TRIGGER_SOURCE" = "weekly-presentation" ]; then
             refresh=1
           fi
           echo "refresh=$refresh" >> "$GITHUB_OUTPUT"
-          echo "Homepage presentation refresh: $refresh"
+          echo "Homepage presentation refresh: $refresh (event=$EVENT_NAME, trigger=${TRIGGER_SOURCE:-none})"
 
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -246,18 +277,27 @@ jobs:
           CHANGED: ${{ steps.sync_commit.outputs.changed }}
           MATERIAL_CHANGED: ${{ steps.site_change.outputs.material_changed }}
           EVENT_NAME: ${{ github.event_name }}
+          TRIGGER_SOURCE: ${{ inputs.trigger_source }}
         run: |
+          set -euo pipefail
           should_deploy=false
-          if [ "$EVENT_NAME" != "schedule" ] || [ "$MATERIAL_CHANGED" = "true" ]; then
+
+          if [ "$EVENT_NAME" = "push" ]; then
+            # A code-only main push has its own release workflow. This sync lane
+            # only deploys when it created a newer synchronized commit.
+            if [ "$CHANGED" = "true" ]; then
+              should_deploy=true
+            fi
+          elif [ "$TRIGGER_SOURCE" = "manual" ] || [ "$TRIGGER_SOURCE" = "manual-health" ]; then
+            should_deploy=true
+          elif [ "$MATERIAL_CHANGED" = "true" ]; then
+            # Scheduled health and weekly presentation runs publish only when
+            # the synchronized site surface actually changed.
             should_deploy=true
           fi
 
           if [ "$should_deploy" != "true" ]; then
-            if [ "$CHANGED" = "true" ]; then
-              echo "Scheduled sync changed bookkeeping state only; commit retained, deployment intentionally skipped."
-            else
-              echo "Scheduled Notion sync is unchanged; no deployment dispatch required."
-            fi
+            echo "Notion synchronization completed without a deployment-worthy site change."
             exit 0
           fi
 

@@ -1,0 +1,105 @@
+name: "Deploy validated code-only main commits"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: main-code-release
+  cancel-in-progress: true
+
+jobs:
+  code-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact main push without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Classify code-only release eligibility
+        id: classify
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" > /tmp/main-release-paths.txt
+          else
+            git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" > /tmp/main-release-paths.txt
+          fi
+
+          decision="$(node scripts/main-release-contract.mjs < /tmp/main-release-paths.txt)"
+          echo "$decision" | jq .
+          echo "deploy=$(echo "$decision" | jq -r '.deploy')" >> "$GITHUB_OUTPUT"
+          echo "reason=$(echo "$decision" | jq -r '.reason')" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Main release classification"
+            echo ""
+            echo "Source SHA: \`$GITHUB_SHA\`"
+            echo "Actor: \`$GITHUB_ACTOR\`"
+            echo "Decision: **$(echo "$decision" | jq -r '.deploy')**"
+            echo "Reason: **$(echo "$decision" | jq -r '.reason')**"
+            echo ""
+            echo "Changed paths:"
+            if [ -s /tmp/main-release-paths.txt ]; then
+              sed 's/^/- `/' /tmp/main-release-paths.txt | sed 's/$/`/'
+            else
+              echo "- none"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup Go for code-only release validation
+        if: steps.classify.outputs.deploy == 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo for code-only release validation
+        if: steps.classify.outputs.deploy == 'true'
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: 0.165.0
+          extended: true
+
+      - name: Validate exact code-only main snapshot
+        if: steps.classify.outputs.deploy == 'true'
+        env:
+          STRICT_CONTENT: '1'
+        run: bash scripts/build-and-verify.sh public
+
+      - name: Dispatch exact-main production deployment
+        if: steps.classify.outputs.deploy == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current_main="$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
+          if [ "$current_main" != "$SOURCE_SHA" ]; then
+            echo "::error::main moved before code-only deployment dispatch. Expected $SOURCE_SHA, current $current_main."
+            exit 1
+          fi
+
+          payload="$(jq -nc --arg ref main --arg sha "$SOURCE_SHA" '{ref:$ref, inputs:{source_sha:$sha}}')"
+          curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches" \
+            -d "$payload"
+
+          echo "Code-only deployment dispatched for exact main SHA: $SOURCE_SHA"

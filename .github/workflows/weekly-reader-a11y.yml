@@ -7,10 +7,12 @@ on:
     paths:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
+      - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-toc-behavior.mjs"
       - "assets/css/custom.css"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
+      - "layouts/partials/comments.html"
       - "config/_default/params.toml"
       - "content/_index.md"
       - "content/_index.zh-cn.md"
@@ -23,10 +25,12 @@ on:
     paths:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
+      - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-toc-behavior.mjs"
       - "assets/css/custom.css"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
+      - "layouts/partials/comments.html"
       - "config/_default/params.toml"
       - "content/_index.md"
       - "content/_index.zh-cn.md"
@@ -109,6 +113,10 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0 axe-core@4.13.0
           npx playwright install --with-deps chromium firefox webkit
+
+      - name: Verify candidate Giscus integration deterministically
+        if: github.event_name != 'schedule'
+        run: node scripts/verify-comments-integration.mjs
 
       - name: Run cross-browser accessibility QA
         run: node scripts/weekly-reader-a11y-qa.mjs
