@@ -18,5 +18,5 @@ sharingLinks: []
 
 除了这个网站，我也把部分持续进行的实践与公开记录放在各自适合的平台：
 
-- **[反脆弱提示框架（AFP）](https://afpframework.org/zh/)** — 我建立的提示治理框架，聚焦复杂与高风险情境中的可控性、可复现性與可解釋性。
+- **[反脆弱提示框架（AFP）](https://afpframework.org/zh/)** — 我建立的提示治理框架，聚焦复杂与高风险情境中的可控性、可复现性与可解释性。
 - **[Devpost](https://devpost.com/huikai79)** — Hackathon 与公开项目的竞赛 Profile，集中保留我在 Devpost 上公开的参赛与实践记录。
