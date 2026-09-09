@@ -134,11 +134,13 @@ if about:
     if parser.h1 != ["關於"]:
         fail(f"About page must render exactly one H1 named 關於; found {parser.h1}")
     for text in (
-        "HUIKAI 是我長期留下內容、思考與生命痕跡的地方",
+        "澄心之遊",
         "遊而澄心",
-        "回答過去的自己",
-        "理解如何改變",
-        "那是一場相遇",
+        "一次次澄的是心",
+        "長年沉澱下來的，也許才逐漸成為性",
+        "自己曾經怎麼看，又是什麼讓自己後來看得不一樣",
+        "一個普通的人，在所見、所學、所歷之間",
+        "留下那些值得長期回望的人事物",
     ):
         if text not in about:
             fail(f"About page is missing expected positioning text: {text}")
@@ -150,4 +152,4 @@ if ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Site identity verification: PASS (HUIKAI + 澄心之遊, author identity preserved in About/author surfaces)")
+print("Site identity verification: PASS (HUIKAI + 澄心之遊, current About philosophy preserved)")
