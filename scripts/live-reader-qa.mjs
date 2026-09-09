@@ -14,6 +14,7 @@ const ROUTES = [
   ["audio-article", "/posts/how-to-make-wealth/"],
 ];
 const VIEWPORTS = [["desktop", 1440, 1000], ["mobile", 390, 844]];
+const ARTICLE_VIEWPORTS = [["pre-breakpoint", 1279, 900], ["breakpoint", 1280, 900], ["desktop", 1440, 1000], ["wide-desktop", 1600, 1000]];
 const SCHEMES = ["light", "dark"];
 const failures = [];
 const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), pages: [], interactions: {}, media: {}, alignment: {}, layout: {} };
@@ -31,6 +32,23 @@ async function verifySourceLineage() {
   if (EXPECTED_SHA && actual !== EXPECTED_SHA) fail(`live source SHA mismatch: expected=${EXPECTED_SHA}, actual=${actual}`);
 }
 
+async function ensureTheme(page, colorScheme, label) {
+  const desiredDark = colorScheme === "dark";
+  let actualDark = await page.locator("html").evaluate(el => el.classList.contains("dark"));
+  if (actualDark !== desiredDark) {
+    const switcher = page.locator("#appearance-switcher");
+    if (!(await switcher.count())) {
+      fail(`${label}: appearance switcher missing while requesting ${colorScheme}`);
+      return actualDark;
+    }
+    await switcher.click();
+    await page.waitForTimeout(200);
+    actualDark = await page.locator("html").evaluate(el => el.classList.contains("dark"));
+  }
+  if (actualDark !== desiredDark) fail(`${label}: requested ${colorScheme} but html.dark=${actualDark}`);
+  return actualDark;
+}
+
 async function pageSnapshot(browser, routeName, routePath, viewportName, width, height, colorScheme) {
   const context = await browser.newContext({ viewport: { width, height }, colorScheme, reducedMotion: "reduce" });
   const page = await context.newPage();
@@ -38,6 +56,7 @@ async function pageSnapshot(browser, routeName, routePath, viewportName, width, 
   page.on("requestfailed", request => failedRequests.push(`${request.method()} ${request.url()} :: ${request.failure()?.errorText || "failed"}`));
   const response = await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
   if (!response || !response.ok()) fail(`${routeName}/${viewportName}/${colorScheme}: navigation failed (${response?.status() ?? "no response"})`);
+  const actualDark = await ensureTheme(page, colorScheme, `${routeName}/${viewportName}/${colorScheme}`);
   const metrics = await page.evaluate(() => {
     const root = document.documentElement;
     const brokenImages = [...document.images].filter(img => img.complete && img.naturalWidth === 0).map(img => img.currentSrc || img.src || img.alt || "unknown");
@@ -61,7 +80,7 @@ async function pageSnapshot(browser, routeName, routePath, viewportName, width, 
   await fs.mkdir(screenshotDir, { recursive: true });
   const screenshot = path.join(screenshotDir, `${routeName}-${viewportName}-${colorScheme}.png`);
   await page.screenshot({ path: screenshot, fullPage: true });
-  report.pages.push({ route: routePath, name: routeName, viewport: viewportName, colorScheme, metrics, failedRequests, screenshot: path.relative(OUT_DIR, screenshot) });
+  report.pages.push({ route: routePath, name: routeName, viewport: viewportName, colorScheme, actualDark, metrics, failedRequests, screenshot: path.relative(OUT_DIR, screenshot) });
   await context.close();
 }
 
@@ -105,6 +124,33 @@ async function verifyInteractions(browser) {
   const searchButton = page.locator("#search-button");
   if (!(await searchButton.count())) fail("desktop search button is missing");
   else {
+    const searchGeometry = await page.evaluate(() => {
+      const button = document.querySelector("#search-button");
+      const hint = document.querySelector("#search-shortcut-hint");
+      if (!button || !hint) return null;
+      const buttonRect = button.getBoundingClientRect();
+      const hintRect = hint.getBoundingClientRect();
+      return {
+        clientWidth: button.clientWidth,
+        scrollWidth: button.scrollWidth,
+        width: buttonRect.width,
+        height: buttonRect.height,
+        buttonLeft: buttonRect.left,
+        buttonRight: buttonRect.right,
+        hintLeft: hintRect.left,
+        hintRight: hintRect.right,
+        hintWhiteSpace: getComputedStyle(hint).whiteSpace,
+        hintText: (hint.textContent || "").trim(),
+      };
+    });
+    report.interactions.searchButton = searchGeometry;
+    if (!searchGeometry) fail("desktop search button geometry is unavailable");
+    else {
+      if (searchGeometry.scrollWidth > searchGeometry.clientWidth + 1) fail(`desktop search button content overflows by ${(searchGeometry.scrollWidth - searchGeometry.clientWidth).toFixed(1)}px`);
+      if (searchGeometry.hintLeft < searchGeometry.buttonLeft - 1 || searchGeometry.hintRight > searchGeometry.buttonRight + 1) fail("desktop search shortcut hint escapes button bounds");
+      if (searchGeometry.hintWhiteSpace !== "nowrap") fail(`desktop search shortcut hint may wrap (${searchGeometry.hintWhiteSpace})`);
+    }
+
     await searchButton.click();
     const wrapper = page.locator("#search-wrapper");
     await wrapper.waitFor({ state: "visible", timeout: 5_000 });
@@ -137,6 +183,60 @@ async function verifyInteractions(browser) {
     }
   }
   await context.close();
+}
+
+async function verifyArticleLayout(browser) {
+  const samples = [];
+  for (const [label, width, height] of ARTICLE_VIEWPORTS) {
+    const context = await browser.newContext({ viewport: { width, height }, colorScheme: "dark", reducedMotion: "reduce" });
+    const page = await context.newPage();
+    try {
+      await page.goto(`${BASE_URL}/posts/first-hackathon/`, { waitUntil: "networkidle", timeout: 45_000 });
+      await ensureTheme(page, "dark", `article-layout/${label}`);
+      const geometry = await page.evaluate(() => {
+        const layout = document.querySelector(".article-reading-layout");
+        const content = document.querySelector(".article-reading-content");
+        const article = document.querySelector(".article-main");
+        const toc = document.querySelector(".article-toc");
+        const footer = document.querySelector(".article-reading-content .article-footer");
+        const hero = document.querySelector(".post-hero");
+        if (!layout || !content || !article || !footer) return null;
+        const toPlainRect = element => {
+          if (!element) return null;
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
+        };
+        return {
+          viewportWidth: document.documentElement.clientWidth,
+          layout: toPlainRect(layout),
+          content: toPlainRect(content),
+          article: toPlainRect(article),
+          toc: toPlainRect(toc),
+          footer: toPlainRect(footer),
+          hero: toPlainRect(hero),
+        };
+      });
+      samples.push({ label, width, geometry });
+      if (!geometry) {
+        fail(`article-layout/${label}: unable to measure reading layout`);
+        continue;
+      }
+      if (geometry.article.width < 600 && width >= 1280) fail(`article-layout/${label}: article column collapsed to ${geometry.article.width.toFixed(1)}px`);
+      if (geometry.footer.left < geometry.content.left - 2 || geometry.footer.right > geometry.content.right + 2) fail(`article-layout/${label}: article footer escapes reading column`);
+      if (width >= 1280) {
+        if (!geometry.toc) fail(`article-layout/${label}: TOC missing on wide desktop`);
+        else if (geometry.toc.left < geometry.content.right - 2) fail(`article-layout/${label}: TOC overlaps or precedes article column`);
+      } else if (geometry.toc && geometry.toc.bottom > geometry.content.top + 2) {
+        fail(`article-layout/${label}: pre-breakpoint TOC is not above article content`);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+  const before = samples.find(sample => sample.label === "pre-breakpoint")?.geometry?.article?.width;
+  const after = samples.find(sample => sample.label === "breakpoint")?.geometry?.article?.width;
+  if (before && after && after < before * 0.9) fail(`article-layout/breakpoint: article width drops from ${before.toFixed(1)}px to ${after.toFixed(1)}px at 1280px`);
+  report.layout.article = samples;
 }
 
 async function verifyComments(browser) {
@@ -251,6 +351,7 @@ async function main() {
     await verifyListAlignment(browser, "/posts/", "posts");
     await verifyListAlignment(browser, "/projects/", "projects");
     await verifyInteractions(browser);
+    await verifyArticleLayout(browser);
     await verifyComments(browser);
     await verifyFooterLayout(browser);
     await verifyMedia(browser, "/posts/how-to-make-wealth/", "audio.notion-audio", "audio", "audio/");
@@ -260,7 +361,7 @@ async function main() {
   report.failures = failures;
   await fs.writeFile(path.join(OUT_DIR, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
   if (failures.length) { console.error(`Live reader QA: FAIL (${failures.length} issue(s))`); process.exit(1); }
-  console.log(`Live reader QA: PASS (${report.pages.length} rendered states + alignment + layout + interactions + media)`);
+  console.log(`Live reader QA: PASS (${report.pages.length} rendered states + alignment + desktop article geometry + layout + interactions + media)`);
 }
 
 main().catch(async error => {
