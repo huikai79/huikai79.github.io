@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout without persisted credentials
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -89,7 +89,7 @@ jobs:
           cmp /tmp/comments-source-a.sha256 /tmp/comments-source-b.sha256
 
       - name: Setup Go for actionlint
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: '1.25.0'
           cache: false
@@ -99,6 +99,7 @@ jobs:
 
       - name: Verify production workflow safety contracts
         run: |
+          python3 scripts/verify-action-sha-pinning.py
           grep -Fq 'Production deployment is restricted to main' .github/workflows/deploy.yml
           grep -Fq 'Deployment lineage mismatch' .github/workflows/deploy.yml
           grep -Fq 'main moved after deployment dispatch' .github/workflows/deploy.yml
@@ -174,13 +175,13 @@ jobs:
           cp /tmp/homepage_runtime.original.toml data/homepage_runtime.toml
 
       - name: Setup site Go runtime
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: '1.24.4'
           cache: true
 
       - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
         with:
           hugo-version: 0.165.0
           extended: true
