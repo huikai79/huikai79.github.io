@@ -75,6 +75,7 @@ language_config = read(ROOT / "config" / "_default" / "languages.zh-TW.toml", "L
 menu_config = read(ROOT / "config" / "_default" / "menus.zh-TW.toml", "Menu config")
 home_source = read(ROOT / "content" / "_index.md", "Homepage source")
 about_source = read(ROOT / "content" / "about" / "index.md", "About source")
+about_source_zh_cn = read(ROOT / "content" / "about" / "index.zh-cn.md", "Simplified Chinese About source")
 manifest_source = read(ROOT / "static" / "site.webmanifest", "Web app manifest")
 
 expected_description = "HUIKAI 是莊輝愷的個人網站。澄心之遊，記錄那些值得長期保留的價值，也留下理解如何改變。"
@@ -101,6 +102,21 @@ if 'label: "關於我"' not in home_source or 'url: "/about/"' not in home_sourc
     fail("Homepage secondary About CTA source contract is missing")
 if 'layout: "simple"' not in about_source:
     fail("About page must explicitly use Blowfish native simple layout")
+if 'layout: "simple"' not in about_source_zh_cn:
+    fail("Simplified Chinese About page must explicitly use Blowfish native simple layout")
+
+for text in (
+    "澄心之遊",
+    "游而澄心",
+    "一次次澄的是心",
+    "长年沉淀下来的，也许才逐渐成为性",
+    "自己曾经怎么看，又是什么让自己后来看得不一样",
+    "一个普通的人，在所见、所学、所历之间",
+    "留下那些值得长期回望的人事物",
+):
+    if text not in about_source_zh_cn:
+        fail(f"Simplified Chinese About source is missing current positioning text: {text}")
+
 if manifest_source:
     try:
         manifest = json.loads(manifest_source)
@@ -111,6 +127,7 @@ if manifest_source:
 
 home = read(PUBLIC / "index.html", "Rendered homepage")
 about = read(PUBLIC / "about" / "index.html", "Rendered About page")
+about_zh_cn = read(PUBLIC / "zh-cn" / "about" / "index.html", "Rendered Simplified Chinese About page")
 if home:
     parser = parse(home)
     ctas = {(href.rstrip("/") or "/", text) for href, text in parser.anchors}
@@ -147,9 +164,27 @@ if about:
     if "閱讀約" in about:
         fail("About page incorrectly inherited article reading-time chrome")
 
+if about_zh_cn:
+    parser = parse(about_zh_cn)
+    if parser.h1 != ["关于"]:
+        fail(f"Simplified Chinese About page must render exactly one H1 named 关于; found {parser.h1}")
+    for text in (
+        "澄心之遊",
+        "游而澄心",
+        "一次次澄的是心",
+        "长年沉淀下来的，也许才逐渐成为性",
+        "自己曾经怎么看，又是什么让自己后来看得不一样",
+        "一个普通的人，在所见、所学、所历之间",
+        "留下那些值得长期回望的人事物",
+    ):
+        if text not in about_zh_cn:
+            fail(f"Simplified Chinese About page is missing expected positioning text: {text}")
+    if "阅读约" in about_zh_cn:
+        fail("Simplified Chinese About page incorrectly inherited article reading-time chrome")
+
 if ERRORS:
     for error in ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Site identity verification: PASS (HUIKAI + 澄心之遊, current About philosophy preserved)")
+print("Site identity verification: PASS (HUIKAI + 澄心之遊, zh-TW/zh-CN About philosophy preserved)")
