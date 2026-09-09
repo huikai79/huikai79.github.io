@@ -6,6 +6,7 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
 ERRORS: list[str] = []
 READING_TIME_RE = re.compile(r"(?:閱讀約|阅读约)\s*(\d+)\s*分鐘|(?:閱讀約|阅读约)\s*(\d+)\s*分钟")
@@ -13,6 +14,36 @@ READING_TIME_RE = re.compile(r"(?:閱讀約|阅读约)\s*(\d+)\s*分鐘|(?:閱�
 
 def fail(message: str) -> None:
     ERRORS.append(message)
+
+
+def verify_source_contract() -> None:
+    template = (ROOT / "layouts" / "_default" / "single.html").read_text(encoding="utf-8")
+    css = (ROOT / "assets" / "css" / "custom.css").read_text(encoding="utf-8")
+
+    if 'class="article-toc toc not-prose print:hidden"' not in template:
+        fail("Article TOC must retain Blowfish's native .toc styling hook and print-hidden behavior")
+
+    sidebar_rule = re.search(
+        r"\.article-reading-layout\.has-toc\s+\.article-toc\s*\{(?P<body>.*?)\}",
+        css,
+        re.S,
+    )
+    if not sidebar_rule or not re.search(r"position\s*:\s*sticky\s*;", sidebar_rule.group("body")):
+        fail("Desktop sticky positioning must be owned by the article TOC sidebar")
+
+    inner_rule = re.search(r"\.article-toc-inner\s*\{(?P<body>.*?)\}", css, re.S)
+    if inner_rule and re.search(r"position\s*:\s*sticky\s*;", inner_rule.group("body")):
+        fail("TOC inner wrapper must not own sticky positioning; its parent bounds prevent useful sticky travel")
+
+    for token in (
+        "@media (min-width: 1024px) and (max-width: 1279.98px)",
+        ".article-toc #TOCView",
+        ".article-toc .toc-inside",
+        ".article-toc #TableOfContents",
+        "font-size: 0.875rem",
+    ):
+        if token not in css:
+            fail(f"Article TOC responsive/typography contract is missing: {token}")
 
 
 class Parser(HTMLParser):
@@ -24,12 +55,15 @@ class Parser(HTMLParser):
         self.scroll_label = ""
         self.article_heading_count = 0
         self.in_article_main = False
+        self.toc_has_native_hook = False
         self.text: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = {key.lower(): value or "" for key, value in attrs}
         classes = set(data.get("class", "").split())
         self.classes.update(classes)
+        if "article-toc" in classes:
+            self.toc_has_native_hook = "toc" in classes
         if data.get("id"):
             self.ids.add(data["id"])
         if tag.lower() == "html":
@@ -58,6 +92,8 @@ def parse(path: Path) -> Parser:
     return parser
 
 
+verify_source_contract()
+
 article_paths = sorted((PUBLIC / "posts").glob("*/index.html"))
 article_paths += sorted((PUBLIC / "zh-cn" / "posts").glob("*/index.html"))
 if not article_paths:
@@ -76,6 +112,8 @@ for path in article_paths:
         expected_toc_pages += 1
         if not has_toc:
             fail(f"Long structured article is missing Smart TOC: {path.relative_to(PUBLIC)}")
+        elif not parser.toc_has_native_hook:
+            fail(f"Smart TOC lost Blowfish native .toc styling hook: {path.relative_to(PUBLIC)}")
     elif has_toc:
         fail(f"Short or unstructured article unexpectedly renders Smart TOC: {path.relative_to(PUBLIC)}")
 
@@ -96,5 +134,5 @@ if ERRORS:
 
 print(
     "Reader navigation verification: PASS "
-    f"(articles={len(article_paths)}, smart-toc-pages={expected_toc_pages}, localized-back-to-top=all)"
+    f"(articles={len(article_paths)}, smart-toc-pages={expected_toc_pages}, native-toc-style=all, localized-back-to-top=all)"
 )

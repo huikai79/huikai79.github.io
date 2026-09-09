@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
+      - "scripts/verify-toc-behavior.mjs"
       - "assets/css/custom.css"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
@@ -22,6 +23,7 @@ on:
     paths:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
+      - "scripts/verify-toc-behavior.mjs"
       - "assets/css/custom.css"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
@@ -110,6 +112,9 @@ jobs:
 
       - name: Run cross-browser accessibility QA
         run: node scripts/weekly-reader-a11y-qa.mjs
+
+      - name: Verify TOC responsive and sticky behavior
+        run: node scripts/verify-toc-behavior.mjs
 
       - name: Upload cross-browser accessibility evidence
         if: ${{ !cancelled() }}
