@@ -32,11 +32,11 @@ rotationIndex = 1
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
-selectedLimit = 3
+selectedLimit = 2
 recentLimit = 5
 pinnedSize = 1
-rotationSlots = 2
-poolSize = 2
+rotationSlots = 1
+poolSize = 1
 poolOffset = 0
 
 [[secondary.selected]]
@@ -47,9 +47,4 @@ source = "pinned"
 [[secondary.selected]]
 pageId = "2367a59e-0439-807a-8de1-c7050f44183e"
 path = "posts/be-alife"
-source = "rotationPool"
-
-[[secondary.selected]]
-pageId = "2347a59e-0439-8034-933b-c7d224735498"
-path = "posts/FreeResource-1"
 source = "rotationPool"
