@@ -71,17 +71,18 @@ async function verifyListAlignment(browser, routePath, label) {
   await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
   const geometry = await page.evaluate(() => {
     const heading = document.querySelector("main h1");
-    const card = document.querySelector("main .article-link--card");
-    if (!heading || !card) return null;
+    const item = document.querySelector("main .article-link--card, main .article-link--simple");
+    if (!heading || !item) return null;
     return {
       headingLeft: heading.getBoundingClientRect().left,
-      cardLeft: card.getBoundingClientRect().left,
-      delta: Math.abs(heading.getBoundingClientRect().left - card.getBoundingClientRect().left),
+      itemLeft: item.getBoundingClientRect().left,
+      itemVariant: item.classList.contains("article-link--card") ? "card" : "simple",
+      delta: Math.abs(heading.getBoundingClientRect().left - item.getBoundingClientRect().left),
     };
   });
   report.alignment[label] = geometry;
-  if (!geometry) fail(`${label}: unable to measure list heading/card alignment`);
-  else if (geometry.delta > 2) fail(`${label}: heading/card left edges differ by ${geometry.delta.toFixed(2)}px`);
+  if (!geometry) fail(`${label}: unable to measure list heading/item alignment`);
+  else if (geometry.delta > 2) fail(`${label}: heading/item left edges differ by ${geometry.delta.toFixed(2)}px`);
   await context.close();
 }
 
