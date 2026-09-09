@@ -19,11 +19,12 @@ const ROUTES = [
   ["zh-cn-article", "/zh-cn/posts/how-you-know/"],
 ];
 const VIEWPORTS = [["desktop", 1440, 1000], ["mobile", 390, 844]];
+const ARTICLE_VIEWPORTS = [["pre-breakpoint", 1279, 900], ["breakpoint", 1280, 900], ["desktop", 1440, 1000], ["wide-desktop", 1600, 1000]];
 const BROWSERS = { chromium, firefox, webkit };
 const AXE_ROUTES = [["home", "/"], ["long-article", "/posts/first-hackathon/"], ["zh-cn-article", "/zh-cn/posts/how-you-know/"]];
-const VISUAL_ROUTES = [["home", "/"], ["posts", "/posts/"], ["projects", "/projects/"]];
+const VISUAL_ROUTES = [["home", "/"], ["posts", "/posts/"], ["projects", "/projects/"], ["long-article", "/posts/first-hackathon/"]];
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), browsers: {}, visualEvidence: [], failures: [] };
+const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), browsers: {}, visualEvidence: [], layout: {}, failures: [] };
 
 function fail(message) {
   report.failures.push(message);
@@ -36,6 +37,23 @@ async function verifyLineage() {
   const actual = (await response.text()).trim();
   report.actualSourceSha = actual;
   if (EXPECTED_SHA && actual !== EXPECTED_SHA) fail(`source lineage mismatch: expected=${EXPECTED_SHA}, actual=${actual}`);
+}
+
+async function ensureTheme(page, colorScheme, label) {
+  const desiredDark = colorScheme === "dark";
+  let actualDark = await page.locator("html").evaluate(el => el.classList.contains("dark"));
+  if (actualDark !== desiredDark) {
+    const switcher = page.locator("#appearance-switcher");
+    if (!(await switcher.count())) {
+      fail(`${label}: appearance switcher missing while requesting ${colorScheme}`);
+      return actualDark;
+    }
+    await switcher.click();
+    await page.waitForTimeout(200);
+    actualDark = await page.locator("html").evaluate(el => el.classList.contains("dark"));
+  }
+  if (actualDark !== desiredDark) fail(`${label}: requested ${colorScheme} but html.dark=${actualDark}`);
+  return actualDark;
 }
 
 async function smoke(browserName, browser, routeName, routePath, viewportName, width, height) {
@@ -80,6 +98,7 @@ async function axeAudit(browserName, browser, routeName, routePath, colorScheme)
   try {
     await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "domcontentloaded", timeout: 45_000 });
     await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
+    await ensureTheme(page, colorScheme, `${browserName}/${routeName}/axe/${colorScheme}`);
     await page.addScriptTag({ path: AXE_PATH });
     const result = await page.evaluate(async tags => {
       const output = await globalThis.axe.run(document, { runOnly: { type: "tag", values: tags } });
@@ -138,10 +157,90 @@ async function keyboardAndTargets(browserName, browser, routeName, routePath) {
     });
     const undersized = targets.filter(target => target.width < 24 || target.height < 24);
     if (undersized.length) fail(`${browserName}/${routeName}: utility targets below 24px: ${undersized.map(t => `${t.label}=${t.width.toFixed(1)}x${t.height.toFixed(1)}`).join(", ")}`);
-    report.browsers[browserName].keyboard.push({ route: routePath, focusTrail, targetCount: targets.length, undersized });
+
+    let searchGeometry = null;
+    if (routeName === "home") {
+      searchGeometry = await page.evaluate(() => {
+        const button = document.querySelector("#search-button");
+        const hint = document.querySelector("#search-shortcut-hint");
+        if (!button || !hint) return null;
+        const buttonRect = button.getBoundingClientRect();
+        const hintRect = hint.getBoundingClientRect();
+        return {
+          clientWidth: button.clientWidth,
+          scrollWidth: button.scrollWidth,
+          width: buttonRect.width,
+          height: buttonRect.height,
+          hintLeft: hintRect.left,
+          hintRight: hintRect.right,
+          buttonLeft: buttonRect.left,
+          buttonRight: buttonRect.right,
+          hintWhiteSpace: getComputedStyle(hint).whiteSpace,
+          hintText: (hint.textContent || "").trim(),
+        };
+      });
+      if (!searchGeometry) fail(`${browserName}/home: unable to measure search button geometry`);
+      else {
+        if (searchGeometry.scrollWidth > searchGeometry.clientWidth + 1) fail(`${browserName}/home: search button content overflows by ${(searchGeometry.scrollWidth - searchGeometry.clientWidth).toFixed(1)}px`);
+        if (searchGeometry.hintLeft < searchGeometry.buttonLeft - 1 || searchGeometry.hintRight > searchGeometry.buttonRight + 1) fail(`${browserName}/home: search shortcut hint escapes button bounds`);
+        if (searchGeometry.hintWhiteSpace !== "nowrap") fail(`${browserName}/home: search shortcut hint may wrap (${searchGeometry.hintWhiteSpace})`);
+      }
+    }
+
+    report.browsers[browserName].keyboard.push({ route: routePath, focusTrail, targetCount: targets.length, undersized, searchGeometry });
   } finally {
     await context.close();
   }
+}
+
+async function verifyArticleLayout(browser) {
+  const samples = [];
+  for (const [label, width, height] of ARTICLE_VIEWPORTS) {
+    const context = await browser.newContext({ viewport: { width, height }, colorScheme: "dark", reducedMotion: "reduce" });
+    const page = await context.newPage();
+    try {
+      await page.goto(`${BASE_URL}/posts/first-hackathon/`, { waitUntil: "networkidle", timeout: 45_000 });
+      await ensureTheme(page, "dark", `article-layout/${label}`);
+      const geometry = await page.evaluate(() => {
+        const layout = document.querySelector(".article-reading-layout");
+        const content = document.querySelector(".article-reading-content");
+        const article = document.querySelector(".article-main");
+        const toc = document.querySelector(".article-toc");
+        const footer = document.querySelector(".article-reading-content .article-footer");
+        const hero = document.querySelector(".post-hero");
+        if (!layout || !content || !article || !footer) return null;
+        const rect = element => element ? element.getBoundingClientRect() : null;
+        return {
+          viewportWidth: document.documentElement.clientWidth,
+          layout: rect(layout),
+          content: rect(content),
+          article: rect(article),
+          toc: rect(toc),
+          footer: rect(footer),
+          hero: rect(hero),
+        };
+      });
+      samples.push({ label, width, geometry });
+      if (!geometry) {
+        fail(`article-layout/${label}: unable to measure reading layout`);
+        continue;
+      }
+      if (geometry.article.width < 600 && width >= 1280) fail(`article-layout/${label}: article column collapsed to ${geometry.article.width.toFixed(1)}px`);
+      if (geometry.footer.left < geometry.content.left - 2 || geometry.footer.right > geometry.content.right + 2) fail(`article-layout/${label}: article footer escapes reading column`);
+      if (width >= 1280) {
+        if (!geometry.toc) fail(`article-layout/${label}: TOC missing on wide desktop`);
+        else if (geometry.toc.left < geometry.content.right - 2) fail(`article-layout/${label}: TOC overlaps or precedes article column`);
+      } else if (geometry.toc && geometry.toc.bottom > geometry.content.top + 2) {
+        fail(`article-layout/${label}: pre-breakpoint TOC is not above article content`);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+  const before = samples.find(sample => sample.label === "pre-breakpoint")?.geometry?.article?.width;
+  const after = samples.find(sample => sample.label === "breakpoint")?.geometry?.article?.width;
+  if (before && after && after < before * 0.9) fail(`article-layout/breakpoint: article width drops from ${before.toFixed(1)}px to ${after.toFixed(1)}px at 1280px`);
+  report.layout.article = samples;
 }
 
 async function captureVisualEvidence(browser) {
@@ -155,9 +254,10 @@ async function captureVisualEvidence(browser) {
         try {
           const response = await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
           if (!response?.ok()) fail(`visual/${routeName}/${viewportName}/${colorScheme}: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
+          const actualDark = await ensureTheme(page, colorScheme, `visual/${routeName}/${viewportName}/${colorScheme}`);
           const fileName = `${routeName}-${viewportName}-${colorScheme}.png`;
           await page.screenshot({ path: path.join(screenshotDir, fileName), fullPage: true });
-          report.visualEvidence.push({ route: routePath, viewport: viewportName, colorScheme, screenshot: `screenshots/${fileName}` });
+          report.visualEvidence.push({ route: routePath, viewport: viewportName, colorScheme, actualDark, screenshot: `screenshots/${fileName}` });
         } finally {
           await context.close();
         }
@@ -184,7 +284,10 @@ async function main() {
       for (const [routeName, routePath] of [["home", "/"], ["long-article", "/posts/first-hackathon/"]]) {
         await keyboardAndTargets(browserName, browser, routeName, routePath);
       }
-      if (browserName === "chromium") await captureVisualEvidence(browser);
+      if (browserName === "chromium") {
+        await verifyArticleLayout(browser);
+        await captureVisualEvidence(browser);
+      }
     } finally {
       await browser.close();
     }
@@ -196,7 +299,7 @@ async function main() {
     console.error(`Weekly cross-browser accessibility QA: FAIL (${report.failures.length} issue(s))`);
     process.exit(1);
   }
-  console.log("Weekly cross-browser accessibility QA: PASS (Chromium + Firefox + WebKit, responsive smoke + WCAG A/AA + keyboard + target size + rendered screenshots)");
+  console.log("Weekly cross-browser accessibility QA: PASS (Chromium + Firefox + WebKit, responsive smoke + WCAG A/AA + keyboard + target size + desktop article geometry + rendered light/dark screenshots)");
 }
 
 main().catch(async error => {
