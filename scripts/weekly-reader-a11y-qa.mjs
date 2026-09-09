@@ -43,9 +43,9 @@ async function ensureTheme(page, colorScheme, label) {
   const desiredDark = colorScheme === "dark";
   let actualDark = await page.locator("html").evaluate(el => el.classList.contains("dark"));
   if (actualDark !== desiredDark) {
-    const switcher = page.locator("#appearance-switcher");
+    const switcher = page.locator("#appearance-switcher:visible, #appearance-switcher-mobile:visible").first();
     if (!(await switcher.count())) {
-      fail(`${label}: appearance switcher missing while requesting ${colorScheme}`);
+      fail(`${label}: visible appearance switcher missing while requesting ${colorScheme}`);
       return actualDark;
     }
     await switcher.click();
@@ -209,15 +209,19 @@ async function verifyArticleLayout(browser) {
         const footer = document.querySelector(".article-reading-content .article-footer");
         const hero = document.querySelector(".post-hero");
         if (!layout || !content || !article || !footer) return null;
-        const rect = element => element ? element.getBoundingClientRect() : null;
+        const toPlainRect = element => {
+          if (!element) return null;
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
+        };
         return {
           viewportWidth: document.documentElement.clientWidth,
-          layout: rect(layout),
-          content: rect(content),
-          article: rect(article),
-          toc: rect(toc),
-          footer: rect(footer),
-          hero: rect(hero),
+          layout: toPlainRect(layout),
+          content: toPlainRect(content),
+          article: toPlainRect(article),
+          toc: toPlainRect(toc),
+          footer: toPlainRect(footer),
+          hero: toPlainRect(hero),
         };
       });
       samples.push({ label, width, geometry });
