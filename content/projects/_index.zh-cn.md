@@ -9,6 +9,6 @@ cardViewScreenWidth: false
 orderByWeight: true
 ---
 
-这里收录已经能够公开说明、并且有实际内容可验证的项目。先保留少量真实条目，不用占位内容填满版面；之后有新的公开项目时，再逐项加入。
+这里只收录具有独立成果、系统或持续生命周期，并值得在 HUIKAI 长期保留的实践。先保留少量真实条目，不为了填满版面增加占位内容。
 
-部分 Hackathon 与公开提交记录另外集中在 [Devpost](https://devpost.com/huikai79)。
+Hackathon 的参赛与正式提交记录不会自动视为长期项目；相关方法与反思归入文章，外部 submission 记录则由 Devpost 保存。既有的 [Nutrient DWS Challenge 案例记录](/zh-cn/projects/nutrient-hackathon/) 保留作为历史入口，但不再列入下方长期项目卡片。

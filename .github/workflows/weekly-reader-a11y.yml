@@ -13,6 +13,7 @@ on:
       - "content/_index.zh-cn.md"
       - "content/posts/_index.md"
       - "content/posts/_index.zh-cn.md"
+      - "content/projects/**"
   push:
     branches:
       - main
@@ -25,6 +26,7 @@ on:
       - "content/_index.zh-cn.md"
       - "content/posts/_index.md"
       - "content/posts/_index.zh-cn.md"
+      - "content/projects/**"
   workflow_dispatch:
   schedule:
     - cron: '30 2 * * 1'

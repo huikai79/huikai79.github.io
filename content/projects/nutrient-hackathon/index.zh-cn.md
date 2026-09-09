@@ -1,19 +1,19 @@
 ---
-title: "Nutrient Hackathon 实践"
-description: "一次围绕证据、人工确认与可验证 Demo 的 Hackathon 项目实践。"
+title: "Nutrient DWS Challenge｜案例记录"
+description: "保留既有网址，将这次 Hackathon 的方法与反思归入文章，而不再列为独立长期项目。"
 layout: "simple"
-weight: 20
 showBreadcrumbs: false
 showDate: false
 showReadingTime: false
+build:
+  list: never
+  render: always
 ---
 
-这是一次参加 **Nutrient DWS Challenge** 后整理出来的项目实践。
+此页保留作为既有网址的历史入口。
 
-过程中最重要的要求，不只是把 Sponsor API 接起来，而是让文件处理技术真正进入作品的因果链：输入文件经过抽取与来源保留之后，后续判断才能回到证据、人工确认与最终结果。
+这次 **Nutrient DWS Challenge** 留下的主要价值，是它如何改变我理解可验证 Demo、证据路径、人工确认与 Sponsor 技术整合的方法；因此相关内容已归入文章记录，而不再与长期维护的系统／框架并列为独立项目。
 
-这次实践也把 Demo 从「功能介绍」重新定义为一条可检查的证据路径：
+[阅读案例文章（繁體）：Nutrient Hackathon 比賽之後](/posts/first-hackathon/)
 
-**Problem → Real Input → Sponsor Technology → Observable Evidence → Human Action → Observable State Change → Result → Scope Boundary**
-
-这套方法后来也成为继续制作 Hackathon 项目时的重要基线：功能必须真的存在，而且评审必须能够在有限时间里看见它为什么成立。
+正式 Hackathon submission 与赛事记录则保留在 [Devpost](https://devpost.com/huikai79)。
