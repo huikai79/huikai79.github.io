@@ -1,0 +1,104 @@
+name: "Notion publication health"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/20 * * * *'
+    - cron: '5 0 * * 1'
+      timezone: 'Asia/Kuala_Lumpur'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: notion-publication-health
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout health-check source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Install locked Notion dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Inspect production publication contract without writing
+        id: contract
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_CONTRACT_NONBLOCKING: '1'
+        run: |
+          set -euo pipefail
+          node scripts/check-notion-publication-contract.mjs production /tmp/notion-publication-contract.json
+          test -s /tmp/notion-publication-contract.json
+          status="$(jq -r '.status' /tmp/notion-publication-contract.json)"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Notion publication health"
+            echo ""
+            echo "Status: **$status**"
+            echo "Production rows: **$(jq -r '.productionCount' /tmp/notion-publication-contract.json)**"
+            echo "Translation families: **$(jq -r '.translationFamilyCount' /tmp/notion-publication-contract.json)**"
+            echo "Cover-ready rows: **$(jq -r '.coverReadyCount' /tmp/notion-publication-contract.json)**"
+            echo ""
+            if [ "$status" != "pass" ]; then
+              echo "### Blocking issues"
+              echo ""
+              jq -r '.failures[] | "- " + .' /tmp/notion-publication-contract.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload publication-health evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: notion-publication-health-${{ github.run_id }}
+          path: /tmp/notion-publication-contract.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Dispatch synchronization only when publication health passes
+        if: steps.contract.outputs.status == 'pass'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          trigger_source="health"
+          if [ "$EVENT_NAME" = "schedule" ] && [ "$EVENT_SCHEDULE" = "5 0 * * 1" ]; then
+            trigger_source="weekly-presentation"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            trigger_source="manual-health"
+          fi
+
+          payload="$(jq -nc --arg ref main --arg source "$trigger_source" '{ref:$ref, inputs:{trigger_source:$source}}')"
+          curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/sync.yml/dispatches" \
+            -d "$payload"
+
+          echo "Notion synchronization dispatched from publication health: $trigger_source"
+
+      - name: Report blocked health without mutating production
+        if: steps.contract.outputs.status != 'pass'
+        run: |
+          echo "::warning::Notion publication health is blocked. Synchronization and publication were intentionally not dispatched."
+          echo "Publication health is blocked; production state remains untouched."
