@@ -56,18 +56,34 @@ async function inspectPage(page, expectedPath, expectedLang) {
   return state;
 }
 
-async function openTranslationMenu(page) {
-  const button = page.locator(".translation button:visible").first();
-  if (!(await button.count())) {
-    fail(`${new URL(page.url()).pathname}: visible translation menu button missing`);
+async function exposeTranslationMenu(page) {
+  const menu = page.locator(".translation.nested-menu:visible").first();
+  if (!(await menu.count())) {
+    fail(`${new URL(page.url()).pathname}: visible translation menu missing`);
     return false;
   }
-  await button.click();
+  // Blowfish v3.6.0 reveals nested menus with :hover / :focus-within.
+  // Exercise that native interaction instead of assuming a click-toggle script.
+  await menu.hover();
+  const submenu = menu.locator(".menuhide").first();
+  try {
+    await submenu.waitFor({ state: "visible", timeout: 5_000 });
+  } catch {
+    const button = menu.locator("button").first();
+    if (await button.count()) await button.focus();
+    try {
+      await submenu.waitFor({ state: "visible", timeout: 5_000 });
+    } catch {
+      fail(`${new URL(page.url()).pathname}: translation submenu did not become visible via hover/focus`);
+      return false;
+    }
+  }
   return true;
 }
 
 async function translationLinkForPath(page, targetPath) {
-  const links = page.locator(".translation a:visible");
+  const menu = page.locator(".translation.nested-menu:visible").first();
+  const links = menu.locator("a");
   const count = await links.count();
   const candidates = [];
   for (let index = 0; index < count; index += 1) {
@@ -75,17 +91,21 @@ async function translationLinkForPath(page, targetPath) {
     const href = await link.getAttribute("href");
     if (!href) continue;
     const resolved = new URL(href, page.url());
-    candidates.push({ href, path: resolved.pathname });
+    candidates.push({ href, path: resolved.pathname, visible: await link.isVisible() });
     if (resolved.pathname === targetPath) return { link, candidates };
   }
   return { link: null, candidates };
 }
 
 async function clickTranslationPath(page, targetPath) {
-  if (!(await openTranslationMenu(page))) return false;
+  if (!(await exposeTranslationMenu(page))) return false;
   const { link, candidates } = await translationLinkForPath(page, targetPath);
   if (!link) {
     fail(`${new URL(page.url()).pathname}: translation menu does not expose ${targetPath}; candidates=${JSON.stringify(candidates)}`);
+    return false;
+  }
+  if (!(await link.isVisible())) {
+    fail(`${new URL(page.url()).pathname}: ${targetPath} translation link exists but is not reader-visible`);
     return false;
   }
   await Promise.all([
@@ -174,7 +194,7 @@ async function main() {
 main().catch(async error => {
   console.error(error);
   try {
-    await fs.mkdir(OUT_DIR, { recursive: true, force: false });
+    await fs.mkdir(OUT_DIR, { recursive: true });
     report.finishedAt = new Date().toISOString();
     report.failures = [...failures, String(error?.stack || error)];
     await fs.writeFile(path.join(OUT_DIR, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
