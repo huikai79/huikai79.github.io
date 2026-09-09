@@ -21,8 +21,9 @@ const ROUTES = [
 const VIEWPORTS = [["desktop", 1440, 1000], ["mobile", 390, 844]];
 const BROWSERS = { chromium, firefox, webkit };
 const AXE_ROUTES = [["home", "/"], ["long-article", "/posts/first-hackathon/"], ["zh-cn-article", "/zh-cn/posts/how-you-know/"]];
+const VISUAL_ROUTES = [["home", "/"], ["posts", "/posts/"], ["projects", "/projects/"]];
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
-const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), browsers: {}, failures: [] };
+const report = { baseUrl: BASE_URL, expectedSourceSha: EXPECTED_SHA || null, startedAt: new Date().toISOString(), browsers: {}, visualEvidence: [], failures: [] };
 
 function fail(message) {
   report.failures.push(message);
@@ -143,6 +144,28 @@ async function keyboardAndTargets(browserName, browser, routeName, routePath) {
   }
 }
 
+async function captureVisualEvidence(browser) {
+  const screenshotDir = path.join(OUT_DIR, "screenshots");
+  await fs.mkdir(screenshotDir, { recursive: true });
+  for (const [routeName, routePath] of VISUAL_ROUTES) {
+    for (const [viewportName, width, height] of VIEWPORTS) {
+      for (const colorScheme of ["light", "dark"]) {
+        const context = await browser.newContext({ viewport: { width, height }, colorScheme, reducedMotion: "reduce" });
+        const page = await context.newPage();
+        try {
+          const response = await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
+          if (!response?.ok()) fail(`visual/${routeName}/${viewportName}/${colorScheme}: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
+          const fileName = `${routeName}-${viewportName}-${colorScheme}.png`;
+          await page.screenshot({ path: path.join(screenshotDir, fileName), fullPage: true });
+          report.visualEvidence.push({ route: routePath, viewport: viewportName, colorScheme, screenshot: `screenshots/${fileName}` });
+        } finally {
+          await context.close();
+        }
+      }
+    }
+  }
+}
+
 async function main() {
   await fs.rm(OUT_DIR, { recursive: true, force: true });
   await fs.mkdir(OUT_DIR, { recursive: true });
@@ -161,6 +184,7 @@ async function main() {
       for (const [routeName, routePath] of [["home", "/"], ["long-article", "/posts/first-hackathon/"]]) {
         await keyboardAndTargets(browserName, browser, routeName, routePath);
       }
+      if (browserName === "chromium") await captureVisualEvidence(browser);
     } finally {
       await browser.close();
     }
@@ -172,7 +196,7 @@ async function main() {
     console.error(`Weekly cross-browser accessibility QA: FAIL (${report.failures.length} issue(s))`);
     process.exit(1);
   }
-  console.log("Weekly cross-browser accessibility QA: PASS (Chromium + Firefox + WebKit, responsive smoke + WCAG A/AA + keyboard + target size)");
+  console.log("Weekly cross-browser accessibility QA: PASS (Chromium + Firefox + WebKit, responsive smoke + WCAG A/AA + keyboard + target size + rendered screenshots)");
 }
 
 main().catch(async error => {
