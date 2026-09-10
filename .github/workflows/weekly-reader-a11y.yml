@@ -8,12 +8,15 @@ on:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
       - "scripts/verify-comments-integration.mjs"
+      - "scripts/verify-comments-admin.mjs"
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
       - "scripts/verify-back-to-top-behavior.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
+      - "assets/css/huikai-comments-admin.css"
       - "assets/js/huikai-comments.js"
+      - "assets/js/huikai-comments-admin.js"
       - "assets/js/reading-progress.js"
       - "assets/js/scroll-to-top.js"
       - "layouts/_default/single.html"
@@ -21,12 +24,14 @@ on:
       - "layouts/partials/comments.html"
       - "layouts/partials/extend-head-uncached.html"
       - "layouts/partials/footer.html"
+      - "layouts/shortcodes/comments-admin.html"
       - "config/_default/params.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
       - "workers/huikai-comments/**"
       - "content/_index.md"
       - "content/_index.zh-cn.md"
+      - "content/comments-admin/**"
       - "content/posts/_index.md"
       - "content/posts/_index.zh-cn.md"
       - "content/projects/**"
@@ -37,12 +42,15 @@ on:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
       - "scripts/verify-comments-integration.mjs"
+      - "scripts/verify-comments-admin.mjs"
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
       - "scripts/verify-back-to-top-behavior.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
+      - "assets/css/huikai-comments-admin.css"
       - "assets/js/huikai-comments.js"
+      - "assets/js/huikai-comments-admin.js"
       - "assets/js/reading-progress.js"
       - "assets/js/scroll-to-top.js"
       - "layouts/_default/single.html"
@@ -50,12 +58,14 @@ on:
       - "layouts/partials/comments.html"
       - "layouts/partials/extend-head-uncached.html"
       - "layouts/partials/footer.html"
+      - "layouts/shortcodes/comments-admin.html"
       - "config/_default/params.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
       - "workers/huikai-comments/**"
       - "content/_index.md"
       - "content/_index.zh-cn.md"
+      - "content/comments-admin/**"
       - "content/posts/_index.md"
       - "content/posts/_index.zh-cn.md"
       - "content/projects/**"
@@ -136,52 +146,60 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0 axe-core@4.13.0
           npx playwright install --with-deps chromium firefox webkit
 
-      - name: Verify candidate Giscus integration deterministically
-        if: github.event_name != 'schedule'
-        env:
-          COMMENTS_PROVIDER: giscus
-        run: node scripts/verify-comments-integration.mjs
-
-      - name: Build deterministic HUIKAI comments preview
-        if: github.event_name != 'schedule'
-        env:
-          TURNSTILE_TEST_SITE_KEY: "1x00000000000000000000AA"
-        run: |
-          set -euo pipefail
-          cp config/_default/params.toml /tmp/huikai-comments-params.toml
-          restore_params() { cp /tmp/huikai-comments-params.toml config/_default/params.toml; }
-          trap restore_params EXIT
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-          path = Path("config/_default/params.toml")
-          text = path.read_text(encoding="utf-8")
-          if text.count('provider = "giscus"') != 1 or text.count('turnstileSiteKey = ""') != 1:
-              raise SystemExit("comments provider preview contract drifted")
-          text = text.replace('provider = "giscus"', 'provider = "huikai"')
-          text = text.replace('turnstileSiteKey = ""', f'turnstileSiteKey = "{os.environ["TURNSTILE_TEST_SITE_KEY"]}"')
-          path.write_text(text, encoding="utf-8")
-          PY
-          rm -rf /tmp/huikai-comments-preview
-          COMMENTS_QA_ALLOW_TEST_KEYS=1 hugo --minify --destination /tmp/huikai-comments-preview
-          restore_params
-          trap - EXIT
-          git diff --exit-code -- config/_default/params.toml
-          python3 -m http.server 4174 --directory /tmp/huikai-comments-preview >/tmp/huikai-comments-preview-http.log 2>&1 &
-          for _ in $(seq 1 20); do
-            curl --fail --silent --show-error http://127.0.0.1:4174/posts/first-hackathon/ >/dev/null && exit 0
-            sleep 1
-          done
-          cat /tmp/huikai-comments-preview-http.log || true
-          echo "::error::HUIKAI comments preview did not become ready"
-          exit 1
-
       - name: Verify candidate HUIKAI comments interaction and layout
         if: github.event_name != 'schedule'
         env:
           COMMENTS_PROVIDER: huikai
-          LIVE_SITE_URL: http://127.0.0.1:4174
+          LIVE_SITE_URL: http://127.0.0.1:4173
           COMMENTS_QA_OUTPUT: weekly-reader-a11y-qa
+        run: node scripts/verify-comments-integration.mjs
+
+      - name: Verify candidate comments moderation surface
+        if: github.event_name != 'schedule'
+        env:
+          LIVE_SITE_URL: http://127.0.0.1:4173
+          COMMENTS_QA_OUTPUT: weekly-reader-a11y-qa
+        run: node scripts/verify-comments-admin.mjs
+
+      - name: Build deterministic Giscus rollback preview
+        if: github.event_name != 'schedule'
+        run: |
+          set -euo pipefail
+          cp config/_default/params.toml /tmp/giscus-rollback-params.toml
+          restore_params() { cp /tmp/giscus-rollback-params.toml config/_default/params.toml; }
+          trap restore_params EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("config/_default/params.toml")
+          text = path.read_text(encoding="utf-8")
+          marker = '[comments]'
+          start = text.index(marker)
+          end = text.index('\n[giscus]', start)
+          block = text[start:end]
+          if block.count('provider = "huikai"') != 1:
+              raise SystemExit("production comments provider contract drifted")
+          block = block.replace('provider = "huikai"', 'provider = "giscus"')
+          path.write_text(text[:start] + block + text[end:], encoding="utf-8")
+          PY
+          rm -rf /tmp/giscus-comments-preview
+          hugo --minify --destination /tmp/giscus-comments-preview
+          restore_params
+          trap - EXIT
+          git diff --exit-code -- config/_default/params.toml
+          python3 -m http.server 4174 --directory /tmp/giscus-comments-preview >/tmp/giscus-comments-preview-http.log 2>&1 &
+          for _ in $(seq 1 20); do
+            curl --fail --silent --show-error http://127.0.0.1:4174/posts/first-hackathon/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/giscus-comments-preview-http.log || true
+          echo "::error::Giscus rollback preview did not become ready"
+          exit 1
+
+      - name: Verify candidate Giscus rollback integration deterministically
+        if: github.event_name != 'schedule'
+        env:
+          COMMENTS_PROVIDER: giscus
+          LIVE_SITE_URL: http://127.0.0.1:4174
         run: node scripts/verify-comments-integration.mjs
 
       - name: Run cross-browser accessibility QA
