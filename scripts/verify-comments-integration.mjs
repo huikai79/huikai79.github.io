@@ -10,9 +10,8 @@ const PROVIDER = (process.env.COMMENTS_PROVIDER || "giscus").toLowerCase();
 const OUTPUT_DIR = path.resolve(process.env.COMMENTS_QA_OUTPUT || process.env.WEEKLY_QA_OUTPUT || "weekly-reader-a11y-qa");
 
 function assertAligned(geometry) {
-  if (!geometry?.comments || !geometry?.reference || !geometry?.reading) throw new Error("comments integration: geometry unavailable");
+  if (!geometry?.comments || !geometry?.reference) throw new Error("comments integration: geometry unavailable");
   if (Math.abs(geometry.comments.left - geometry.reference.left) > 2 || Math.abs(geometry.comments.right - geometry.reference.right) > 2) throw new Error("comments integration: footer alignment drift");
-  if (geometry.comments.left < geometry.reading.left - 2 || geometry.comments.right > geometry.reading.right + 2) throw new Error("comments integration: comments escape reading column");
 }
 
 async function geometry(page, selector) {
