@@ -19,6 +19,13 @@ function setVisible(visible) {
   scrollToTop.tabIndex = visible ? 0 : -1;
 }
 
+function getDesktopReadingAnchor() {
+  const readingLayoutWithToc = document.querySelector(".article-reading-layout.has-toc");
+  if (readingLayoutWithToc) return readingLayoutWithToc;
+
+  return document.querySelector(".article-reading-content");
+}
+
 function updateInlinePosition() {
   if (!scrollToTop) return;
 
@@ -27,11 +34,11 @@ function updateInlinePosition() {
   let inlineEnd = baseInlineEnd;
 
   if (viewportWidth >= 1280) {
-    const readingLayout = document.querySelector(".article-reading-layout.has-toc");
-    if (readingLayout) {
-      const layoutRect = readingLayout.getBoundingClientRect();
+    const readingAnchor = getDesktopReadingAnchor();
+    if (readingAnchor) {
+      const anchorRect = readingAnchor.getBoundingClientRect();
       const preferredInlineEnd = viewportWidth - (
-        layoutRect.right + READING_GUTTER_GAP + scrollToTop.offsetWidth
+        anchorRect.right + READING_GUTTER_GAP + scrollToTop.offsetWidth
       );
       inlineEnd = Math.max(baseInlineEnd, preferredInlineEnd);
     }

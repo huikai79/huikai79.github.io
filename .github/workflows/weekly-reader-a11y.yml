@@ -12,6 +12,7 @@ on:
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
       - "scripts/verify-back-to-top-behavior.mjs"
+      - "scripts/verify-header-home-navigation.mjs"
       - "scripts/verify-site-log-layout.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
@@ -28,6 +29,8 @@ on:
       - "layouts/partials/footer.html"
       - "layouts/shortcodes/comments-admin.html"
       - "config/_default/params.toml"
+      - "config/_default/menus.zh-TW.toml"
+      - "config/_default/menus.zh-CN.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
       - "workers/huikai-comments/**"
@@ -49,6 +52,7 @@ on:
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
       - "scripts/verify-back-to-top-behavior.mjs"
+      - "scripts/verify-header-home-navigation.mjs"
       - "scripts/verify-site-log-layout.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
@@ -65,6 +69,8 @@ on:
       - "layouts/partials/footer.html"
       - "layouts/shortcodes/comments-admin.html"
       - "config/_default/params.toml"
+      - "config/_default/menus.zh-TW.toml"
+      - "config/_default/menus.zh-CN.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
       - "workers/huikai-comments/**"
@@ -230,6 +236,9 @@ jobs:
 
       - name: Verify back-to-top threshold, placement and footer avoidance
         run: node scripts/verify-back-to-top-behavior.mjs
+
+      - name: Verify HUIKAI home-link navigation contract
+        run: node scripts/verify-header-home-navigation.mjs
 
       - name: Verify compact site-log hierarchy and footer entry
         run: node scripts/verify-site-log-layout.mjs
