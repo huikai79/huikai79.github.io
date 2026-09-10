@@ -14,6 +14,8 @@ contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-CN"
 translationKey: "be-alife"
+sourceLabel: "Paul Graham 精选文"
+sourceURL: "https://paulgraham.com/die.html"
 cover: "cover.zh-cn.jpg"
 icon: "☀️"
 images: ["cover.zh-cn.jpg"]

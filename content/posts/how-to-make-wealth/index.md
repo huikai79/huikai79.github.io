@@ -14,6 +14,8 @@ contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "how-to-make-wealth"
+sourceLabel: "Paul Graham 精选文"
+sourceURL: "https://paulgraham.com/wealth.html"
 cover: "cover.jpg"
 icon: "💬"
 images: ["cover.jpg"]

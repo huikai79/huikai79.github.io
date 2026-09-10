@@ -14,6 +14,8 @@ contentVisibility: "Public"
 homePlacement: "None"
 contentLanguage: "zh-TW"
 translationKey: "daxuepeiyangchuangyezhe"
+sourceLabel: "Paul Graham 精选文"
+sourceURL: "https://paulgraham.com/prepare.html"
 cover: "cover.jpg"
 icon: "🧑🏻‍🎓"
 images: ["cover.jpg"]

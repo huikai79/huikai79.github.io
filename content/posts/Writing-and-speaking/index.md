@@ -14,6 +14,8 @@ contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "Writing-and-speaking"
+sourceLabel: "Paul Graham 精选文"
+sourceURL: "https://paulgraham.com/speak.html"
 cover: "cover.jpg"
 icon: "🗣️"
 images: ["cover.jpg"]

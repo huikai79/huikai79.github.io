@@ -14,6 +14,8 @@ contentVisibility: "Public"
 homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "Writes-and-Write-Nots"
+sourceLabel: "Paul Graham 精选文"
+sourceURL: "https://paulgraham.com/writes.html"
 cover: "cover.jpg"
 icon: "📝"
 images: ["cover.jpg"]

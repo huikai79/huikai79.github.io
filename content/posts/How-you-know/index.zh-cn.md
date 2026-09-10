@@ -14,6 +14,8 @@ contentVisibility: "Public"
 homePlacement: "Pinned"
 contentLanguage: "zh-CN"
 translationKey: "How-you-know"
+sourceLabel: "Paul Graham 精选文"
+sourceURL: "https://paulgraham.com/know.html"
 cover: "cover.zh-cn.jpg"
 icon: "🤔"
 images: ["cover.zh-cn.jpg"]
