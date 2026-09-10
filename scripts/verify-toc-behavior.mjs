@@ -14,7 +14,8 @@ function fail(message) {
 async function openPage(browser, width, height) {
   const context = await browser.newContext({ viewport: { width, height }, colorScheme: "dark", reducedMotion: "reduce" });
   const page = await context.newPage();
-  const response = await page.goto(`${BASE_URL}${ROUTE}`, { waitUntil: "networkidle", timeout: 45_000 });
+  const response = await page.goto(`${BASE_URL}${ROUTE}`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+  await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
   if (!response?.ok()) fail(`TOC behavior ${width}x${height}: navigation failed (${response?.status() ?? "no response"})`);
   return { context, page };
 }
