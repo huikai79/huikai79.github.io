@@ -97,6 +97,7 @@ build:
 ### 工程可靠性
 
 - GitHub Actions 的外部 action reference 固定到完整 immutable SHA，并加入验证，避免日后重新出现浮动 tag／branch 依赖。
+- 已启用 `Protect main` Ruleset，只套用 `main`，禁止 branch deletion 与 non-fast-forward（force push），且未设置 bypass actor，降低主分支遭误删或改写历史的风险。
 - 建立每周 Chromium、Firefox、WebKit 跨浏览器读者质量检查，涵盖代表性 responsive 页面、亮／暗模式、键盘操作、基本 target size 与 WCAG A／AA axe 检查。
 - 多语言路由、Projects 版面与首页／列表调整也纳入实际 render 与浏览器回归，而不只依赖 Hugo build。
 
