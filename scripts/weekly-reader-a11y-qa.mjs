@@ -207,7 +207,8 @@ async function verifyArticleLayout(browser) {
         const content = document.querySelector(".article-reading-content");
         const article = document.querySelector(".article-main");
         const toc = document.querySelector(".article-toc");
-        const footer = document.querySelector(".article-reading-content .article-footer");
+        const footer = document.querySelector(".article-footer");
+        const footerInsideReading = document.querySelector(".article-reading-layout .article-footer");
         const hero = document.querySelector(".post-hero");
         if (!layout || !content || !article || !footer) return null;
         const toPlainRect = element => {
@@ -222,6 +223,7 @@ async function verifyArticleLayout(browser) {
           article: toPlainRect(article),
           toc: toPlainRect(toc),
           footer: toPlainRect(footer),
+          footerInsideReading: Boolean(footerInsideReading),
           hero: toPlainRect(hero),
         };
       });
@@ -231,7 +233,7 @@ async function verifyArticleLayout(browser) {
         continue;
       }
       if (geometry.article.width < 600 && width >= 1280) fail(`article-layout/${label}: article column collapsed to ${geometry.article.width.toFixed(1)}px`);
-      if (geometry.footer.left < geometry.content.left - 2 || geometry.footer.right > geometry.content.right + 2) fail(`article-layout/${label}: article footer escapes reading column`);
+      if (geometry.footerInsideReading) fail(`article-layout/${label}: post-reading footer remains inside TOC reading grid`);
       if (width >= 1280) {
         if (!geometry.toc) fail(`article-layout/${label}: TOC missing on wide desktop`);
         else if (geometry.toc.left < geometry.content.right - 2) fail(`article-layout/${label}: TOC overlaps or precedes article column`);
@@ -273,8 +275,11 @@ async function captureVisualEvidence(browser) {
 }
 
 async function main() {
-  await fs.rm(OUT_DIR, { recursive: true, force: true });
   await fs.mkdir(OUT_DIR, { recursive: true });
+  await Promise.all([
+    fs.rm(path.join(OUT_DIR, "report.json"), { force: true }),
+    fs.rm(path.join(OUT_DIR, "screenshots"), { recursive: true, force: true }),
+  ]);
   await verifyLineage();
 
   for (const [browserName, browserType] of Object.entries(BROWSERS)) {

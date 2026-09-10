@@ -41,5 +41,6 @@ huikai:
   comments_rate_limit_error: "送出得太频繁，请稍后再试。"
   comments_name: "称呼"
   comments_body: "你的回应"
+  comments_body_limit: "最多 4,000 字"
   comments_privacy: "不需登录；不收集电子邮件。回应公开前会先经过简单审核。"
   comments_submit: "送出回应"

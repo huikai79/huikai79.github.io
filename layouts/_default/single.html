@@ -98,17 +98,21 @@
       {{ $content := .Content | replaceRE `<h1([^>]*)>` `<h2$1>` | replaceRE `</h1>` `</h2>` }}
       {{ $content | safeHTML }}
     </article>
-
-    {{ partial "article/author.html" . }}
-    <div class="article-footer mx-auto w-full max-w-3xl px-4">
-      {{ partial "sharing-links.html" . }}
-      {{ partial "article-pagination.html" . }}
-      {{ partial "related.html" . }}
-    </div>
-    <div class="article-footer mx-auto w-full max-w-3xl px-4">
-      {{ partial "article-comments.html" . }}
-    </div>
   </div>
 </section>
+
+{{/* Reading and post-reading are intentionally separate. Keeping author,
+     navigation, related content and comments outside the TOC grid makes the
+     sticky table of contents end with the article body instead of competing
+     with the reader-response phase. */}}
+{{ partial "article/author.html" . }}
+<div class="article-footer mx-auto w-full max-w-3xl px-4">
+  {{ partial "sharing-links.html" . }}
+  {{ partial "article-pagination.html" . }}
+  {{ partial "related.html" . }}
+</div>
+<div class="article-footer mx-auto w-full max-w-3xl px-4">
+  {{ partial "article-comments.html" . }}
+</div>
 
 {{ end }}
