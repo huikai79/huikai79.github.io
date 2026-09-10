@@ -34,6 +34,23 @@ function normalizePath(href) {
   }
 }
 
+async function verifyBrand(page, spec, surface) {
+  const brand = page.locator('header a[href]').filter({ hasText: "HUIKAI" }).first();
+  if ((await brand.count()) !== 1 || !(await brand.isVisible())) {
+    fail(`${spec.label} ${surface}: visible HUIKAI brand-home link is missing`);
+    return;
+  }
+
+  const href = await brand.getAttribute("href");
+  if (normalizePath(href || "") !== spec.homePath) {
+    fail(`${spec.label} ${surface}: HUIKAI brand should link to ${spec.homePath}, got ${href}`);
+  }
+  const text = (await brand.innerText()).trim();
+  if (text !== "HUIKAI") {
+    fail(`${spec.label} ${surface}: brand label should remain exactly HUIKAI, got ${JSON.stringify(text)}`);
+  }
+}
+
 async function verifyDesktop(browser, spec) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
@@ -44,22 +61,13 @@ async function verifyDesktop(browser, spec) {
       return;
     }
 
-    const header = page.locator("header");
-    const brand = header.locator('a[href]').filter({ hasText: "HUIKAI" }).first();
-    if ((await brand.count()) !== 1 || !(await brand.isVisible())) {
-      fail(`${spec.label} desktop: visible HUIKAI brand-home link is missing`);
-    } else {
-      const href = await brand.getAttribute("href");
-      if (normalizePath(href || "") !== spec.homePath) {
-        fail(`${spec.label} desktop: HUIKAI brand should link to ${spec.homePath}, got ${href}`);
-      }
-      const text = (await brand.innerText()).trim();
-      if (text !== "HUIKAI") {
-        fail(`${spec.label} desktop: brand label should remain exactly HUIKAI, got ${JSON.stringify(text)}`);
-      }
-    }
+    await verifyBrand(page, spec, "desktop");
 
-    const desktopNav = header.locator(".hidden.md\\:flex nav").first();
+    const desktopNav = page.locator("header .hidden.md\\:flex nav").first();
+    if ((await desktopNav.count()) !== 1 || !(await desktopNav.isVisible())) {
+      fail(`${spec.label} desktop: desktop main navigation is missing`);
+      return;
+    }
     const navText = (await desktopNav.innerText()).replace(/\s+/g, " ").trim();
     if (navText.includes(spec.homeLabel)) {
       fail(`${spec.label} desktop: duplicate explicit ${spec.homeLabel} item is still visible beside HUIKAI`);
@@ -84,24 +92,20 @@ async function verifyMobile(browser, spec) {
       return;
     }
 
-    const header = page.locator("header");
-    const brand = header.locator('a[href]').filter({ hasText: "HUIKAI" }).first();
-    if ((await brand.count()) !== 1 || !(await brand.isVisible())) {
-      fail(`${spec.label} mobile: visible HUIKAI brand-home link is missing`);
-    } else {
-      const href = await brand.getAttribute("href");
-      if (normalizePath(href || "") !== spec.homePath) {
-        fail(`${spec.label} mobile: HUIKAI brand should link to ${spec.homePath}, got ${href}`);
-      }
-    }
+    await verifyBrand(page, spec, "mobile");
 
-    const toggle = header.locator('label[for="mobile-menu-toggle"]');
-    if ((await toggle.count()) !== 1) {
-      fail(`${spec.label} mobile: menu toggle is missing`);
+    // Blowfish's responsive mobile controls are rendered adjacent to the
+    // desktop wrapper rather than inside the semantic <header> element in all
+    // layout variants. Target the stable control contract globally.
+    const toggleInput = page.locator("#mobile-menu-toggle");
+    const toggle = page.locator('label[for="mobile-menu-toggle"]').first();
+    if ((await toggleInput.count()) !== 1 || (await toggle.count()) < 1 || !(await toggle.isVisible())) {
+      fail(`${spec.label} mobile: visible menu toggle is missing`);
       return;
     }
+
     await toggle.click();
-    const dialog = header.locator("#mobile-menu-dialog");
+    const dialog = page.locator("#mobile-menu-dialog");
     await dialog.waitFor({ state: "visible", timeout: 3_000 });
     const navText = (await dialog.innerText()).replace(/\s+/g, " ").trim();
     if (navText.includes(spec.homeLabel)) {
