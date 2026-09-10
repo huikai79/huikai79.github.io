@@ -1,0 +1,72 @@
+name: "Comments production readiness probe"
+
+on:
+  push:
+    branches:
+      - ops/comments-production-readiness-20260910
+    paths:
+      - ".github/workflows/comments-production-readiness.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - name: Check configured production credentials without exposing values
+        id: secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMMENTS_ADMIN_TOKEN: ${{ secrets.COMMENTS_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          cf_token=no; cf_account=no; admin_token=no
+          test -n "$CLOUDFLARE_API_TOKEN" && cf_token=yes || true
+          test -n "$CLOUDFLARE_ACCOUNT_ID" && cf_account=yes || true
+          test -n "$COMMENTS_ADMIN_TOKEN" && admin_token=yes || true
+          echo "cf_token=$cf_token" >> "$GITHUB_OUTPUT"
+          echo "cf_account=$cf_account" >> "$GITHUB_OUTPUT"
+          echo "admin_token=$admin_token" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Production comments readiness"
+            echo ""
+            echo "- Cloudflare API token configured: $cf_token"
+            echo "- Cloudflare account ID configured: $cf_account"
+            echo "- Comments admin token configured: $admin_token"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Probe Cloudflare account and existing comments resources
+        if: steps.secrets.outputs.cf_token == 'yes' && steps.secrets.outputs.cf_account == 'yes'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
+
+          token_http="$(curl -sS -o /tmp/token.json -w '%{http_code}' "https://api.cloudflare.com/client/v4/user/tokens/verify" "${auth[@]}")"
+          d1_http="$(curl -sS -o /tmp/d1.json -w '%{http_code}' "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?per_page=100" "${auth[@]}")"
+          turnstile_http="$(curl -sS -o /tmp/turnstile.json -w '%{http_code}' "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/challenges/widgets?per_page=100" "${auth[@]}")"
+
+          token_ok=no; d1_ok=no; turnstile_ok=no; d1_exists=no; turnstile_exists=no
+          test "$token_http" = 200 && jq -e '.success == true and .result.status == "active"' /tmp/token.json >/dev/null && token_ok=yes || true
+          test "$d1_http" = 200 && jq -e '.success == true' /tmp/d1.json >/dev/null && d1_ok=yes || true
+          test "$turnstile_http" = 200 && jq -e '.success == true' /tmp/turnstile.json >/dev/null && turnstile_ok=yes || true
+          test "$d1_ok" = yes && jq -e '.result[]? | select(.name == "huikai-comments")' /tmp/d1.json >/dev/null && d1_exists=yes || true
+          test "$turnstile_ok" = yes && jq -e '.result[]? | select(.name == "HUIKAI Comments")' /tmp/turnstile.json >/dev/null && turnstile_exists=yes || true
+
+          {
+            echo "- Cloudflare token active: $token_ok"
+            echo "- D1 list access: $d1_ok (HTTP $d1_http)"
+            echo "- Existing D1 \`huikai-comments\`: $d1_exists"
+            echo "- Turnstile list access: $turnstile_ok (HTTP $turnstile_http)"
+            echo "- Existing Turnstile widget \`HUIKAI Comments\`: $turnstile_exists"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          test "$token_ok" = yes
+          test "$d1_ok" = yes
+          test "$turnstile_ok" = yes
