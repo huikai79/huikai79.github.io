@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 
 const BASE_URL = (process.env.LIVE_SITE_URL || "https://huikai.com.kg").replace(/\/$/, "");
 const TOC_ROUTE = "/posts/first-hackathon/";
-const NO_TOC_ROUTE = "/posts/Writing-and-speaking/";
+const NO_TOC_ROUTE = "/posts/writing-and-speaking/";
 const CASES = [
   ["mobile-toc", TOC_ROUTE, 390, 844, true],
   ["pre-breakpoint-toc", TOC_ROUTE, 1279, 900, true],
