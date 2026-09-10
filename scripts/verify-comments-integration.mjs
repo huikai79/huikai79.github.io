@@ -29,6 +29,20 @@ async function geometry(page, selector) {
   }, selector);
 }
 
+async function ensureTheme(page, colorScheme, label) {
+  const desiredDark=colorScheme === "dark";
+  let actualDark=await page.locator("html").evaluate(el=>el.classList.contains("dark"));
+  if (actualDark !== desiredDark) {
+    const switcher=page.locator("#appearance-switcher:visible, #appearance-switcher-mobile:visible").first();
+    if (!(await switcher.count())) throw new Error(`HUIKAI comments ${label}: appearance switcher missing`);
+    await switcher.click();
+    await page.waitForTimeout(200);
+    actualDark=await page.locator("html").evaluate(el=>el.classList.contains("dark"));
+  }
+  if (actualDark !== desiredDark) throw new Error(`HUIKAI comments ${label}: requested ${colorScheme} but html.dark=${actualDark}`);
+  return actualDark;
+}
+
 async function verifyGiscus(browser) {
   const context = await browser.newContext({ viewport:{width:1440,height:1000}, reducedMotion:"reduce" });
   const page = await context.newPage();
@@ -140,6 +154,7 @@ async function verifyHuikaiPopulated(browser) {
       await installHuikaiMocks(page,{submissions});
       const response=await page.goto(`${BASE_URL}${ARTICLE_PATH}`, { waitUntil:"domcontentloaded", timeout:45_000 });
       if (!response?.ok()) throw new Error(`HUIKAI comments QA navigation failed: ${response?.status()}`);
+      const actualDark=await ensureTheme(page,colorScheme,name);
       const root=await waitForHuikai(page);
       await page.locator('.huikai-comment').first().waitFor({ state:"visible", timeout:5000 });
       const initial=await readHuikaiContract(page);
@@ -162,7 +177,7 @@ async function verifyHuikaiPopulated(browser) {
       if (submissions.length !== 1 || submissions[0].articleKey !== initial.key || submissions[0].pagePath !== ARTICLE_PATH || submissions[0].parentId !== "11111111-1111-4111-8111-111111111111" || submissions[0].turnstileToken !== "qa-token" || "email" in submissions[0] || "ip" in submissions[0]) throw new Error(`HUIKAI submission contract failed: ${JSON.stringify(submissions)}`);
       if (afterSubmit.kind !== "success" || afterSubmit.source !== "submit" || !afterSubmit.text || afterSubmit.counter !== "0 / 4,000") throw new Error(`HUIKAI submit/reset status contract failed: ${JSON.stringify(afterSubmit)}`);
       const measured=await geometry(page,'.huikai-comments'); assertAligned(measured);
-      results.push({name,initial,afterSubmit,measured,screenshot});
+      results.push({name,colorScheme,actualDark,initial,afterSubmit,measured,screenshot});
     } finally { await context.close(); }
   }
   return results;
