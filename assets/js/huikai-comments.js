@@ -144,6 +144,11 @@
 
   function form(root, state) {
     const form = q(root, "[data-comments-form]");
+    const body = q(root, "[data-comments-body]");
+    const counter = q(root, "[data-comments-count]");
+    const syncCount = () => { if (counter) counter.textContent = `${body.value.length.toLocaleString(root.dataset.language || "zh-TW")} / 4,000`; };
+    body.addEventListener("input", syncCount);
+    syncCount();
     q(root, "[data-comments-cancel-reply]").addEventListener("click", () => clearReply(root));
     form.addEventListener("submit", async event => {
       event.preventDefault();
@@ -151,9 +156,9 @@
       if (!state.token) { status(root, label(root, "verificationRequired", "請先完成人機驗證。"), "error"); return; }
       const submit = q(root, "[data-comments-submit]"); submit.disabled = true;
       try {
-        const payload = await json(`${api(root)}/comments`, { method: "POST", body: JSON.stringify({ articleKey: root.dataset.commentKey, pagePath: root.dataset.pagePath || location.pathname, displayName: q(root, "[data-comments-name]").value, body: q(root, "[data-comments-body]").value, parentId: q(root, "[data-comments-parent]").value || null, turnstileToken: state.token }) });
+        const payload = await json(`${api(root)}/comments`, { method: "POST", body: JSON.stringify({ articleKey: root.dataset.commentKey, pagePath: root.dataset.pagePath || location.pathname, displayName: q(root, "[data-comments-name]").value, body: body.value, parentId: q(root, "[data-comments-parent]").value || null, turnstileToken: state.token }) });
         if (payload.id && payload.managementToken) saveCap(payload.id, payload.managementToken);
-        q(root, "[data-comments-body]").value = ""; clearReply(root); status(root, label(root, "submitSuccess", "回應已收到，公開前會先經過簡單審核。"), "success");
+        body.value = ""; syncCount(); clearReply(root); status(root, label(root, "submitSuccess", "回應已收到，公開前會先經過簡單審核。"), "success");
       } catch (error) {
         status(root, error.code === "rate_limited" ? label(root, "rateLimitError", "送出得太頻繁，請稍後再試。") : label(root, "submitError", "暫時無法送出回應，請稍後再試。"), "error");
       } finally {
