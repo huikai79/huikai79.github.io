@@ -92,7 +92,7 @@
         </div>
         <input type="hidden" data-comments-parent value="">
         <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_name" }}</span><input type="text" name="displayName" data-comments-name maxlength="40" autocomplete="nickname" required></label>
-        <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_body" }}</span><textarea name="body" data-comments-body maxlength="4000" rows="4" required></textarea></label>
+        <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_body" }} <small class="huikai-comments__field-note">{{ i18n "huikai.comments_body_limit" }}</small></span><textarea name="body" data-comments-body maxlength="4000" rows="4" required></textarea></label>
         <div class="huikai-comments__turnstile" data-comments-turnstile></div>
         <p class="huikai-comments__privacy">{{ i18n "huikai.comments_privacy" }}</p>
         <div class="huikai-comments__submit-row">
