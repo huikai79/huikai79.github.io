@@ -20,7 +20,14 @@
   function saveCap(id, token) { const caps = readCaps(); caps[id] = token; writeCaps(caps); }
   function removeCap(id) { const caps = readCaps(); delete caps[id]; writeCaps(caps); }
   function label(root, key, fallback) { return root.dataset[key] || fallback; }
-  function status(root, text, kind = "") { const el = q(root, "[data-comments-status]"); if (el) { el.textContent = text; el.dataset.kind = kind; } }
+  function status(root, text, kind = "", source = "") {
+    const el = q(root, "[data-comments-status]");
+    if (el) { el.textContent = text; el.dataset.kind = kind; el.dataset.source = source; }
+  }
+  function clearVerificationStatus(root) {
+    const el = q(root, "[data-comments-status]");
+    if (el?.dataset.source === "verification") status(root, "");
+  }
   function api(root) { return root.dataset.apiBase.replace(/\/$/, ""); }
 
   async function json(url, options = {}) {
@@ -61,10 +68,10 @@
     try {
       await json(`${api(root)}/comments/${encodeURIComponent(commentId)}/withdraw`, { method: "POST", headers: { "X-Comment-Manage-Token": token }, body: "{}" });
       removeCap(commentId);
-      status(root, label(root, "withdrawSuccess", "這則回應已撤回。"), "success");
+      status(root, label(root, "withdrawSuccess", "這則回應已撤回。"), "success", "withdraw");
       await load(root);
     } catch {
-      status(root, label(root, "submitError", "暫時無法撤回，請稍後再試。"), "error");
+      status(root, label(root, "submitError", "暫時無法撤回，請稍後再試。"), "error", "withdraw");
       button.disabled = false;
     }
   }
@@ -120,14 +127,14 @@
     } catch {
       list.replaceChildren();
       if (empty) empty.hidden = true;
-      status(root, label(root, "loadError", "暫時無法載入回應，請稍後再試。"), "error");
+      status(root, label(root, "loadError", "暫時無法載入回應，請稍後再試。"), "error", "load");
     }
     finally { list.removeAttribute("aria-busy"); }
   }
 
   async function turnstile(root, state) {
     for (let i = 0; i < 80 && !window.turnstile?.render; i += 1) await new Promise(resolve => setTimeout(resolve, 50));
-    if (!window.turnstile?.render) { status(root, label(root, "verificationRequired", "人機驗證暫時無法載入。"), "error"); return; }
+    if (!window.turnstile?.render) { status(root, label(root, "verificationRequired", "人機驗證暫時無法載入。"), "error", "verification"); return; }
     const target = q(root, "[data-comments-turnstile]");
     const targetWidth = target.getBoundingClientRect().width;
     state.widgetId = window.turnstile.render(target, {
@@ -136,9 +143,9 @@
       size: targetWidth > 0 && targetWidth < 300 ? "compact" : "flexible",
       appearance: "interaction-only",
       action: "comment-submit",
-      callback(token) { state.token = token || ""; if (state.token) status(root, ""); },
+      callback(token) { state.token = token || ""; if (state.token) clearVerificationStatus(root); },
       "expired-callback"() { state.token = ""; },
-      "error-callback"() { state.token = ""; status(root, label(root, "verificationRequired", "請重新完成人機驗證。"), "error"); },
+      "error-callback"() { state.token = ""; status(root, label(root, "verificationRequired", "請重新完成人機驗證。"), "error", "verification"); },
     });
   }
 
@@ -146,21 +153,23 @@
     const form = q(root, "[data-comments-form]");
     const body = q(root, "[data-comments-body]");
     const counter = q(root, "[data-comments-count]");
-    const syncCount = () => { if (counter) counter.textContent = `${body.value.length.toLocaleString(root.dataset.language || "zh-TW")} / 4,000`; };
+    const locale = root.dataset.language || "zh-TW";
+    const maxLength = body.maxLength > 0 ? body.maxLength : 4000;
+    const syncCount = () => { if (counter) counter.textContent = `${body.value.length.toLocaleString(locale)} / ${maxLength.toLocaleString(locale)}`; };
     body.addEventListener("input", syncCount);
     syncCount();
     q(root, "[data-comments-cancel-reply]").addEventListener("click", () => clearReply(root));
     form.addEventListener("submit", async event => {
       event.preventDefault();
       if (!form.reportValidity()) return;
-      if (!state.token) { status(root, label(root, "verificationRequired", "請先完成人機驗證。"), "error"); return; }
+      if (!state.token) { status(root, label(root, "verificationRequired", "請先完成人機驗證。"), "error", "verification"); return; }
       const submit = q(root, "[data-comments-submit]"); submit.disabled = true;
       try {
         const payload = await json(`${api(root)}/comments`, { method: "POST", body: JSON.stringify({ articleKey: root.dataset.commentKey, pagePath: root.dataset.pagePath || location.pathname, displayName: q(root, "[data-comments-name]").value, body: body.value, parentId: q(root, "[data-comments-parent]").value || null, turnstileToken: state.token }) });
         if (payload.id && payload.managementToken) saveCap(payload.id, payload.managementToken);
-        body.value = ""; syncCount(); clearReply(root); status(root, label(root, "submitSuccess", "回應已收到，公開前會先經過簡單審核。"), "success");
+        body.value = ""; syncCount(); clearReply(root); status(root, label(root, "submitSuccess", "回應已收到，公開前會先經過簡單審核。"), "success", "submit");
       } catch (error) {
-        status(root, error.code === "rate_limited" ? label(root, "rateLimitError", "送出得太頻繁，請稍後再試。") : label(root, "submitError", "暫時無法送出回應，請稍後再試。"), "error");
+        status(root, error.code === "rate_limited" ? label(root, "rateLimitError", "送出得太頻繁，請稍後再試。") : label(root, "submitError", "暫時無法送出回應，請稍後再試。"), "error", "submit");
       } finally {
         state.token = ""; try { window.turnstile?.reset(state.widgetId); } catch {} submit.disabled = false;
       }
@@ -175,6 +184,6 @@
     await Promise.all([load(root), turnstile(root, state)]);
   }
 
-  const start = () => document.querySelectorAll(".huikai-comments").forEach(root => init(root).catch(() => status(root, label(root, "loadError", "留言功能暫時無法使用。"), "error")));
+  const start = () => document.querySelectorAll(".huikai-comments").forEach(root => init(root).catch(() => status(root, label(root, "loadError", "留言功能暫時無法使用。"), "error", "load")));
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true }); else start();
 })();
