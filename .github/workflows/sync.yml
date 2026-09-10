@@ -119,6 +119,9 @@ jobs:
       - name: Enforce deletion quarantine
         run: node scripts/check-sync-deletion-quarantine.mjs .notion-sync-report.json
 
+      - name: Project Notion last-edited timestamps into article metadata
+        run: python3 scripts/apply-editorial-metadata.py
+
       - name: Apply comments policy
         run: python3 scripts/apply-comments-policy.py
 
