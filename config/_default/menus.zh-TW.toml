@@ -2,6 +2,7 @@
   name = "首頁"
   pageRef = "/"
   weight = 10
+  params = { mobileOnly = true }
 
 [[main]]
   name = "文章"
