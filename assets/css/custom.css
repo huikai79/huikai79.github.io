@@ -131,9 +131,15 @@ body {
 
 /* ----------------- Scroll-to-top ----------------- */
 .scroll-to-top {
+  --scroll-to-top-inline-end: 1.25rem;
+  --scroll-to-top-base-bottom: 1rem;
+  --scroll-to-top-footer-lift: 0px;
   position: fixed;
-  right: max(1rem, env(safe-area-inset-right));
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  inset-inline-end: max(var(--scroll-to-top-inline-end), env(safe-area-inset-right));
+  bottom: calc(
+    max(var(--scroll-to-top-base-bottom), env(safe-area-inset-bottom))
+    + var(--scroll-to-top-footer-lift)
+  );
   z-index: 50;
   display: flex;
   width: 44px;
@@ -144,14 +150,26 @@ body {
   background: rgb(var(--color-primary-600, 37 99 235));
   color: #fff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    bottom 0.16s ease;
 }
 
 @media (min-width: 768px) {
   .scroll-to-top {
-    right: max(1.5rem, env(safe-area-inset-right));
-    bottom: max(1.5rem, env(safe-area-inset-bottom));
+    --scroll-to-top-inline-end: 1.5rem;
+    --scroll-to-top-base-bottom: 1.5rem;
   }
+}
+
+.scroll-to-top.opacity-0 {
+  pointer-events: none;
+}
+
+.scroll-to-top.opacity-100 {
+  pointer-events: auto;
 }
 
 .scroll-to-top:hover {
@@ -167,6 +185,12 @@ body {
 .scroll-to-top svg {
   width: 18px;
   height: 18px;
+}
+
+/* ----------------- Footer hierarchy ----------------- */
+.site-footer-attribution {
+  font-size: 0.6875rem;
+  line-height: 1.45;
 }
 
 /* ----------------- Article reading navigation ----------------- */
