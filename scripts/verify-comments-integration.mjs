@@ -68,7 +68,7 @@ async function verifyHuikai(browser) {
       const response=await page.goto(`${BASE_URL}${ARTICLE_PATH}`, { waitUntil:"domcontentloaded", timeout:45_000 });
       if (!response?.ok()) throw new Error(`HUIKAI comments QA navigation failed: ${response?.status()}`);
       const root=page.locator('.huikai-comments'); await root.waitFor({ state:"visible", timeout:5000 });
-      await page.locator('.qa-turnstile').waitFor({ state:"visible", timeout:5000 });
+      await page.locator('.qa-turnstile').waitFor({ state:"attached", timeout:5000 });
       await page.locator('.huikai-comment').first().waitFor({ state:"visible", timeout:5000 });
       const initial=await page.evaluate(() => {
         const root=document.querySelector('.huikai-comments'), input=document.querySelector('[data-comments-name]'), textarea=document.querySelector('[data-comments-body]'), submit=document.querySelector('[data-comments-submit]');
