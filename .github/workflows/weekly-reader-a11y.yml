@@ -10,14 +10,17 @@ on:
       - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
+      - "scripts/verify-back-to-top-behavior.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
       - "assets/js/huikai-comments.js"
       - "assets/js/reading-progress.js"
+      - "assets/js/scroll-to-top.js"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
       - "layouts/partials/comments.html"
       - "layouts/partials/extend-head-uncached.html"
+      - "layouts/partials/footer.html"
       - "config/_default/params.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
@@ -36,14 +39,17 @@ on:
       - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
+      - "scripts/verify-back-to-top-behavior.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
       - "assets/js/huikai-comments.js"
       - "assets/js/reading-progress.js"
+      - "assets/js/scroll-to-top.js"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
       - "layouts/partials/comments.html"
       - "layouts/partials/extend-head-uncached.html"
+      - "layouts/partials/footer.html"
       - "config/_default/params.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
@@ -186,6 +192,9 @@ jobs:
 
       - name: Verify long-form and CJK reading behavior
         run: node scripts/verify-longform-reading.mjs
+
+      - name: Verify back-to-top threshold, placement and footer avoidance
+        run: node scripts/verify-back-to-top-behavior.mjs
 
       - name: Upload cross-browser accessibility evidence
         if: ${{ !cancelled() }}
