@@ -32,12 +32,15 @@ build:
 - zh-TW／zh-CN 文章正文加入較嚴格的 CJK 換行處理，同時保留既有 overflow safety；不為追求「日系感」加入額外正文字距或全文左右對齊。
 - 實際瀏覽器量測確認目前正文約為 16px 字級、28px 行高、約 42 個 CJK em／行，因此保留現有正文寬度與密度，不再憑 `80ch` 單位推測中文字行過寬。
 
-### 回到頂部與頁尾
+### 導覽、回到頂部與頁尾
 
-- 「回到頂部」由固定貼著 viewport 的位置改成閱讀版心感知配置：手機維持傳統右下角，中型螢幕保留安全邊距，寬螢幕且有 TOC 時則依實際閱讀布局右緣定位到外側 gutter。
+- 繁體／簡體、桌面／手機的主選單移除與左上角 `HUIKAI` 品牌連結功能重複的「首頁／首页」；`HUIKAI` 維持各語言首頁的持續入口，主導航只保留真正不同的目的地。
+- 「回到頂部」由固定貼著 viewport 的位置改成閱讀版心感知配置：手機維持傳統右下角，中型螢幕保留安全邊距；寬螢幕有 TOC 時依完整閱讀布局右緣定位，沒有 TOC 的文章則依正文 `.article-reading-content` 右緣定位，不再退回視窗最右側。
+- 非文章頁仍保留 viewport fallback，避免把文章版心邏輯錯套到一般頁面。
 - 按鈕延後到捲動約兩個 viewport 後才出現，降低閱讀初段干擾；接近 footer 時會自動上移，不遮住頁尾資訊。
 - 隱藏狀態同步退出鍵盤焦點與 pointer interaction，並保留 44×44px 點擊範圍與可見 focus 狀態。
 - 頁尾 Hugo／Blowfish 技術 attribution 保留，但縮小到較低視覺層級，避免與 copyright 及正文競爭注意力。
+- 新增繁簡、桌機首頁入口與有／無 TOC 的回到頂部瀏覽器回歸，讓這些讀者路徑不只依 CSS 靜態判斷。
 
 ### 文章資訊與閱讀框架
 
@@ -55,13 +58,14 @@ build:
 - 完成來源追溯、Translation Group、Translation Source Revision、Translation Engine 等翻譯治理契約；原文仍可在 Test 階段準備翻譯草稿，不必先公開。
 - 翻譯流程缺少 OpenAI API key 時會安全退回 preflight，只產生檢查結果，不建立不完整草稿。
 
-### 發布流程與驗證
+### 留言、發布流程與驗證
 
+- 正式留言由 Giscus 切換到 HUIKAI 自有的免帳號留言服務；既有 Giscus 保留為可驗證的 rollback 路徑，而不是同時在 production 載入兩套留言系統。
 - 將純程式／CSS／模板的 code-only release 與 Notion publication health 適度解耦，避免某一篇 Notion 內容資料異常時，連無關的前端修正都無法發布。
 - Notion publication health 改由唯讀流程檢查；真正同步仍維持 fail-closed，且 exact-current-main／exact-SHA 部署邊界保留。
 - 重要讀者行為不再只檢查 CSS 或 build 是否成功，而是由 Playwright 實際操作與量測。
-- production reader QA 已涵蓋 TOC responsive／sticky、長文閱讀進度、CJK 排版、回到頂部定位與 footer 避讓等行為。
-- 本日整合後的正式 `main` 已完成 exact commit 建置、GitHub Pages 部署與 production live reader QA。
+- production reader QA 已涵蓋 TOC responsive／sticky、長文閱讀進度、CJK 排版、首頁入口、回到頂部定位、留言區與 footer 避讓等行為。
+- 本日整合後的正式 `main` 以 exact commit 建置與 GitHub Pages 發布；部署後亦以 `source-commit.txt` 核對 production 實際提供的來源版本。
 
 ## 2026-09-09｜首頁定位、多語言與內容探索重新整理
 
@@ -115,6 +119,27 @@ build:
 - 完成 Notion Video Gateway；正式頁面 MP4 可播放、seek，並支援 Range request。
 - 完成公開文章的 comments policy、media source contract 與 rendered-site verification。
 - 完成 Notion 作者工作 Views：寫作工作台、已發布、測試內容、翻譯工作、發布檢查。
+
+## 從 Git 回溯的早期歷史
+
+- 2026-09-08 以前的架站階段當時尚未整理進本站「網站紀錄」。以下依 repository 的 commit 時間、訊息與實際變更回溯重建，只保留可確認的主要里程碑；重複的自動同步與一般小修補不逐筆抄錄。
+
+### 2025-07-31｜Notion 同步開始留下可追溯版本
+
+- 至少自 2025-07-31 起，Git 歷史已持續出現由自動流程寫入的 `🔄 Sync from Notion` commits，顯示內容工作流已從純手動 Hugo 檔案逐步轉向 Notion 驅動。
+- 這些同步紀錄後續延續到 2026 年，成為現在 Notion → Hugo 發布系統的前身；這裡只保留階段性里程碑，不把每次同步當成一筆網站大事。
+
+### 2025-07-06–07｜自動建置與部署開始成形
+
+- 2025-07-06 的 Git 紀錄加入 `hugo.yml`，GitHub Actions 開始承擔 Hugo 網站的自動建置／發布工作。
+- 2025-07-07 清理最初的 Blowfish submodule／bootstrap 殘留；同日亦留下 `trigger new Cloudflare deployment` 的 commit，顯示早期已在調整部署與託管方式。
+- 當時架構仍在試驗，不能用今天的 exact-SHA、Notion publication contract 與 production QA 標準倒推早期系統已具備同等治理。
+
+### 2025-07-05｜Hugo／Blowfish 網站起點
+
+- GitHub repository 建立於 2025-07-05；目前 Git 歷史的 root commit 為 `4c4bace`（`Vendor bootstrap theme`），是可追溯的網站程式起點。
+- 初始版本已採 Hugo + Blowfish；最早的 `hugo.toml` 使用 `https://huikai79.com.kg/`，預設內容語言仍是 English，之後才逐步演變為今天以繁體中文為主、支援簡體中文的 HUIKAI。
+- 這一階段主要建立可運行的靜態網站骨架；後來的 Notion CMS、多語言、媒體 gateway、Reader QA 與發布治理，都是在這個基礎上逐步形成。
 
 ## 待條件成熟再評估
 
