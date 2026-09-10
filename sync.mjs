@@ -420,6 +420,8 @@ async function buildArticle(candidate) {
     productionFields && `homePlacement: ${yamlString(productionFields.homePlacement)}`,
     productionFields && `contentLanguage: ${yamlString(productionFields.contentLanguage)}`,
     productionFields && `translationKey: ${yamlString(productionFields.translationKey)}`,
+    productionFields?.sourceLabel && `sourceLabel: ${yamlString(productionFields.sourceLabel)}`,
+    productionFields?.sourceURL && `sourceURL: ${yamlString(productionFields.sourceURL)}`,
     coverField && `cover: ${yamlString(coverField)}`,
     iconField && `icon: ${yamlString(iconField)}`,
     coverField && `images: [${yamlString(coverField)}]`,

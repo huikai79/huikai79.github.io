@@ -28,8 +28,7 @@ export const SAFE_EXTERNAL_MEDIA_BLOCK_TYPES = new Set([
 
 const LANGUAGE_LABELS = {
   "zh-TW": "Traditional Chinese used in Taiwan",
-  "zh-CN": "Simplified Chinese",
-  en: "English"
+  "zh-CN": "Simplified Chinese"
 };
 
 function clone(value) {
@@ -63,7 +62,9 @@ export function validateSourceForTranslation({ pageId = "", editorial = {} } = {
   const errors = [];
   if (!pageId) errors.push("missing page id");
   if (editorial.translationStatus !== "Source") errors.push("Translation Status must be Source");
-  if (editorial.visibility !== "Public") errors.push("Visibility must be Public");
+  if (!new Set(["Test", "Public"]).has(editorial.visibility)) {
+    errors.push("Visibility must be Test or Public");
+  }
   if (!editorial.language || !LANGUAGE_LABELS[editorial.language]) errors.push("unsupported source Language");
   if (!editorial.translationGroup) errors.push("missing Translation Group");
   for (const target of sourceTranslationTargets(editorial)) {
@@ -221,7 +222,6 @@ export function translationInstructions(sourceLanguage, targetLanguage) {
     "Do not add facts, commentary, headings, citations or explanations that are not in the source.",
     "For zh-TW, use natural Taiwan Traditional Chinese terminology rather than mechanical character conversion.",
     "For zh-CN, use natural Simplified Chinese terminology rather than mechanical character conversion.",
-    "For English, prefer clear idiomatic prose while keeping the source's level of formality.",
     "Return exactly one translation for every supplied id, with no missing, duplicate or extra ids."
   ].join(" ");
 }
@@ -267,6 +267,8 @@ export function draftProperties({ source, targetLanguage, translatedTitle, trans
   const category = p.Category?.select?.name ?? "";
   const entryType = p.Type?.select?.name ?? "";
   const tags = p.tags?.multi_select?.map(item => item.name).filter(Boolean) ?? [];
+  const sourceLabel = p.Source?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
+  const sourceUrl = p["Source URL"]?.url ?? "";
   if (!date || !slug || !group || !category || !entryType) {
     throw new Error("Source page is missing date/slug/Translation Group/Category/Type required for a draft");
   }
@@ -290,6 +292,8 @@ export function draftProperties({ source, targetLanguage, translatedTitle, trans
       rich_text: [{ type: "text", text: { content: source.last_edited_time ?? "" } }]
     },
     "Translation Engine": { rich_text: [{ type: "text", text: { content: engine } }] },
+    Source: { rich_text: sourceLabel ? [{ type: "text", text: { content: sourceLabel } }] : [] },
+    "Source URL": { url: sourceUrl || null },
     tags: { multi_select: tags.map(name => ({ name })) }
   };
 }

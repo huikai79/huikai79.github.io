@@ -81,6 +81,17 @@
         <p class="article-summary">{{ . }}</p>
       {{ end }}
 
+      {{ with .Params.sourceLabel }}
+        <p class="article-source not-prose text-sm opacity-70">
+          {{ i18n "huikai.source" }}：
+          {{ with $.Params.sourceURL }}
+            <a href="{{ . }}" rel="external noopener noreferrer">{{ $.Params.sourceLabel }}</a>
+          {{ else }}
+            {{ . }}
+          {{ end }}
+        </p>
+      {{ end }}
+
       {{/* The page template owns the single document H1. This is a defensive
            rendering boundary for legacy content; sync.mjs also demotes Notion
            body H1 headings before writing Markdown. */}}
