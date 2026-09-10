@@ -1,0 +1,244 @@
+name: "Provision and deploy HUIKAI comments runtime"
+
+on:
+  push:
+    branches:
+      - ops/comments-production-readiness-20260910
+    paths:
+      - ".github/workflows/provision-comments-runtime.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huikai-comments-runtime-provision
+  cancel-in-progress: false
+
+env:
+  WRANGLER_VERSION: "4.129.0"
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 25
+    steps:
+      - name: Resolve exact current main SHA
+        id: main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="$(curl --fail-with-body --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Exact main source: $sha"
+
+      - name: Checkout exact current main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ steps.main.outputs.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Require production credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMMENTS_ADMIN_TOKEN: ${{ secrets.COMMENTS_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$COMMENTS_ADMIN_TOKEN"
+          test "${#COMMENTS_ADMIN_TOKEN}" -ge 48
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Create or reuse production D1 database
+        id: d1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
+          curl -fsS "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?per_page=100" "${auth[@]}" > /tmp/d1-list.json
+          db_id="$(jq -r '.result[]? | select(.name == "huikai-comments") | .uuid' /tmp/d1-list.json | head -n1)"
+          if [ -z "$db_id" ]; then
+            curl -fsS -X POST "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
+              "${auth[@]}" --data '{"name":"huikai-comments"}' > /tmp/d1-created.json
+            jq -e '.success == true' /tmp/d1-created.json >/dev/null
+            db_id="$(jq -r '.result.uuid' /tmp/d1-created.json)"
+            echo "Created production D1 huikai-comments"
+          else
+            echo "Reused production D1 huikai-comments"
+          fi
+          printf '%s' "$db_id" | grep -Eq '^[0-9a-f-]{36}$'
+          echo "database_id=$db_id" >> "$GITHUB_OUTPUT"
+          echo "D1 database ID: $db_id"
+
+      - name: Retrieve HUIKAI Comments Turnstile credentials
+        id: turnstile
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
+          curl -fsS "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/challenges/widgets?per_page=100" "${auth[@]}" > /tmp/widgets.json
+          sitekey="$(jq -r '.result[]? | select(.name == "HUIKAI Comments") | .sitekey' /tmp/widgets.json | head -n1)"
+          test -n "$sitekey"
+          curl -fsS "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/challenges/widgets/${sitekey}" "${auth[@]}" > /tmp/widget.json
+          jq -e '.success == true' /tmp/widget.json >/dev/null
+          secret="$(jq -r '.result.secret' /tmp/widget.json)"
+          test -n "$secret"
+          echo "::add-mask::$secret"
+          echo "TURNSTILE_SECRET=$secret" >> "$GITHUB_ENV"
+          echo "sitekey=$sitekey" >> "$GITHUB_OUTPUT"
+          echo "Turnstile sitekey: $sitekey"
+
+      - name: Generate exact production Wrangler configs
+        env:
+          REQUESTED_SHA: ${{ steps.main.outputs.sha }}
+          DATABASE_ID: ${{ steps.d1.outputs.database_id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          src = Path('workers/huikai-comments/wrangler.toml').read_text(encoding='utf-8')
+          src = src.replace('SOURCE_SHA = "development"', f'SOURCE_SHA = "{os.environ["REQUESTED_SHA"]}"')
+          src = src.replace('database_id = "00000000-0000-0000-0000-000000000000"', f'database_id = "{os.environ["DATABASE_ID"]}"')
+          Path('/tmp/huikai-comments.production.toml').write_text(src, encoding='utf-8')
+          bootstrap = re.sub(r'\n\[secrets\]\nrequired = \[[^\n]*\]\n', '\n', src, count=1)
+          Path('/tmp/huikai-comments.bootstrap.toml').write_text(bootstrap, encoding='utf-8')
+          PY
+          grep -F "${REQUESTED_SHA}" /tmp/huikai-comments.production.toml >/dev/null
+          grep -F "${DATABASE_ID}" /tmp/huikai-comments.production.toml >/dev/null
+          ! grep -q '^\[secrets\]$' /tmp/huikai-comments.bootstrap.toml
+
+      - name: Verify exact Worker source and dry-run compile
+        run: |
+          set -euo pipefail
+          node --check workers/huikai-comments/index.js
+          node workers/huikai-comments/test-runtime.mjs
+          rm -rf /tmp/comments-predeploy
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy \
+            --config /tmp/huikai-comments.bootstrap.toml \
+            --dry-run --outdir /tmp/comments-predeploy
+          test -n "$(find /tmp/comments-predeploy -type f -print -quit)"
+
+      - name: Reconfirm exact main before production data mutation
+        env:
+          REQUESTED_SHA: ${{ steps.main.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
+          current_main="$(curl --fail-with-body --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          test "$current_main" = "$REQUESTED_SHA" || { echo "::error::main moved before comments production mutation"; exit 1; }
+
+      - name: Apply D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes "wrangler@${WRANGLER_VERSION}" d1 migrations apply huikai-comments \
+            --remote --config /tmp/huikai-comments.production.toml
+
+      - name: Bootstrap Worker route with fail-closed secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config /tmp/huikai-comments.bootstrap.toml
+
+      - name: Bind Worker secrets without exposing values
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMMENTS_ADMIN_TOKEN: ${{ secrets.COMMENTS_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$TURNSTILE_SECRET" | npx --yes "wrangler@${WRANGLER_VERSION}" secret put TURNSTILE_SECRET --config /tmp/huikai-comments.bootstrap.toml
+          printf '%s' "$COMMENTS_ADMIN_TOKEN" | npx --yes "wrangler@${WRANGLER_VERSION}" secret put COMMENTS_ADMIN_TOKEN --config /tmp/huikai-comments.bootstrap.toml
+
+      - name: Reconfirm exact main and deploy final Worker
+        env:
+          REQUESTED_SHA: ${{ steps.main.outputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          current_main="$(curl --fail-with-body --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          test "$current_main" = "$REQUESTED_SHA" || { echo "::error::main moved before final comments Worker deploy"; exit 1; }
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config /tmp/huikai-comments.production.toml
+
+      - name: Verify live Worker lineage and moderation boundary
+        env:
+          REQUESTED_SHA: ${{ steps.main.outputs.sha }}
+          COMMENTS_ADMIN_TOKEN: ${{ secrets.COMMENTS_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          health=''
+          for _ in $(seq 1 20); do
+            health="$(curl --fail --silent --show-error https://huikai.com.kg/api/comments/v1/health || true)"
+            if [ -n "$health" ] && [ "$(printf '%s' "$health" | jq -r '.sourceSha // empty')" = "$REQUESTED_SHA" ]; then break; fi
+            sleep 3
+          done
+          test "$(printf '%s' "$health" | jq -r '.sourceSha // empty')" = "$REQUESTED_SHA"
+          test "$(printf '%s' "$health" | jq -r '.ok')" = true
+
+          unauth_status="$(curl --silent --show-error -o /tmp/unauth.json -w '%{http_code}' https://huikai.com.kg/api/comments/v1/admin/pending)"
+          test "$unauth_status" = 401
+          auth_status="$(curl --silent --show-error -o /tmp/auth.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${COMMENTS_ADMIN_TOKEN}" \
+            https://huikai.com.kg/api/comments/v1/admin/pending)"
+          test "$auth_status" = 200
+          jq -e '.ok == true and (.comments | type == "array")' /tmp/auth.json >/dev/null
+
+          invalid_get="$(curl --silent --show-error -o /tmp/invalid.json -w '%{http_code}' \
+            'https://huikai.com.kg/api/comments/v1/comments?articleKey=invalid')"
+          test "$invalid_get" = 400
+          origin_guard="$(curl --silent --show-error -o /tmp/origin.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' --data '{}' \
+            https://huikai.com.kg/api/comments/v1/comments)"
+          test "$origin_guard" = 403
+          echo "Live Worker lineage, admin authorization and public guards: PASS"
+
+      - name: Record non-secret production resources
+        env:
+          REQUESTED_SHA: ${{ steps.main.outputs.sha }}
+          DATABASE_ID: ${{ steps.d1.outputs.database_id }}
+          SITEKEY: ${{ steps.turnstile.outputs.sitekey }}
+        run: |
+          {
+            echo "## HUIKAI comments runtime provisioned"
+            echo ""
+            echo "- Source SHA: \`$REQUESTED_SHA\`"
+            echo "- D1: \`huikai-comments\`"
+            echo "- D1 database ID: \`$DATABASE_ID\`"
+            echo "- Turnstile: \`HUIKAI Comments\`"
+            echo "- Turnstile sitekey: \`$SITEKEY\`"
+            echo "- API route: \`https://huikai.com.kg/api/comments/v1/*\`"
+            echo "- Provider cutover: not performed by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
