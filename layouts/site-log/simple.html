@@ -69,6 +69,19 @@
       margin-top: 0;
     }
 
+    .site-log-content > ul:first-child {
+      margin: 0 0 1.6rem;
+      padding: 0;
+      list-style: none;
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: rgb(var(--color-neutral-500, 115 115 115));
+    }
+
+    .dark .site-log-content > ul:first-child {
+      color: rgb(var(--color-neutral-400, 163 163 163));
+    }
+
     .site-log-content p,
     .site-log-content ul,
     .site-log-content ol {
@@ -78,6 +91,14 @@
     .site-log-content ul,
     .site-log-content ol {
       padding-inline-start: 1.25rem;
+    }
+
+    .site-log-content ul {
+      list-style: disc;
+    }
+
+    .site-log-content ol {
+      list-style: decimal;
     }
 
     .site-log-content li {
