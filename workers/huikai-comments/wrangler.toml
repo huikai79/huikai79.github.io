@@ -1,0 +1,25 @@
+name = "huikai-comments"
+main = "index.js"
+compatibility_date = "2026-09-10"
+workers_dev = false
+
+[vars]
+SOURCE_SHA = "development"
+
+[secrets]
+required = ["TURNSTILE_SECRET", "COMMENTS_ADMIN_TOKEN"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "huikai-comments"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "COMMENT_RATE_LIMITER"
+namespace_id = "2026091001"
+simple = { limit = 5, period = 60 }
+
+[[routes]]
+pattern = "huikai.com.kg/api/comments/*"
+zone_name = "huikai.com.kg"
