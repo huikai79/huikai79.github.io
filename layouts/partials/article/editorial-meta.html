@@ -1,0 +1,36 @@
+{{- $entryType := strings.TrimSpace (printf "%v" (.Params.entryType | default "")) -}}
+{{- $maturityKey := "" -}}
+{{- if in (slice "札記" "札记") $entryType -}}
+  {{- $maturityKey = "huikai.article_maturity_note" -}}
+{{- else if eq $entryType "文章" -}}
+  {{- $maturityKey = "huikai.article_maturity_article" -}}
+{{- else if in (slice "紀錄" "纪录" "實驗紀錄" "实验纪录") $entryType -}}
+  {{- $maturityKey = "huikai.article_maturity_record" -}}
+{{- end -}}
+
+{{- $formatTerms := .GetTerms "formats" -}}
+{{- if and $entryType $maturityKey -}}
+  <p class="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 article-maturity">
+    {{- with index $formatTerms 0 -}}
+      <a class="font-medium text-neutral-700 no-underline hover:underline dark:text-neutral-300" data-discovery-kind="format" href="{{ .RelPermalink }}">{{ $entryType }}</a>
+    {{- else -}}
+      <span class="font-medium text-neutral-700 dark:text-neutral-300">{{ $entryType }}</span>
+    {{- end -}}
+    <span aria-hidden="true">·</span>
+    <span>{{ i18n $maturityKey }}</span>
+  </p>
+{{- end -}}
+
+{{- $publishedDay := .Date.Format "2006-01-02" -}}
+{{- $updated := false -}}
+{{- with .Params.lastmod -}}
+  {{- $candidate := time.AsTime . -}}
+  {{- if ne ($candidate.Format "2006-01-02") $publishedDay -}}
+    {{- $updated = $candidate -}}
+  {{- end -}}
+{{- end -}}
+<p class="text-sm opacity-70 article-date-line">
+  {{ i18n "huikai.article_published" }} {{ .Date.Format (.Site.Params.dateFormat | default "2006年1月2日") }}
+  {{- with $updated }} · {{ i18n "huikai.article_updated" }} {{ .Format ($.Site.Params.dateFormat | default "2006年1月2日") }}{{ end -}}
+  · {{ i18n "huikai.reading_time" .ReadingTime }}
+</p>

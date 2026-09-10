@@ -44,9 +44,7 @@
         <span>{{ .Title }}</span>
       </h1>
 
-      <p class="text-sm opacity-70 article-date-line">
-        {{ .Date.Format "2006年1月2日" }} · {{ i18n "huikai.reading_time" .ReadingTime }}
-      </p>
+      {{ partial "article/editorial-meta.html" . }}
 
       {{ $categoryTerms := .GetTerms "categories" }}
       {{ $formatTerms := .GetTerms "formats" }}
@@ -60,13 +58,10 @@
       {{ if and .Params.tags (eq (len $tagTerms) 0) }}
         {{ errorf "Article tag taxonomy did not resolve for %s" .RelPermalink }}
       {{ end }}
-      {{ if or $categoryTerms $formatTerms $tagTerms }}
+      {{ if or $categoryTerms $tagTerms }}
         <nav class="article-context not-prose" aria-label="{{ i18n "huikai.article_context" }}">
           {{ range $categoryTerms }}
             <a class="article-context-chip" data-discovery-kind="category" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
-          {{ end }}
-          {{ range $formatTerms }}
-            <a class="article-context-chip" data-discovery-kind="format" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
           {{ end }}
           {{ range $tagTerms }}
             <a class="article-context-chip" data-discovery-kind="tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
