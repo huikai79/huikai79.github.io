@@ -12,7 +12,7 @@
 {{- if and $entryType $maturityKey -}}
   <p class="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400 article-maturity">
     {{- with index $formatTerms 0 -}}
-      <a class="font-medium text-neutral-700 no-underline hover:underline dark:text-neutral-300" href="{{ .RelPermalink }}">{{ $entryType }}</a>
+      <a class="font-medium text-neutral-700 no-underline hover:underline dark:text-neutral-300" data-discovery-kind="format" href="{{ .RelPermalink }}">{{ $entryType }}</a>
     {{- else -}}
       <span class="font-medium text-neutral-700 dark:text-neutral-300">{{ $entryType }}</span>
     {{- end -}}
