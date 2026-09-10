@@ -8,8 +8,9 @@ showAuthor: false
 showDate: false
 sharingLinks: []
 noindex: true
-_build:
+build:
   list: never
+  render: always
 ---
 
 {{< comments-admin >}}
