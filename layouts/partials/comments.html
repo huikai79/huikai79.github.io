@@ -78,7 +78,10 @@
              data-rate-limit-error="{{ i18n "huikai.comments_rate_limit_error" }}">
       <header class="huikai-comments__header">
         <h2 id="reader-responses-title">{{ i18n "huikai.comments_title" }}</h2>
-        <p>{{ i18n "huikai.comments_invitation" }}</p>
+        <p class="huikai-comments__intro">
+          <span>{{ i18n "huikai.comments_invitation" }}</span>
+          <span class="huikai-comments__empty" data-comments-empty-summary hidden>{{ i18n "huikai.comments_empty" }}</span>
+        </p>
       </header>
       <div class="huikai-comments__status" data-comments-status role="status" aria-live="polite"></div>
       <div class="huikai-comments__list" data-comments-list aria-live="polite"></div>
@@ -89,10 +92,10 @@
         </div>
         <input type="hidden" data-comments-parent value="">
         <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_name" }}</span><input type="text" name="displayName" data-comments-name maxlength="40" autocomplete="nickname" required></label>
-        <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_body" }}</span><textarea name="body" data-comments-body maxlength="4000" rows="5" required></textarea></label>
+        <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_body" }}</span><textarea name="body" data-comments-body maxlength="4000" rows="4" required></textarea></label>
         <div class="huikai-comments__turnstile" data-comments-turnstile></div>
+        <p class="huikai-comments__privacy">{{ i18n "huikai.comments_privacy" }}</p>
         <div class="huikai-comments__submit-row">
-          <p class="huikai-comments__privacy">{{ i18n "huikai.comments_privacy" }}</p>
           <button type="submit" class="huikai-comments__submit" data-comments-submit>{{ i18n "huikai.comments_submit" }}</button>
         </div>
       </form>
