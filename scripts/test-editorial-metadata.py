@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import importlib.util
 import json
 import tempfile
 from pathlib import Path
 
-from apply_editorial_metadata import add_or_replace_lastmod, apply
+MODULE_PATH = Path(__file__).with_name("apply-editorial-metadata.py")
+spec = importlib.util.spec_from_file_location("apply_editorial_metadata", MODULE_PATH)
+assert spec and spec.loader
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+add_or_replace_lastmod = module.add_or_replace_lastmod
+apply = module.apply
 
 SAMPLE = """---
 title: \"Sample\"
