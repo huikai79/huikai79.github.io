@@ -37,12 +37,10 @@ jobs:
             echo "::error::source_sha must be a full 40-character commit SHA"
             exit 1
           fi
-
           if [ "$REQUESTED_SHA" != "$GITHUB_SHA" ]; then
             echo "::error::Deployment lineage mismatch: requested $REQUESTED_SHA but workflow main SHA is $GITHUB_SHA"
             exit 1
           fi
-
           echo "source_sha=$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
           echo "Exact deployment source: $REQUESTED_SHA"
 
@@ -68,13 +66,11 @@ jobs:
             echo "::error::Checkout SHA mismatch: expected $SOURCE_SHA, got $actual"
             exit 1
           }
-
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$SOURCE_SHA" origin/main || {
             echo "::error::Requested source SHA is not contained in main"
             exit 1
           }
-
           if [ "$(git rev-parse origin/main)" != "$SOURCE_SHA" ]; then
             echo "::error::main moved after deployment dispatch; refusing stale production deployment"
             exit 1
@@ -157,13 +153,11 @@ jobs:
             -H "Authorization: Bearer ${CF_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}')"
-
           if ! echo "$response" | jq -e '.success == true' > /dev/null; then
             echo "::error::Cloudflare rejected the cache purge response."
             echo "$response" | jq -c '{success, errors, messages}' || true
             exit 1
           fi
-
           echo "Cloudflare cache purged successfully."
 
       - name: Report production result
@@ -212,7 +206,7 @@ jobs:
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
         run: |
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium firefox webkit
 
       - name: Wait for exact production lineage
         env:
@@ -236,6 +230,9 @@ jobs:
 
       - name: Verify live TOC responsive and sticky behavior
         run: node scripts/verify-toc-behavior.mjs
+
+      - name: Verify live long-form and CJK reading behavior
+        run: node scripts/verify-longform-reading.mjs
 
       - name: Upload live QA evidence
         if: ${{ !cancelled() }}
