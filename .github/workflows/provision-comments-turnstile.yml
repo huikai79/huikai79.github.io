@@ -1,0 +1,50 @@
+name: "Provision HUIKAI comments Turnstile"
+
+on:
+  push:
+    branches:
+      - ops/comments-production-readiness-20260910
+    paths:
+      - ".github/workflows/provision-comments-turnstile.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - name: Create or reuse HUIKAI Comments widget
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
+          curl -fsS "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/challenges/widgets?per_page=100" "${auth[@]}" > /tmp/widgets.json
+          sitekey="$(jq -r '.result[]? | select(.name == "HUIKAI Comments") | .sitekey' /tmp/widgets.json | head -n1)"
+          if [ -z "$sitekey" ]; then
+            curl -fsS -X POST "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/challenges/widgets" \
+              "${auth[@]}" \
+              --data '{"domains":["huikai.com.kg"],"mode":"managed","name":"HUIKAI Comments"}' > /tmp/widget-created.json
+            jq -e '.success == true' /tmp/widget-created.json >/dev/null
+            sitekey="$(jq -r '.result.sitekey' /tmp/widget-created.json)"
+            secret="$(jq -r '.result.secret' /tmp/widget-created.json)"
+            test -n "$sitekey" && test -n "$secret"
+            echo "::add-mask::$secret"
+            echo "Created HUIKAI Comments Turnstile widget"
+          else
+            echo "Reused existing HUIKAI Comments Turnstile widget"
+          fi
+          echo "Turnstile sitekey: $sitekey"
+          {
+            echo "## HUIKAI Comments Turnstile"
+            echo ""
+            echo "- Widget: HUIKAI Comments"
+            echo "- Domain: huikai.com.kg"
+            echo "- Mode: managed"
+            echo "- Sitekey: \`$sitekey\`"
+          } >> "$GITHUB_STEP_SUMMARY"
