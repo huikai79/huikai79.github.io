@@ -93,14 +93,14 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showZenMode = false
   sharingLinks = ["facebook", "line", "whatsapp", "telegram", "email"]
 
-# Public Notion articles continue to receive showComments/commentKey from the
-# existing visibility-based sync policy. The native accountless provider is
-# prepared behind this switch; production remains on Giscus until its D1,
-# Turnstile, moderation path, legacy discussion decision and live QA are ready.
+# Public Notion articles receive stable showComments/commentKey metadata from
+# the visibility-based sync policy. HUIKAI is now the production comment
+# provider. Giscus configuration is intentionally retained below as a fast
+# rollback path; the pre-cutover inventory found no legacy Giscus discussions.
 [comments]
-  provider = "giscus"
+  provider = "huikai"
   apiBase = "/api/comments/v1"
-  turnstileSiteKey = ""
+  turnstileSiteKey = "0x4AAAAAAEuog13822T_6ZeU"
 
 [giscus]
   enabled = true
