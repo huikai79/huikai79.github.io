@@ -1,42 +1,106 @@
-{{- $giscus := site.Params.giscus -}}
-{{- if and $giscus.enabled .Params.commentKey -}}
-  {{- if or (not $giscus.repo) (not $giscus.repoId) (not $giscus.category) (not $giscus.categoryId) -}}
-    {{- errorf "giscus is enabled but repository/category configuration is incomplete" -}}
-  {{- end -}}
-  <div class="giscus-comments" data-comment-key="{{ .Params.commentKey }}" data-theme-sync="html-class">
-    <script src="https://giscus.app/client.js"
-            data-repo="{{ $giscus.repo }}"
-            data-repo-id="{{ $giscus.repoId }}"
-            data-category="{{ $giscus.category }}"
-            data-category-id="{{ $giscus.categoryId }}"
-            data-mapping="specific"
-            data-term="{{ .Params.commentKey }}"
-            data-strict="1"
-            data-reactions-enabled="1"
-            data-emit-metadata="0"
-            data-input-position="top"
-            data-theme="preferred_color_scheme"
-            data-lang="{{ .Site.Language.Params.htmlCode }}"
-            data-loading="lazy"
-            crossorigin="anonymous"
-            async>
-    </script>
-    <script>
-      (() => {
-        const container = document.currentScript.parentElement;
-        const targetOrigin = "https://giscus.app";
-        const currentTheme = () => document.documentElement.classList.contains("dark") ? "dark" : "light";
-        const syncTheme = () => {
-          const frame = container.querySelector("iframe.giscus-frame");
-          if (!frame || !frame.contentWindow) return;
-          frame.contentWindow.postMessage({ giscus: { setConfig: { theme: currentTheme() } } }, targetOrigin);
-        };
+{{- $commentKey := .Params.commentKey -}}
+{{- if $commentKey -}}
+  {{- $comments := site.Params.comments -}}
+  {{- $provider := "giscus" -}}
+  {{- with $comments.provider }}{{ $provider = lower . }}{{ end -}}
 
-        new MutationObserver(syncTheme).observe(container, { childList: true, subtree: true });
-        new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-        window.addEventListener("pageshow", syncTheme);
-        syncTheme();
-      })();
-    </script>
-  </div>
+  {{- if eq $provider "giscus" -}}
+    {{- $giscus := site.Params.giscus -}}
+    {{- if $giscus.enabled -}}
+      {{- if or (not $giscus.repo) (not $giscus.repoId) (not $giscus.category) (not $giscus.categoryId) -}}
+        {{- errorf "giscus is enabled but repository/category configuration is incomplete" -}}
+      {{- end -}}
+      <section class="mt-12 border-t border-neutral-200 pt-8 dark:border-neutral-700" aria-labelledby="reader-responses-title">
+        <header class="mb-5">
+          <h2 id="reader-responses-title" class="m-0 text-xl font-semibold">{{ i18n "huikai.comments_title" }}</h2>
+          <p class="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{{ i18n "huikai.comments_invitation" }}</p>
+        </header>
+        <div class="giscus-comments" data-comment-key="{{ $commentKey }}" data-theme-sync="html-class">
+          <script src="https://giscus.app/client.js"
+                  data-repo="{{ $giscus.repo }}"
+                  data-repo-id="{{ $giscus.repoId }}"
+                  data-category="{{ $giscus.category }}"
+                  data-category-id="{{ $giscus.categoryId }}"
+                  data-mapping="specific"
+                  data-term="{{ $commentKey }}"
+                  data-strict="1"
+                  data-reactions-enabled="1"
+                  data-emit-metadata="0"
+                  data-input-position="top"
+                  data-theme="preferred_color_scheme"
+                  data-lang="{{ .Site.Language.Params.htmlCode }}"
+                  data-loading="lazy"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+          <script>
+            (() => {
+              const container = document.currentScript.parentElement;
+              const targetOrigin = "https://giscus.app";
+              const currentTheme = () => document.documentElement.classList.contains("dark") ? "dark" : "light";
+              const syncTheme = () => {
+                const frame = container.querySelector("iframe.giscus-frame");
+                if (!frame || !frame.contentWindow) return;
+                frame.contentWindow.postMessage({ giscus: { setConfig: { theme: currentTheme() } } }, targetOrigin);
+              };
+              new MutationObserver(syncTheme).observe(container, { childList: true, subtree: true });
+              new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+              window.addEventListener("pageshow", syncTheme);
+              syncTheme();
+            })();
+          </script>
+        </div>
+      </section>
+    {{- end -}}
+  {{- else if eq $provider "huikai" -}}
+    {{- $apiBase := $comments.apiBase | default "/api/comments/v1" -}}
+    {{- $siteKey := $comments.turnstileSiteKey | default "" -}}
+    {{- if not $siteKey -}}{{- errorf "HUIKAI comments provider requires comments.turnstileSiteKey" -}}{{- end -}}
+    {{- if not (hasPrefix $apiBase "/") -}}{{- errorf "HUIKAI comments apiBase must be same-origin and start with /" -}}{{- end -}}
+
+    {{- $commentsCSS := resources.Get "css/huikai-comments.css" | minify -}}
+    <style data-huikai-comments-style>{{ $commentsCSS.Content | safeCSS }}</style>
+    <section class="huikai-comments not-prose" aria-labelledby="reader-responses-title"
+             data-comment-key="{{ $commentKey }}"
+             data-api-base="{{ $apiBase }}"
+             data-turnstile-site-key="{{ $siteKey }}"
+             data-page-path="{{ .RelPermalink }}"
+             data-language="{{ .Site.Language.Params.htmlCode }}"
+             data-empty-label="{{ i18n "huikai.comments_empty" }}"
+             data-load-error="{{ i18n "huikai.comments_load_error" }}"
+             data-reply-label="{{ i18n "huikai.comments_reply" }}"
+             data-author-label="{{ i18n "huikai.comments_author" }}"
+             data-withdraw-label="{{ i18n "huikai.comments_withdraw" }}"
+             data-withdrawn-label="{{ i18n "huikai.comments_withdrawn" }}"
+             data-verification-required="{{ i18n "huikai.comments_verification_required" }}"
+             data-submit-success="{{ i18n "huikai.comments_submit_success" }}"
+             data-submit-error="{{ i18n "huikai.comments_submit_error" }}"
+             data-rate-limit-error="{{ i18n "huikai.comments_rate_limit_error" }}">
+      <header class="huikai-comments__header">
+        <h2 id="reader-responses-title">{{ i18n "huikai.comments_title" }}</h2>
+        <p>{{ i18n "huikai.comments_invitation" }}</p>
+      </header>
+      <div class="huikai-comments__status" data-comments-status role="status" aria-live="polite"></div>
+      <div class="huikai-comments__list" data-comments-list aria-live="polite"></div>
+      <form class="huikai-comments__form" data-comments-form>
+        <div class="huikai-comments__reply-state" data-comments-reply-state hidden>
+          <span>{{ i18n "huikai.comments_replying_to" }} <strong data-comments-reply-name></strong></span>
+          <button type="button" class="huikai-comments__text-button" data-comments-cancel-reply>{{ i18n "huikai.comments_cancel_reply" }}</button>
+        </div>
+        <input type="hidden" data-comments-parent value="">
+        <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_name" }}</span><input type="text" name="displayName" data-comments-name maxlength="40" autocomplete="nickname" required></label>
+        <label class="huikai-comments__field"><span>{{ i18n "huikai.comments_body" }}</span><textarea name="body" data-comments-body maxlength="4000" rows="5" required></textarea></label>
+        <div class="huikai-comments__turnstile" data-comments-turnstile></div>
+        <div class="huikai-comments__submit-row">
+          <p class="huikai-comments__privacy">{{ i18n "huikai.comments_privacy" }}</p>
+          <button type="submit" class="huikai-comments__submit" data-comments-submit>{{ i18n "huikai.comments_submit" }}</button>
+        </div>
+      </form>
+    </section>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+    {{- $commentsJS := resources.Get "js/huikai-comments.js" | minify | fingerprint site.Params.fingerprintAlgorithm -}}
+    <script src="{{ $commentsJS.RelPermalink }}" integrity="{{ $commentsJS.Data.Integrity }}" defer></script>
+  {{- else -}}
+    {{- errorf "Unsupported comments provider %q" $provider -}}
+  {{- end -}}
 {{- end -}}

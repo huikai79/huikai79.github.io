@@ -93,8 +93,15 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   showZenMode = false
   sharingLinks = ["facebook", "line", "whatsapp", "telegram", "email"]
 
-# Comments remain globally opt-in at the theme level. Generated Public Notion
-# articles receive showComments/commentKey from the visibility-based sync policy.
+# Public Notion articles continue to receive showComments/commentKey from the
+# existing visibility-based sync policy. The native accountless provider is
+# prepared behind this switch; production remains on Giscus until its D1,
+# Turnstile, moderation path, legacy discussion decision and live QA are ready.
+[comments]
+  provider = "giscus"
+  apiBase = "/api/comments/v1"
+  turnstileSiteKey = ""
+
 [giscus]
   enabled = true
   repo = "huikai79/huikai79.github.io"
