@@ -243,6 +243,9 @@ jobs:
       - name: Verify live back-to-top threshold, placement and footer avoidance
         run: node scripts/verify-back-to-top-behavior.mjs
 
+      - name: Verify live HUIKAI home-link navigation contract
+        run: node scripts/verify-header-home-navigation.mjs
+
       - name: Upload live QA evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
