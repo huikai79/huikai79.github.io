@@ -1,4 +1,6 @@
-{{- if strings.HasSuffix .RelPermalink "/404.html" -}}
+{{- if .Params.noindex -}}
+<meta name="robots" content="noindex,nofollow,noarchive">
+{{- else if strings.HasSuffix .RelPermalink "/404.html" -}}
 <meta name="robots" content="noindex,follow">
 {{- end -}}
 
