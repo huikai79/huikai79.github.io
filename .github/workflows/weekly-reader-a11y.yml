@@ -11,12 +11,14 @@ on:
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
       - "scripts/verify-back-to-top-behavior.mjs"
+      - "scripts/verify-site-log-layout.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
       - "assets/js/huikai-comments.js"
       - "assets/js/reading-progress.js"
       - "assets/js/scroll-to-top.js"
       - "layouts/_default/single.html"
+      - "layouts/site-log/**"
       - "layouts/partials/article/**"
       - "layouts/partials/comments.html"
       - "layouts/partials/extend-head-uncached.html"
@@ -30,6 +32,7 @@ on:
       - "content/posts/_index.md"
       - "content/posts/_index.zh-cn.md"
       - "content/projects/**"
+      - "content/site-log/**"
   push:
     branches:
       - main
@@ -40,12 +43,14 @@ on:
       - "scripts/verify-toc-behavior.mjs"
       - "scripts/verify-longform-reading.mjs"
       - "scripts/verify-back-to-top-behavior.mjs"
+      - "scripts/verify-site-log-layout.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
       - "assets/js/huikai-comments.js"
       - "assets/js/reading-progress.js"
       - "assets/js/scroll-to-top.js"
       - "layouts/_default/single.html"
+      - "layouts/site-log/**"
       - "layouts/partials/article/**"
       - "layouts/partials/comments.html"
       - "layouts/partials/extend-head-uncached.html"
@@ -59,6 +64,7 @@ on:
       - "content/posts/_index.md"
       - "content/posts/_index.zh-cn.md"
       - "content/projects/**"
+      - "content/site-log/**"
   workflow_dispatch:
   schedule:
     - cron: '30 2 * * 1'
@@ -195,6 +201,9 @@ jobs:
 
       - name: Verify back-to-top threshold, placement and footer avoidance
         run: node scripts/verify-back-to-top-behavior.mjs
+
+      - name: Verify compact site-log hierarchy and footer entry
+        run: node scripts/verify-site-log-layout.mjs
 
       - name: Upload cross-browser accessibility evidence
         if: ${{ !cancelled() }}
