@@ -3,12 +3,15 @@ import process from "node:process";
 import { chromium } from "playwright";
 
 const BASE_URL = (process.env.LIVE_SITE_URL || "https://huikai.com.kg").replace(/\/$/, "");
-const ROUTE = "/posts/first-hackathon/";
-const VIEWPORTS = [
-  ["mobile", 390, 844],
-  ["pre-breakpoint", 1279, 900],
-  ["desktop", 1440, 1000],
-  ["wide-desktop", 1600, 1000],
+const TOC_ROUTE = "/posts/first-hackathon/";
+const NO_TOC_ROUTE = "/posts/Writing-and-speaking/";
+const CASES = [
+  ["mobile-toc", TOC_ROUTE, 390, 844, true],
+  ["pre-breakpoint-toc", TOC_ROUTE, 1279, 900, true],
+  ["desktop-toc", TOC_ROUTE, 1440, 1000, true],
+  ["wide-desktop-toc", TOC_ROUTE, 1600, 1000, true],
+  ["desktop-no-toc", NO_TOC_ROUTE, 1440, 900, false],
+  ["wide-desktop-no-toc", NO_TOC_ROUTE, 1600, 900, false],
 ];
 const failures = [];
 
@@ -21,7 +24,8 @@ async function snapshot(page) {
   return page.evaluate(() => {
     const button = document.querySelector("#scroll-to-top");
     const footer = document.querySelector("#site-footer");
-    const layout = document.querySelector(".article-reading-layout.has-toc");
+    const layoutWithToc = document.querySelector(".article-reading-layout.has-toc");
+    const readingContent = document.querySelector(".article-reading-content");
     if (!button || !footer) return null;
     const rect = element => {
       if (!element) return null;
@@ -45,7 +49,8 @@ async function snapshot(page) {
       tabIndex: button.tabIndex,
       button: rect(button),
       footer: rect(footer),
-      layout: rect(layout),
+      layoutWithToc: rect(layoutWithToc),
+      readingContent: rect(readingContent),
       opacity: getComputedStyle(button).opacity,
       pointerEvents: getComputedStyle(button).pointerEvents,
     };
@@ -60,11 +65,11 @@ async function waitForSettledTransition(page) {
   await page.waitForTimeout(260);
 }
 
-async function verifyViewport(browser, label, width, height) {
+async function verifyCase(browser, label, route, width, height, expectToc) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
   const page = await context.newPage();
   try {
-    const response = await page.goto(`${BASE_URL}${ROUTE}`, { waitUntil: "load", timeout: 45_000 });
+    const response = await page.goto(`${BASE_URL}${route}`, { waitUntil: "load", timeout: 45_000 });
     if (!response?.ok()) {
       fail(`${label}: article returned HTTP ${response?.status() ?? "NO_RESPONSE"}`);
       return;
@@ -76,6 +81,17 @@ async function verifyViewport(browser, label, width, height) {
       fail(`${label}: back-to-top button or footer missing`);
       return;
     }
+
+    if (expectToc && !state.layoutWithToc) {
+      fail(`${label}: expected article TOC layout is missing`);
+    }
+    if (!expectToc && state.layoutWithToc) {
+      fail(`${label}: no-TOC regression route unexpectedly has a TOC layout`);
+    }
+    if (!state.readingContent) {
+      fail(`${label}: article reading content anchor is missing`);
+    }
+
     if (isVisible(state) || state.ariaHidden !== "true" || state.tabIndex !== -1 || state.pointerEvents !== "none") {
       fail(`${label}: button must be non-interactive and hidden at page top`);
     }
@@ -106,16 +122,27 @@ async function verifyViewport(browser, label, width, height) {
       if (Math.abs(inlineGap - 24) > 2) {
         fail(`${label}: pre-breakpoint inline-end gap should stay near 24px, got ${inlineGap.toFixed(1)}px`);
       }
-    } else if (state.layout) {
-      const availableGutter = state.viewportWidth - state.layout.right;
-      if (availableGutter >= state.button.width + 44) {
-        const gapFromLayout = state.button.left - state.layout.right;
-        if (gapFromLayout < 12 || gapFromLayout > 28) {
-          fail(`${label}: desktop button should sit just outside reading layout, got ${gapFromLayout.toFixed(1)}px gap`);
+    } else {
+      const anchor = state.layoutWithToc || state.readingContent;
+      if (!anchor) {
+        fail(`${label}: desktop reading anchor is missing`);
+      } else {
+        const availableGutter = state.viewportWidth - anchor.right;
+        if (availableGutter >= state.button.width + 44) {
+          const gapFromAnchor = state.button.left - anchor.right;
+          if (gapFromAnchor < 12 || gapFromAnchor > 28) {
+            fail(`${label}: desktop button should sit just outside its reading anchor, got ${gapFromAnchor.toFixed(1)}px gap`);
+          }
         }
       }
       if (inlineGap < 23) {
         fail(`${label}: desktop button is too close to viewport edge (${inlineGap.toFixed(1)}px)`);
+      }
+      if (!expectToc && state.readingContent) {
+        const viewportFallbackLeft = state.viewportWidth - 24 - state.button.width;
+        if (state.button.left >= viewportFallbackLeft - 2) {
+          fail(`${label}: no-TOC article still uses the viewport-edge fallback instead of the reading-content gutter`);
+        }
       }
     }
 
@@ -143,8 +170,8 @@ async function verifyViewport(browser, label, width, height) {
 
 const browser = await chromium.launch({ headless: true });
 try {
-  for (const [label, width, height] of VIEWPORTS) {
-    await verifyViewport(browser, label, width, height);
+  for (const [label, route, width, height, expectToc] of CASES) {
+    await verifyCase(browser, label, route, width, height, expectToc);
   }
 } finally {
   await browser.close();
@@ -155,4 +182,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("Back-to-top behavior verification: PASS (threshold + responsive placement + reading gutter + footer avoidance + click return)");
+console.log("Back-to-top behavior verification: PASS (threshold + TOC/no-TOC reading-anchor placement + footer avoidance + click return)");
