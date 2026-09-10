@@ -1,9 +1,4 @@
 [[main]]
-  name = "首页"
-  pageRef = "/"
-  weight = 10
-
-[[main]]
   name = "文章"
   pageRef = "posts"
   weight = 20
