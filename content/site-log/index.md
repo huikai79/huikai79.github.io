@@ -1,7 +1,7 @@
 ---
 title: "網站紀錄"
 layout: "simple"
-description: "記錄本站已完成的重要里程碑、產品決策與工程改善。"
+description: "記錄本站已完成的重要里程碑、產品決策、工程改善與條件式待辦。"
 showBreadcrumbs: false
 showDate: false
 showAuthor: false
@@ -16,7 +16,7 @@ build:
   render: always
 ---
 
-- 本頁只記已完成、已確認的網站里程碑與重要決策；未完成、僅候選或尚未啟用的項目，等實際完成後再補記。一般小修補不逐項記錄。
+- 本頁分成三層：已完成事項按日期留下；需要等規模、資料或使用情境成熟後才值得處理的項目放在「待條件成熟再評估」；已有明確下一步但尚未完成的事項放在「下次可完善」。條件達成且實際完成後，再移入當天紀錄。一般小修補不逐項記錄。
 
 ## 2026-09-10｜長文閱讀、文章框架與發布治理完成一輪收斂
 
@@ -115,3 +115,19 @@ build:
 - 完成 Notion Video Gateway；正式頁面 MP4 可播放、seek，並支援 Range request。
 - 完成公開文章的 comments policy、media source contract 與 rendered-site verification。
 - 完成 Notion 作者工作 Views：寫作工作台、已發布、測試內容、翻譯工作、發布檢查。
+
+## 待條件成熟再評估
+
+- Managed media 接近現有 100 MiB 管理預算，或大型影音需求明顯增加時：重新評估 Cloudflare R2／object storage。
+- 正式文章約達 30–50 篇時：重新檢查 Category／Tag 的 canonical taxonomy 與命名治理。
+- 翻譯文章約達 10 篇以上，或來源文章開始頻繁修訂時：評估自動 stale detection 與 translation refresh。
+- 正式內容約達 50 篇以上，或讀者開始難以找到舊內容時：重新評估搜尋排序、推薦與相關文章策略。
+- 留言量、垃圾訊息或管理負擔明顯增加時：重新評估 moderation、通知與社群管理流程。
+- 同步／建置時間持續明顯上升時：再評估 cache、圖片處理與 pipeline 效能優化；目前不為預期中的未來規模提前加複雜度。
+
+## 下次可完善
+
+- 取得 Umami Website ID 後再正式啟用 Analytics，並以真實讀者資料決定後續 UX 調整；在此之前不把 Analytics 記為已啟用。
+- 逐步壓縮仍超過 media warning threshold 的舊封面，降低 repository 與 build 的媒體負擔。
+- 逐篇決定哪些 Test 內容值得修訂後轉成正式文章，不批次公開。
+- 當主要版面、內容模型或讀者路徑再次有明顯變動時，除既有自動化 QA 外，再做一次人工的桌機／手機、亮／暗模式與主要瀏覽器視覺巡檢。
