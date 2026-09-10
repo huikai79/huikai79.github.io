@@ -1,0 +1,169 @@
+{{ define "main" }}
+  <article class="site-log-page max-w-full">
+    <header class="site-log-header">
+      {{ if .Params.showBreadcrumbs | default (.Site.Params.article.showBreadcrumbs | default false) }}
+        {{ partial "breadcrumbs.html" . }}
+      {{ end }}
+      <h1>{{ .Title | emojify }}</h1>
+      {{ with .Description }}
+        <p class="site-log-description">{{ . }}</p>
+      {{ end }}
+    </header>
+
+    <section class="site-log-content">
+      {{ .Content }}
+    </section>
+
+    <footer class="pt-8 print:hidden">
+      {{ partial "sharing-links.html" . }}
+      {{ partial "article-comments.html" . }}
+    </footer>
+  </article>
+
+  <style>
+    .site-log-page {
+      width: min(100%, 52rem);
+      margin-inline: auto;
+    }
+
+    .site-log-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .site-log-header h1 {
+      margin: 0;
+      font-size: 1.75rem;
+      line-height: 1.3;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: rgb(var(--color-neutral-900, 23 23 23));
+    }
+
+    .dark .site-log-header h1 {
+      color: rgb(var(--color-neutral-100, 245 245 245));
+    }
+
+    .site-log-description {
+      margin: 0.5rem 0 0;
+      max-width: 70ch;
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: rgb(var(--color-neutral-500, 115 115 115));
+    }
+
+    .dark .site-log-description {
+      color: rgb(var(--color-neutral-400, 163 163 163));
+    }
+
+    .site-log-content {
+      font-size: 0.9375rem;
+      line-height: 1.75;
+      color: rgb(var(--color-neutral-700, 64 64 64));
+    }
+
+    .dark .site-log-content {
+      color: rgb(var(--color-neutral-300, 212 212 212));
+    }
+
+    .site-log-content > :first-child {
+      margin-top: 0;
+    }
+
+    .site-log-content > ul:first-child {
+      margin: 0 0 1.6rem;
+      padding: 0;
+      list-style: none;
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: rgb(var(--color-neutral-500, 115 115 115));
+    }
+
+    .dark .site-log-content > ul:first-child {
+      color: rgb(var(--color-neutral-400, 163 163 163));
+    }
+
+    .site-log-content p,
+    .site-log-content ul,
+    .site-log-content ol {
+      margin-block: 0.7rem;
+    }
+
+    .site-log-content ul,
+    .site-log-content ol {
+      padding-inline-start: 1.25rem;
+    }
+
+    .site-log-content ul {
+      list-style: disc;
+    }
+
+    .site-log-content ol {
+      list-style: decimal;
+    }
+
+    .site-log-content li {
+      margin-block: 0.28rem;
+      padding-inline-start: 0.1rem;
+    }
+
+    .site-log-content h2 {
+      margin: 2.5rem 0 1rem;
+      padding-top: 1.35rem;
+      border-top: 1px solid rgb(var(--color-neutral-200, 229 229 229));
+      font-size: 1.2rem;
+      line-height: 1.45;
+      font-weight: 650;
+      letter-spacing: -0.005em;
+      color: rgb(var(--color-neutral-850, 31 31 31));
+      text-wrap: balance;
+    }
+
+    .dark .site-log-content h2 {
+      border-color: rgb(var(--color-neutral-700, 64 64 64));
+      color: rgb(var(--color-neutral-100, 245 245 245));
+    }
+
+    .site-log-content h3 {
+      margin: 1.4rem 0 0.45rem;
+      font-size: 0.9375rem;
+      line-height: 1.55;
+      font-weight: 650;
+      color: rgb(var(--color-neutral-800, 38 38 38));
+    }
+
+    .dark .site-log-content h3 {
+      color: rgb(var(--color-neutral-200, 229 229 229));
+    }
+
+    .site-log-content code {
+      font-size: 0.9em;
+    }
+
+    .site-log-content a {
+      text-decoration: underline;
+      text-decoration-color: rgb(var(--color-neutral-300, 212 212 212));
+      text-underline-offset: 0.18em;
+    }
+
+    .dark .site-log-content a {
+      text-decoration-color: rgb(var(--color-neutral-600, 82 82 82));
+    }
+
+    @media (max-width: 639.98px) {
+      .site-log-header h1 {
+        font-size: 1.55rem;
+      }
+
+      .site-log-content {
+        font-size: 0.9rem;
+        line-height: 1.72;
+      }
+
+      .site-log-content h2 {
+        margin-top: 2rem;
+        padding-top: 1.1rem;
+        font-size: 1.08rem;
+      }
+    }
+  </style>
+{{ end }}
