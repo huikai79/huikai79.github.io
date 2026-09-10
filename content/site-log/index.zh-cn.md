@@ -22,7 +22,7 @@ build:
 
 ### 长文阅读与中文排版
 
-- 重新整理桌面文章阅读布局，将正文与右侧目录收敛为更稳定的双栏结构；作者信息、分享、上一篇／下一篇、相关文章与留言维持和正文阅读区对齐。
+- 重新整理桌面文章阅读布局，将正文与右侧目录收敛为更稳定的双栏结构；作者信息、分享、上一篇／下一篇、相关文章与留言移入独立读后区，维持一致版心，但不再延长正文的 sticky TOC 阅读阶段。
 - 修正文章目录原本“CSS 看似 sticky、实际滚动却无法稳定固定”的问题，将 sticky 行为移到真正的 sidebar 容器，并重新接回 Blowfish 原生 `.toc` 与 Smart TOC 行为。
 - 1024–1279px 维持文章上方的可折叠目录；1280px 以上才使用右侧 sticky TOC，避免中型屏幕被目录挤压。
 - 桌面 TOC 降低字号与一般项目的视觉权重；当前阅读中的章节以低调方式加强辨识，不额外建立第二套 scroll-spy。
@@ -61,6 +61,8 @@ build:
 ### 留言、发布流程与验证
 
 - 正式留言由 Giscus 切换到 HUIKAI 自有的免账号留言服务；既有 Giscus 保留为可验证的 rollback 路径，而不是同时在 production 载入两套留言系统。
+- 将留言与读后导航正式拆出正文／TOC 阅读网格，让 sticky TOC 随正文结束；留言表单同步收敛高度、空状态、Turnstile 显示、字段语义与状态处理，降低读完正文后的视觉竞争。
+- 补齐留言区有留言、0 条留言、载入失败、桌面／手机、亮／暗模式与窄宽 Turnstile 等回归，并修正专项截图保存与 production live-reader QA 的结构判断，使候选版与正式站使用同一套读后区边界。
 - 将纯程序／CSS／模板的 code-only release 与 Notion publication health 适度解耦，避免某一篇 Notion 内容资料异常时，连无关的前端修正都无法发布。
 - Notion publication health 改由只读流程检查；真正同步仍维持 fail-closed，且 exact-current-main／exact-SHA 部署边界保留。
 - 重要读者行为不再只检查 CSS 或 build 是否成功，而是由 Playwright 实际操作与量测。
