@@ -25,12 +25,18 @@ async function waitForProgress(page, expected, tolerance = 0.08) {
   ).catch(() => {});
 }
 
+async function openRoute(page, route) {
+  const response = await page.goto(`${BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+  await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
+  return response;
+}
+
 async function verifyCjkTypography(browserType, label) {
   const browser = await browserType.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: "light", reducedMotion: "reduce" });
   const page = await context.newPage();
   try {
-    const response = await page.goto(`${BASE_URL}${LONG_ROUTE}`, { waitUntil: "networkidle", timeout: 45_000 });
+    const response = await openRoute(page, LONG_ROUTE);
     if (!response?.ok()) return fail(`${label}: CJK typography route failed (${response?.status() ?? "no response"})`);
     const state = await page.evaluate(() => {
       const article = document.querySelector(".article-main");
@@ -73,7 +79,7 @@ async function verifyDesktop(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, colorScheme: "dark", reducedMotion: "reduce" });
   const page = await context.newPage();
   try {
-    const response = await page.goto(`${BASE_URL}${LONG_ROUTE}`, { waitUntil: "networkidle", timeout: 45_000 });
+    const response = await openRoute(page, LONG_ROUTE);
     if (!response?.ok()) return fail(`longform desktop: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
 
     const initial = await page.evaluate(() => {
@@ -198,7 +204,7 @@ async function verifyMobile(browser) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: "light", reducedMotion: "reduce" });
   const page = await context.newPage();
   try {
-    const response = await page.goto(`${BASE_URL}${LONG_ROUTE}`, { waitUntil: "networkidle", timeout: 45_000 });
+    const response = await openRoute(page, LONG_ROUTE);
     if (!response?.ok()) return fail(`longform mobile: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
     const state = await page.evaluate(() => {
       const article = document.querySelector(".article-main");
@@ -228,7 +234,7 @@ async function verifyShortArticleStaysQuiet(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
   const page = await context.newPage();
   try {
-    const response = await page.goto(`${BASE_URL}${SHORT_ROUTE}`, { waitUntil: "networkidle", timeout: 45_000 });
+    const response = await openRoute(page, SHORT_ROUTE);
     if (!response?.ok()) return fail(`short article: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
     const progressCount = await page.locator("#reading-progress").count();
     if (progressCount !== 0) fail(`short article: reading progress should not render below the 8-minute threshold (count=${progressCount})`);
