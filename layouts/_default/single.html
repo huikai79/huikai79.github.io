@@ -20,6 +20,14 @@
 {{ $enableToc := site.Params.article.showTableOfContents | default false }}
 {{ $enableToc = .Params.showTableOfContents | default $enableToc }}
 {{ $showToc := and $enableToc (ge .ReadingTime 5) (in .TableOfContents "<ul") }}
+{{ $showReadingProgress := ge .ReadingTime 8 }}
+
+{{ if $showReadingProgress }}
+  <div id="reading-progress" class="article-reading-progress print:hidden" aria-hidden="true"></div>
+  {{ $alg := site.Params.fingerprintAlgorithm | default "sha512" }}
+  {{ $readingProgressJS := resources.Get "js/reading-progress.js" | resources.Minify | resources.Fingerprint $alg }}
+  <script defer src="{{ $readingProgressJS.RelPermalink }}" integrity="{{ $readingProgressJS.Data.Integrity }}"></script>
+{{ end }}
 
 <section class="article-reading-layout{{ if $showToc }} has-toc{{ end }} mt-8">
   {{ if $showToc }}
