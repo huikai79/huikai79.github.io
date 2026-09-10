@@ -314,35 +314,60 @@ async function verifyComments(browser) {
   const page = await context.newPage();
   try {
     await navigate(page, "/posts/first-hackathon/", "comments");
-    const scriptCount = await page.locator('script[src^="https://giscus.app/client.js"]').count();
-    let iframeLoaded = false;
+    const root = page.locator(".huikai-comments");
     try {
-      await page.locator("iframe.giscus-frame").waitFor({ state: "attached", timeout: 10_000 });
-      iframeLoaded = true;
-    } catch {}
-    const geometry = await page.evaluate(() => {
-      const comments = document.querySelector(".giscus-comments");
+      await root.waitFor({ state: "visible", timeout: 10_000 });
+    } catch {
+      fail("public article does not expose the HUIKAI comments surface");
+      return;
+    }
+    const state = await page.evaluate(() => {
+      const comments = document.querySelector(".huikai-comments");
       const commentsOuter = comments?.closest(".article-footer");
-      const candidates = [...document.querySelectorAll("main .article-footer")].filter(element => element !== commentsOuter);
-      const reference = candidates.at(-1);
-      if (!commentsOuter || !reference) return null;
-      const commentsRect = commentsOuter.getBoundingClientRect();
-      const referenceRect = reference.getBoundingClientRect();
+      const reading = comments?.closest(".article-reading-content");
+      const reference = [...document.querySelectorAll(".article-reading-content > .article-footer")]
+        .filter(element => element !== commentsOuter)
+        .at(-1);
+      const rect = element => {
+        if (!element) return null;
+        const value = element.getBoundingClientRect();
+        return { left: value.left, right: value.right, width: value.width };
+      };
+      const controls = [
+        document.querySelector("[data-comments-name]"),
+        document.querySelector("[data-comments-body]"),
+        document.querySelector("[data-comments-submit]"),
+      ].map(element => element?.getBoundingClientRect().height || 0);
       return {
-        commentsLeft: commentsRect.left,
-        commentsRight: commentsRect.right,
-        referenceLeft: referenceRect.left,
-        referenceRight: referenceRect.right,
-        leftDelta: Math.abs(commentsRect.left - referenceRect.left),
-        rightDelta: Math.abs(commentsRect.right - referenceRect.right),
+        key: comments?.dataset.commentKey || "",
+        api: comments?.dataset.apiBase || "",
+        giscusScripts: document.querySelectorAll('script[src^="https://giscus.app/client.js"]').length,
+        giscusFrames: document.querySelectorAll("iframe.giscus-frame").length,
+        comments: rect(commentsOuter),
+        reference: rect(reference),
+        reading: rect(reading),
+        minControlHeight: Math.min(...controls),
+        overflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       };
     });
-    report.interactions.comments = { giscusScriptCount: scriptCount, iframeLoaded, geometry };
-    if (scriptCount !== 1) fail("public article does not expose exactly one Giscus client script");
-    if (!geometry) fail("comments layout: unable to measure Giscus/article-footer alignment");
-    else if (geometry.leftDelta > 2 || geometry.rightDelta > 2) {
-      fail(`comments layout: Giscus container differs from article footer by left=${geometry.leftDelta.toFixed(2)}px right=${geometry.rightDelta.toFixed(2)}px`);
+    report.interactions.comments = { provider: "huikai", ...state };
+    if (!state.key.startsWith("notion:")) fail(`HUIKAI comments key is invalid: ${state.key || "EMPTY"}`);
+    if (state.api !== "/api/comments/v1") fail(`HUIKAI comments API contract drifted: ${state.api || "EMPTY"}`);
+    if (state.giscusScripts !== 0 || state.giscusFrames !== 0) fail("production article unexpectedly loads Giscus alongside HUIKAI comments");
+    if (!state.comments || !state.reference || !state.reading) {
+      fail("comments layout: unable to measure HUIKAI comments/article-footer alignment");
+    } else {
+      const leftDelta = Math.abs(state.comments.left - state.reference.left);
+      const rightDelta = Math.abs(state.comments.right - state.reference.right);
+      if (leftDelta > 2 || rightDelta > 2) {
+        fail(`comments layout: HUIKAI comments differ from article footer by left=${leftDelta.toFixed(2)}px right=${rightDelta.toFixed(2)}px`);
+      }
+      if (state.comments.left < state.reading.left - 2 || state.comments.right > state.reading.right + 2) {
+        fail("comments layout: HUIKAI comments escape the article reading column");
+      }
     }
+    if (state.minControlHeight < 44) fail(`HUIKAI comments interactive target is too small (${state.minControlHeight.toFixed(1)}px)`);
+    if (state.overflowX > 1) fail(`HUIKAI comments introduce horizontal overflow (${state.overflowX.toFixed(1)}px)`);
   } finally {
     await context.close();
   }
