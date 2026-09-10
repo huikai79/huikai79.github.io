@@ -1,1 +1,276 @@
-.huikai-comments{width:100%;margin-top:3rem;padding-top:2rem;border-top:1px solid rgb(var(--color-neutral-200,229 229 229));color:rgb(var(--color-neutral-800,38 38 38))}.dark .huikai-comments{border-color:rgb(var(--color-neutral-700,64 64 64));color:rgb(var(--color-neutral-100,245 245 245))}.huikai-comments__header h2{margin:0;font-size:1.2rem;line-height:1.4;font-weight:650}.huikai-comments__header p,.huikai-comments__privacy,.huikai-comments__empty,.huikai-comments__status,.huikai-comment__date,.huikai-comment__reply-context{color:rgb(var(--color-neutral-600,82 82 82))}.dark .huikai-comments__header p,.dark .huikai-comments__privacy,.dark .huikai-comments__empty,.dark .huikai-comments__status,.dark .huikai-comment__date,.dark .huikai-comment__reply-context{color:rgb(var(--color-neutral-400,163 163 163))}.huikai-comments__header p{margin:.45rem 0 0;font-size:.925rem;line-height:1.65}.huikai-comments__status{min-height:1.5rem;margin-top:.75rem;font-size:.875rem;line-height:1.5}.huikai-comments__status[data-kind=success]{color:rgb(var(--color-primary-700,29 78 216))}.huikai-comments__status[data-kind=error]{color:rgb(var(--color-red-700,185 28 28))}.dark .huikai-comments__status[data-kind=success]{color:rgb(var(--color-primary-300,147 197 253))}.dark .huikai-comments__status[data-kind=error]{color:rgb(var(--color-red-300,252 165 165))}.huikai-comments__list{margin-top:.5rem}.huikai-comment-group{border-top:1px solid rgb(var(--color-neutral-200,229 229 229))}.dark .huikai-comment-group{border-color:rgb(var(--color-neutral-700,64 64 64))}.huikai-comment{padding:1.15rem 0}.huikai-comment--reply{margin-left:1.25rem;padding-left:1rem;border-left:2px solid rgb(var(--color-neutral-200,229 229 229))}.dark .huikai-comment--reply{border-color:rgb(var(--color-neutral-700,64 64 64))}.huikai-comment__meta{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.5rem 1rem;font-size:.82rem;line-height:1.45}.huikai-comment__identity{font-weight:600}.huikai-comment__author-label{color:rgb(var(--color-primary-700,29 78 216))}.dark .huikai-comment__author-label{color:rgb(var(--color-primary-300,147 197 253))}.huikai-comment__reply-context{margin-top:.35rem;font-size:.78rem}.huikai-comment__body{margin-top:.6rem;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.95rem;line-height:1.7}.huikai-comment__actions{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin-top:.65rem}.huikai-comment__action,.huikai-comments__text-button{min-height:44px;padding:.25rem 0;border:0;background:transparent;color:rgb(var(--color-neutral-600,82 82 82));font:inherit;font-size:.82rem;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.dark .huikai-comment__action,.dark .huikai-comments__text-button{color:rgb(var(--color-neutral-300,212 212 212))}.huikai-comments__form{margin-top:1.25rem;padding-top:1.5rem;border-top:1px solid rgb(var(--color-neutral-200,229 229 229))}.dark .huikai-comments__form{border-color:rgb(var(--color-neutral-700,64 64 64))}.huikai-comments__reply-state{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;font-size:.875rem}.huikai-comments__field{display:block;margin-top:1rem;font-size:.875rem}.huikai-comments__field>span{display:block;margin-bottom:.4rem;font-weight:600}.huikai-comments__field input,.huikai-comments__field textarea{box-sizing:border-box;width:100%;min-height:44px;padding:.7rem .8rem;border:1px solid rgb(var(--color-neutral-300,212 212 212));border-radius:.5rem;background:transparent;color:inherit;font:inherit;line-height:1.5}.dark .huikai-comments__field input,.dark .huikai-comments__field textarea{border-color:rgb(var(--color-neutral-600,82 82 82))}.huikai-comments__field textarea{min-height:8rem;resize:vertical}.huikai-comments__field input:focus-visible,.huikai-comments__field textarea:focus-visible,.huikai-comment__action:focus-visible,.huikai-comments__text-button:focus-visible,.huikai-comments__submit:focus-visible{outline:2px solid rgb(var(--color-primary-500,59 130 246));outline-offset:2px}.huikai-comments__turnstile{min-height:65px;margin-top:1rem}.huikai-comments__submit-row{display:flex;flex-direction:column;align-items:flex-start;gap:.75rem;margin-top:1rem}.huikai-comments__privacy{margin:0;font-size:.8rem;line-height:1.5}.huikai-comments__submit{min-height:44px;padding:.65rem 1rem;border:1px solid rgb(var(--color-neutral-400,163 163 163));border-radius:.5rem;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}.huikai-comments__submit:disabled,.huikai-comment__action:disabled{cursor:wait;opacity:.55}@media(min-width:640px){.huikai-comments__submit-row{flex-direction:row;align-items:center;justify-content:space-between}.huikai-comments__privacy{max-width:70%}}@media(max-width:480px){.huikai-comment--reply{margin-left:.5rem;padding-left:.75rem}.huikai-comments__submit{width:100%}}
+.huikai-comments {
+  width: 100%;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(var(--color-neutral-200, 229 229 229));
+  color: rgb(var(--color-neutral-800, 38 38 38));
+}
+
+.dark .huikai-comments {
+  border-color: rgb(var(--color-neutral-700, 64 64 64));
+  color: rgb(var(--color-neutral-100, 245 245 245));
+}
+
+.huikai-comments__header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.huikai-comments__header p,
+.huikai-comments__privacy,
+.huikai-comments__empty,
+.huikai-comments__status,
+.huikai-comment__date,
+.huikai-comment__reply-context {
+  color: rgb(var(--color-neutral-600, 82 82 82));
+}
+
+.dark .huikai-comments__header p,
+.dark .huikai-comments__privacy,
+.dark .huikai-comments__empty,
+.dark .huikai-comments__status,
+.dark .huikai-comment__date,
+.dark .huikai-comment__reply-context {
+  color: rgb(var(--color-neutral-400, 163 163 163));
+}
+
+.huikai-comments__header p {
+  margin: 0.45rem 0 0;
+  font-size: 0.925rem;
+  line-height: 1.65;
+}
+
+.huikai-comments__empty:not([hidden])::before {
+  content: " ";
+}
+
+.huikai-comments__status {
+  min-height: 0;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.huikai-comments__status:not(:empty) {
+  margin-top: 0.75rem;
+}
+
+.huikai-comments__status[data-kind="success"] {
+  color: rgb(var(--color-primary-700, 29 78 216));
+}
+
+.huikai-comments__status[data-kind="error"] {
+  color: rgb(var(--color-red-700, 185 28 28));
+}
+
+.dark .huikai-comments__status[data-kind="success"] {
+  color: rgb(var(--color-primary-300, 147 197 253));
+}
+
+.dark .huikai-comments__status[data-kind="error"] {
+  color: rgb(var(--color-red-300, 252 165 165));
+}
+
+.huikai-comments__list {
+  margin-top: 0.5rem;
+}
+
+.huikai-comments__list:empty {
+  margin-top: 0;
+}
+
+.huikai-comment-group {
+  border-top: 1px solid rgb(var(--color-neutral-200, 229 229 229));
+}
+
+.dark .huikai-comment-group {
+  border-color: rgb(var(--color-neutral-700, 64 64 64));
+}
+
+.huikai-comment {
+  padding: 1.15rem 0;
+}
+
+.huikai-comment--reply {
+  margin-left: 1.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgb(var(--color-neutral-200, 229 229 229));
+}
+
+.dark .huikai-comment--reply {
+  border-color: rgb(var(--color-neutral-700, 64 64 64));
+}
+
+.huikai-comment__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.huikai-comment__identity {
+  font-weight: 600;
+}
+
+.huikai-comment__author-label {
+  color: rgb(var(--color-primary-700, 29 78 216));
+}
+
+.dark .huikai-comment__author-label {
+  color: rgb(var(--color-primary-300, 147 197 253));
+}
+
+.huikai-comment__reply-context {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.huikai-comment__body {
+  margin-top: 0.6rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.huikai-comment__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin-top: 0.65rem;
+}
+
+.huikai-comment__action,
+.huikai-comments__text-button {
+  min-height: 44px;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--color-neutral-600, 82 82 82));
+  font: inherit;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.dark .huikai-comment__action,
+.dark .huikai-comments__text-button {
+  color: rgb(var(--color-neutral-300, 212 212 212));
+}
+
+.huikai-comments__form {
+  margin-top: 1.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgb(var(--color-neutral-200, 229 229 229));
+}
+
+.dark .huikai-comments__form {
+  border-color: rgb(var(--color-neutral-700, 64 64 64));
+}
+
+.huikai-comments__reply-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.huikai-comments__field {
+  display: block;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+.huikai-comments__field > span {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.huikai-comments__field input,
+.huikai-comments__field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgb(var(--color-neutral-300, 212 212 212));
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.dark .huikai-comments__field input,
+.dark .huikai-comments__field textarea {
+  border-color: rgb(var(--color-neutral-600, 82 82 82));
+}
+
+.huikai-comments__field textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+
+.huikai-comments__field input:focus-visible,
+.huikai-comments__field textarea:focus-visible,
+.huikai-comment__action:focus-visible,
+.huikai-comments__text-button:focus-visible,
+.huikai-comments__submit:focus-visible {
+  outline: 2px solid rgb(var(--color-primary-500, 59 130 246));
+  outline-offset: 2px;
+}
+
+.huikai-comments__turnstile {
+  width: 100%;
+  min-height: 0;
+  margin-top: 1rem;
+}
+
+.huikai-comments__privacy {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.huikai-comments__submit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.huikai-comments__submit {
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid rgb(var(--color-neutral-400, 163 163 163));
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.huikai-comments__submit:disabled,
+.huikai-comment__action:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (max-width: 480px) {
+  .huikai-comment--reply {
+    margin-left: 0.5rem;
+    padding-left: 0.75rem;
+  }
+
+  .huikai-comments__submit {
+    width: 100%;
+  }
+}
