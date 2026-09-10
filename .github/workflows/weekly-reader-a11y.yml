@@ -124,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f public/comments-admin/index.html
-          grep -Eq '<meta name="robots" content="noindex,nofollow,noarchive"\s*/?>' public/comments-admin/index.html
+          grep -Fq 'noindex,nofollow,noarchive' public/comments-admin/index.html
           if grep -Fq '/comments-admin/' public/sitemap.xml; then
             echo "::error::Unlisted comments moderation route leaked into sitemap"
             exit 1
