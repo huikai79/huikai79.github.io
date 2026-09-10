@@ -57,16 +57,22 @@ try {
     await page.locator("[data-comments-admin-login] button[type=submit]").click();
     await page.locator(".huikai-comments-admin__item").first().waitFor({ state: "visible", timeout: 5000 });
 
-    const authenticated = await page.evaluate(() => ({
-      tokenValue: document.querySelector("[data-comments-admin-token]")?.value || "",
-      localKeys: Object.keys(localStorage),
-      sessionKeys: Object.keys(sessionStorage),
-      injected: Boolean(document.querySelector(".huikai-comments-admin__body img,.huikai-comments-admin__body script")),
-      text: document.querySelector(".huikai-comments-admin__body")?.textContent || "",
-      minButton: Math.min(...[...document.querySelectorAll(".huikai-comments-admin button")].map(el => el.getBoundingClientRect().height)),
-      overflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
-    }));
-    if (authenticated.tokenValue || authenticated.injected || !authenticated.text.includes("<img") || authenticated.minButton < 44 || authenticated.overflow > 1) throw new Error(`comments admin ${name}: authenticated contract failed ${JSON.stringify(authenticated)}`);
+    const authenticated = await page.evaluate(() => {
+      const visibleButtonRects = [...document.querySelectorAll(".huikai-comments-admin button")]
+        .map(el => el.getBoundingClientRect())
+        .filter(rect => rect.width > 0 && rect.height > 0);
+      return {
+        tokenValue: document.querySelector("[data-comments-admin-token]")?.value || "",
+        localKeys: Object.keys(localStorage),
+        sessionKeys: Object.keys(sessionStorage),
+        injected: Boolean(document.querySelector(".huikai-comments-admin__body img,.huikai-comments-admin__body script")),
+        text: document.querySelector(".huikai-comments-admin__body")?.textContent || "",
+        visibleButtonCount: visibleButtonRects.length,
+        minButton: visibleButtonRects.length ? Math.min(...visibleButtonRects.map(rect => rect.height)) : 0,
+        overflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      };
+    });
+    if (authenticated.tokenValue || authenticated.injected || !authenticated.text.includes("<img") || authenticated.visibleButtonCount === 0 || authenticated.minButton < 44 || authenticated.overflow > 1) throw new Error(`comments admin ${name}: authenticated contract failed ${JSON.stringify(authenticated)}`);
     if (authenticated.localKeys.some(key => /admin.*token|token.*admin/i.test(key)) || authenticated.sessionKeys.some(key => /admin.*token|token.*admin/i.test(key))) throw new Error(`comments admin ${name}: admin token persisted in browser storage`);
 
     const first = page.locator(".huikai-comments-admin__item").first();
