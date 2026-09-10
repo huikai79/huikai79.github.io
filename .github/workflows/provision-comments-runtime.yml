@@ -105,25 +105,31 @@ jobs:
           echo "sitekey=$sitekey" >> "$GITHUB_OUTPUT"
           echo "Turnstile sitekey: $sitekey"
 
-      - name: Generate exact production Wrangler configs
+      - name: Generate exact production Wrangler configs beside Worker entry point
         env:
           REQUESTED_SHA: ${{ steps.main.outputs.sha }}
           DATABASE_ID: ${{ steps.d1.outputs.database_id }}
         run: |
           set -euo pipefail
+          mkdir -p workers/huikai-comments/.runtime
           python3 - <<'PY'
           import os, re
           from pathlib import Path
           src = Path('workers/huikai-comments/wrangler.toml').read_text(encoding='utf-8')
           src = src.replace('SOURCE_SHA = "development"', f'SOURCE_SHA = "{os.environ["REQUESTED_SHA"]}"')
           src = src.replace('database_id = "00000000-0000-0000-0000-000000000000"', f'database_id = "{os.environ["DATABASE_ID"]}"')
-          Path('/tmp/huikai-comments.production.toml').write_text(src, encoding='utf-8')
+          # These runtime configs live one directory below the Worker config, so make
+          # entry point and migration paths explicit relative to that directory.
+          src = src.replace('main = "index.js"', 'main = "../index.js"')
+          src = src.replace('migrations_dir = "migrations"', 'migrations_dir = "../migrations"')
+          prod = Path('workers/huikai-comments/.runtime/production.toml')
+          prod.write_text(src, encoding='utf-8')
           bootstrap = re.sub(r'\n\[secrets\]\nrequired = \[[^\n]*\]\n', '\n', src, count=1)
-          Path('/tmp/huikai-comments.bootstrap.toml').write_text(bootstrap, encoding='utf-8')
+          Path('workers/huikai-comments/.runtime/bootstrap.toml').write_text(bootstrap, encoding='utf-8')
           PY
-          grep -F "${REQUESTED_SHA}" /tmp/huikai-comments.production.toml >/dev/null
-          grep -F "${DATABASE_ID}" /tmp/huikai-comments.production.toml >/dev/null
-          ! grep -q '^\[secrets\]$' /tmp/huikai-comments.bootstrap.toml
+          grep -F "${REQUESTED_SHA}" workers/huikai-comments/.runtime/production.toml >/dev/null
+          grep -F "${DATABASE_ID}" workers/huikai-comments/.runtime/production.toml >/dev/null
+          ! grep -q '^\[secrets\]$' workers/huikai-comments/.runtime/bootstrap.toml
 
       - name: Verify exact Worker source and dry-run compile
         run: |
@@ -132,7 +138,7 @@ jobs:
           node workers/huikai-comments/test-runtime.mjs
           rm -rf /tmp/comments-predeploy
           npx --yes "wrangler@${WRANGLER_VERSION}" deploy \
-            --config /tmp/huikai-comments.bootstrap.toml \
+            --config workers/huikai-comments/.runtime/bootstrap.toml \
             --dry-run --outdir /tmp/comments-predeploy
           test -n "$(find /tmp/comments-predeploy -type f -print -quit)"
 
@@ -157,7 +163,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes "wrangler@${WRANGLER_VERSION}" d1 migrations apply huikai-comments \
-            --remote --config /tmp/huikai-comments.production.toml
+            --remote --config workers/huikai-comments/.runtime/production.toml
 
       - name: Bootstrap Worker route with fail-closed secrets
         env:
@@ -165,7 +171,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config /tmp/huikai-comments.bootstrap.toml
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config workers/huikai-comments/.runtime/bootstrap.toml
 
       - name: Bind Worker secrets without exposing values
         env:
@@ -174,8 +180,8 @@ jobs:
           COMMENTS_ADMIN_TOKEN: ${{ secrets.COMMENTS_ADMIN_TOKEN }}
         run: |
           set -euo pipefail
-          printf '%s' "$TURNSTILE_SECRET" | npx --yes "wrangler@${WRANGLER_VERSION}" secret put TURNSTILE_SECRET --config /tmp/huikai-comments.bootstrap.toml
-          printf '%s' "$COMMENTS_ADMIN_TOKEN" | npx --yes "wrangler@${WRANGLER_VERSION}" secret put COMMENTS_ADMIN_TOKEN --config /tmp/huikai-comments.bootstrap.toml
+          printf '%s' "$TURNSTILE_SECRET" | npx --yes "wrangler@${WRANGLER_VERSION}" secret put TURNSTILE_SECRET --config workers/huikai-comments/.runtime/bootstrap.toml
+          printf '%s' "$COMMENTS_ADMIN_TOKEN" | npx --yes "wrangler@${WRANGLER_VERSION}" secret put COMMENTS_ADMIN_TOKEN --config workers/huikai-comments/.runtime/bootstrap.toml
 
       - name: Reconfirm exact main and deploy final Worker
         env:
@@ -191,7 +197,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
           test "$current_main" = "$REQUESTED_SHA" || { echo "::error::main moved before final comments Worker deploy"; exit 1; }
-          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config /tmp/huikai-comments.production.toml
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config workers/huikai-comments/.runtime/production.toml
 
       - name: Verify live Worker lineage and moderation boundary
         env:
