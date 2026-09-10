@@ -129,10 +129,11 @@
     for (let i = 0; i < 80 && !window.turnstile?.render; i += 1) await new Promise(resolve => setTimeout(resolve, 50));
     if (!window.turnstile?.render) { status(root, label(root, "verificationRequired", "人機驗證暫時無法載入。"), "error"); return; }
     const target = q(root, "[data-comments-turnstile]");
+    const targetWidth = target.getBoundingClientRect().width;
     state.widgetId = window.turnstile.render(target, {
       sitekey: root.dataset.turnstileSiteKey,
       theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
-      size: "flexible",
+      size: targetWidth > 0 && targetWidth < 300 ? "compact" : "flexible",
       appearance: "interaction-only",
       action: "comment-submit",
       callback(token) { state.token = token || ""; if (state.token) status(root, ""); },
