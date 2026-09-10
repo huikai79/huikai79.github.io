@@ -262,7 +262,8 @@ async function verifyArticleLayout(browser) {
         const content = document.querySelector(".article-reading-content");
         const article = document.querySelector(".article-main");
         const toc = document.querySelector(".article-toc");
-        const footer = document.querySelector(".article-reading-content .article-footer");
+        const footer = document.querySelector(".article-footer");
+        const footerInsideReading = document.querySelector(".article-reading-layout .article-footer");
         const hero = document.querySelector(".post-hero");
         if (!layout || !content || !article || !footer) return null;
         const toPlainRect = element => {
@@ -277,6 +278,7 @@ async function verifyArticleLayout(browser) {
           article: toPlainRect(article),
           toc: toPlainRect(toc),
           footer: toPlainRect(footer),
+          footerInsideReading: Boolean(footerInsideReading),
           hero: toPlainRect(hero),
         };
       });
@@ -288,8 +290,8 @@ async function verifyArticleLayout(browser) {
       if (geometry.article.width < 600 && width >= 1280) {
         fail(`article-layout/${label}: article column collapsed to ${geometry.article.width.toFixed(1)}px`);
       }
-      if (geometry.footer.left < geometry.content.left - 2 || geometry.footer.right > geometry.content.right + 2) {
-        fail(`article-layout/${label}: article footer escapes reading column`);
+      if (geometry.footerInsideReading) {
+        fail(`article-layout/${label}: post-reading footer remains inside TOC reading grid`);
       }
       if (width >= 1280) {
         if (!geometry.toc) fail(`article-layout/${label}: TOC missing on wide desktop`);
@@ -324,10 +326,11 @@ async function verifyComments(browser) {
     const state = await page.evaluate(() => {
       const comments = document.querySelector(".huikai-comments");
       const commentsOuter = comments?.closest(".article-footer");
-      const reading = comments?.closest(".article-reading-content");
-      const reference = [...document.querySelectorAll(".article-reading-content > .article-footer")]
+      const reading = document.querySelector(".article-reading-content");
+      const reference = [...document.querySelectorAll(".article-footer")]
         .filter(element => element !== commentsOuter)
         .at(-1);
+      const commentsInsideReading = Boolean(document.querySelector(".article-reading-layout .huikai-comments"));
       const rect = element => {
         if (!element) return null;
         const value = element.getBoundingClientRect();
@@ -346,6 +349,7 @@ async function verifyComments(browser) {
         comments: rect(commentsOuter),
         reference: rect(reference),
         reading: rect(reading),
+        commentsInsideReading,
         minControlHeight: Math.min(...controls),
         overflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       };
@@ -354,7 +358,7 @@ async function verifyComments(browser) {
     if (!state.key.startsWith("notion:")) fail(`HUIKAI comments key is invalid: ${state.key || "EMPTY"}`);
     if (state.api !== "/api/comments/v1") fail(`HUIKAI comments API contract drifted: ${state.api || "EMPTY"}`);
     if (state.giscusScripts !== 0 || state.giscusFrames !== 0) fail("production article unexpectedly loads Giscus alongside HUIKAI comments");
-    if (!state.comments || !state.reference || !state.reading) {
+    if (!state.comments || !state.reference) {
       fail("comments layout: unable to measure HUIKAI comments/article-footer alignment");
     } else {
       const leftDelta = Math.abs(state.comments.left - state.reference.left);
@@ -362,10 +366,9 @@ async function verifyComments(browser) {
       if (leftDelta > 2 || rightDelta > 2) {
         fail(`comments layout: HUIKAI comments differ from article footer by left=${leftDelta.toFixed(2)}px right=${rightDelta.toFixed(2)}px`);
       }
-      if (state.comments.left < state.reading.left - 2 || state.comments.right > state.reading.right + 2) {
-        fail("comments layout: HUIKAI comments escape the article reading column");
-      }
     }
+    if (!state.reading) fail("comments layout: article reading content anchor is missing");
+    if (state.commentsInsideReading) fail("comments layout: HUIKAI comments remain inside the TOC reading grid");
     if (state.minControlHeight < 44) fail(`HUIKAI comments interactive target is too small (${state.minControlHeight.toFixed(1)}px)`);
     if (state.overflowX > 1) fail(`HUIKAI comments introduce horizontal overflow (${state.overflowX.toFixed(1)}px)`);
   } finally {
