@@ -1,6 +1,7 @@
 ---
 title: "Nutrient Hackathon 比賽之後"
 date: "2026-09-04"
+lastmod: "2026-09-08T16:16:00.000Z"
 slug: "first-Hackathon"
 description: "參加 Nutrient DWS Challenge 後，我重新思考 Sponsor 技術整合、可驗證 Demo、公開證明與技術保護之間的界線，也重新整理 Hackathon 作品從開發、揭露到提交的工作方式。"
 tags: ["AI", "Hackathon"]
