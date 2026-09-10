@@ -1,0 +1,49 @@
+name: "Inventory legacy Giscus discussions"
+
+on:
+  push:
+    branches:
+      - ops/comments-production-readiness-20260910
+    paths:
+      - ".github/workflows/inventory-giscus-comments.yml"
+
+permissions:
+  contents: read
+  discussions: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Inventory Giscus category without mutation
+        run: |
+          set -euo pipefail
+          query='query($owner:String!,$name:String!,$cursor:String){repository(owner:$owner,name:$name){discussionCategories(first:100){nodes{id name}} discussions(first:100,after:$cursor,orderBy:{field:CREATED_AT,direction:ASC}){pageInfo{hasNextPage endCursor} nodes{number title url category{name} comments{totalCount}}}}}'
+          cursor=null
+          : > /tmp/discussions.jsonl
+          while :; do
+            response="$(gh api graphql -f query="$query" -F owner=huikai79 -F name=huikai79.github.io -F cursor="$cursor")"
+            printf '%s\n' "$response" | jq -c '.data.repository.discussions.nodes[]' >> /tmp/discussions.jsonl
+            has_next="$(printf '%s' "$response" | jq -r '.data.repository.discussions.pageInfo.hasNextPage')"
+            cursor="$(printf '%s' "$response" | jq -r '.data.repository.discussions.pageInfo.endCursor')"
+            [ "$has_next" = true ] || break
+          done
+          category='技术讨论'
+          total="$(jq -s --arg c "$category" '[.[] | select(.category.name==$c)] | length' /tmp/discussions.jsonl)"
+          giscus_like="$(jq -s --arg c "$category" '[.[] | select(.category.name==$c and (.title|startswith("notion:")))] | length' /tmp/discussions.jsonl)"
+          comments="$(jq -s --arg c "$category" '[.[] | select(.category.name==$c and (.title|startswith("notion:"))) | .comments.totalCount] | add // 0' /tmp/discussions.jsonl)"
+          echo "Legacy category discussions: $total"
+          echo "Giscus notion-key discussions: $giscus_like"
+          echo "Replies/comments across Giscus notion-key discussions: $comments"
+          jq -r --arg c "$category" '. | select(.category.name==$c and (.title|startswith("notion:"))) | "#\(.number) | \(.title) | comments=\(.comments.totalCount) | \(.url)"' /tmp/discussions.jsonl
+          {
+            echo "## Legacy Giscus inventory"
+            echo ""
+            echo "- Category: $category"
+            echo "- Category discussions: $total"
+            echo "- Giscus notion-key discussions: $giscus_like"
+            echo "- Replies/comments: $comments"
+          } >> "$GITHUB_STEP_SUMMARY"
