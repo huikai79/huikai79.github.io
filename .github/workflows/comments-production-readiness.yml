@@ -31,6 +31,9 @@ jobs:
           echo "cf_token=$cf_token" >> "$GITHUB_OUTPUT"
           echo "cf_account=$cf_account" >> "$GITHUB_OUTPUT"
           echo "admin_token=$admin_token" >> "$GITHUB_OUTPUT"
+          echo "Cloudflare API token configured: $cf_token"
+          echo "Cloudflare account ID configured: $cf_account"
+          echo "Comments admin token configured: $admin_token"
           {
             echo "## Production comments readiness"
             echo ""
@@ -58,6 +61,13 @@ jobs:
           test "$turnstile_http" = 200 && jq -e '.success == true' /tmp/turnstile.json >/dev/null && turnstile_ok=yes || true
           test "$d1_ok" = yes && jq -e '.result[]? | select(.name == "huikai-comments")' /tmp/d1.json >/dev/null && d1_exists=yes || true
           test "$turnstile_ok" = yes && jq -e '.result[]? | select(.name == "HUIKAI Comments")' /tmp/turnstile.json >/dev/null && turnstile_exists=yes || true
+
+          echo "Cloudflare token active: $token_ok (HTTP $token_http)"
+          echo "D1 list access: $d1_ok (HTTP $d1_http); huikai-comments exists: $d1_exists"
+          echo "Turnstile list access: $turnstile_ok (HTTP $turnstile_http); HUIKAI Comments exists: $turnstile_exists"
+          if [ "$token_ok" != yes ]; then jq -r '.errors // [] | map(.message) | join("; ")' /tmp/token.json; fi
+          if [ "$d1_ok" != yes ]; then jq -r '.errors // [] | map(.message) | join("; ")' /tmp/d1.json; fi
+          if [ "$turnstile_ok" != yes ]; then jq -r '.errors // [] | map(.message) | join("; ")' /tmp/turnstile.json; fi
 
           {
             echo "- Cloudflare token active: $token_ok"
