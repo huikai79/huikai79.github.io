@@ -275,8 +275,11 @@ async function captureVisualEvidence(browser) {
 }
 
 async function main() {
-  await fs.rm(OUT_DIR, { recursive: true, force: true });
   await fs.mkdir(OUT_DIR, { recursive: true });
+  await Promise.all([
+    fs.rm(path.join(OUT_DIR, "report.json"), { force: true }),
+    fs.rm(path.join(OUT_DIR, "screenshots"), { recursive: true, force: true }),
+  ]);
   await verifyLineage();
 
   for (const [browserName, browserType] of Object.entries(BROWSERS)) {
