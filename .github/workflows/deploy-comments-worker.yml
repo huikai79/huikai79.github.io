@@ -1,0 +1,183 @@
+name: "Validate or deploy HUIKAI comments Worker"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-comments-worker.yml"
+      - "workers/huikai-comments/**"
+      - "assets/js/huikai-comments.js"
+      - "layouts/partials/comments.html"
+      - "scripts/verify-comments-integration.mjs"
+      - "config/_default/params.toml"
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: "Exact current main commit SHA to deploy"
+        required: true
+        type: string
+      database_id:
+        description: "Existing huikai-comments D1 database UUID"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huikai-comments-worker-production
+  cancel-in-progress: false
+
+env:
+  WRANGLER_VERSION: "4.129.0"
+  WORKER_CONFIG: "workers/huikai-comments/wrangler.toml"
+  RUNTIME_CONFIG: "workers/huikai-comments/wrangler.production.toml"
+
+jobs:
+  dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Verify comments runtime contracts
+        run: |
+          set -euo pipefail
+          node --check workers/huikai-comments/index.js
+          node --check workers/huikai-comments/test-runtime.mjs
+          node --check assets/js/huikai-comments.js
+          node workers/huikai-comments/test-runtime.mjs
+
+      - name: Apply comments schema to local D1
+        run: |
+          set -euo pipefail
+          rm -rf workers/huikai-comments/.wrangler
+          npx --yes "wrangler@${WRANGLER_VERSION}" d1 migrations apply huikai-comments --local --config "$WORKER_CONFIG"
+
+      - name: Compile Worker without deploying
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/huikai-comments-worker-dry-run
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config "$WORKER_CONFIG" --dry-run --outdir /tmp/huikai-comments-worker-dry-run
+          test -n "$(find /tmp/huikai-comments-worker-dry-run -type f -print -quit)"
+          test ! -e "$RUNTIME_CONFIG"
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Validate exact inputs
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          DATABASE_ID: ${{ inputs.database_id }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$REQUESTED_SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo "::error::source_sha must be a full lowercase SHA"; exit 1; }
+          printf '%s' "$DATABASE_ID" | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' || { echo "::error::database_id must be a canonical UUID"; exit 1; }
+          test "$DATABASE_ID" != "00000000-0000-0000-0000-000000000000" || { echo "::error::placeholder D1 UUID cannot be deployed"; exit 1; }
+
+      - name: Checkout exact source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Require exact current main lineage
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
+          current_main="$(curl --fail-with-body --silent --show-error -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          test "$current_main" = "$REQUESTED_SHA" || { echo "::error::Comments Worker deployment is restricted to exact current main"; exit 1; }
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Generate runtime config
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          DATABASE_ID: ${{ inputs.database_id }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          path=Path("workers/huikai-comments/wrangler.toml")
+          text=path.read_text(encoding="utf-8")
+          text=text.replace('database_id = "00000000-0000-0000-0000-000000000000"', f'database_id = "{os.environ["DATABASE_ID"]}"')
+          text=text.replace('SOURCE_SHA = "development"', f'SOURCE_SHA = "{os.environ["REQUESTED_SHA"]}"')
+          Path("workers/huikai-comments/wrangler.production.toml").write_text(text, encoding="utf-8")
+          PY
+
+      - name: Verify source and compile before data write
+        run: |
+          set -euo pipefail
+          node workers/huikai-comments/test-runtime.mjs
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config "$RUNTIME_CONFIG" --dry-run --outdir /tmp/huikai-comments-worker-predeploy
+
+      - name: Require Cloudflare credentials and pre-provisioned secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes "wrangler@${WRANGLER_VERSION}" secret list --config "$RUNTIME_CONFIG" --format json > /tmp/comments-secrets.json
+          jq -e 'map(.name) | index("TURNSTILE_SECRET") != null and index("COMMENTS_ADMIN_TOKEN") != null' /tmp/comments-secrets.json >/dev/null
+
+      - name: Reconfirm main and apply D1 migrations
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          current_main="$(curl --fail-with-body --silent --show-error -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          test "$current_main" = "$REQUESTED_SHA" || { echo "::error::main moved before D1 migration"; exit 1; }
+          npx --yes "wrangler@${WRANGLER_VERSION}" d1 migrations apply huikai-comments --remote --config "$RUNTIME_CONFIG"
+
+      - name: Reconfirm main and deploy exact Worker source
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          current_main="$(curl --fail-with-body --silent --show-error -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          test "$current_main" = "$REQUESTED_SHA" || { echo "::error::main moved after comments D1 migration"; exit 1; }
+          npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config "$RUNTIME_CONFIG"
+
+      - name: Verify live Worker lineage
+        env:
+          REQUESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 20); do
+            body="$(curl --fail --silent --show-error https://huikai.com.kg/api/comments/v1/health || true)"
+            test -n "$body" && test "$(printf '%s' "$body" | jq -r '.sourceSha // empty')" = "$REQUESTED_SHA" && exit 0
+            sleep 3
+          done
+          echo "::error::Comments Worker production lineage did not converge"
+          exit 1
+
+      - name: Remove generated runtime config
+        if: always()
+        run: rm -f "$RUNTIME_CONFIG"
