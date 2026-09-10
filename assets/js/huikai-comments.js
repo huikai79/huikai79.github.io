@@ -94,8 +94,10 @@
 
   function render(root, comments) {
     const list = q(root, "[data-comments-list]");
+    const empty = q(root, "[data-comments-empty-summary]");
     list.replaceChildren();
-    if (!comments.length) { list.append(make("p", "huikai-comments__empty", label(root, "emptyLabel", "目前還沒有公開回應。"))); return; }
+    if (empty) empty.hidden = comments.length !== 0;
+    if (!comments.length) return;
     const top = comments.filter(item => !item.parentId);
     const topById = new Map(top.map(item => [item.id, item]));
     const replies = new Map();
@@ -110,11 +112,16 @@
 
   async function load(root) {
     const list = q(root, "[data-comments-list]");
+    const empty = q(root, "[data-comments-empty-summary]");
     list.setAttribute("aria-busy", "true");
     try {
       const payload = await json(`${api(root)}/comments?articleKey=${encodeURIComponent(root.dataset.commentKey)}`, { method: "GET", headers: {} });
       render(root, Array.isArray(payload.comments) ? payload.comments : []);
-    } catch { render(root, []); status(root, label(root, "loadError", "暫時無法載入回應，請稍後再試。"), "error"); }
+    } catch {
+      list.replaceChildren();
+      if (empty) empty.hidden = true;
+      status(root, label(root, "loadError", "暫時無法載入回應，請稍後再試。"), "error");
+    }
     finally { list.removeAttribute("aria-busy"); }
   }
 
@@ -125,6 +132,8 @@
     state.widgetId = window.turnstile.render(target, {
       sitekey: root.dataset.turnstileSiteKey,
       theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+      size: "flexible",
+      appearance: "interaction-only",
       action: "comment-submit",
       callback(token) { state.token = token || ""; if (state.token) status(root, ""); },
       "expired-callback"() { state.token = ""; },
