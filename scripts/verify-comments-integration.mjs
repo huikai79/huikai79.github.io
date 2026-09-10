@@ -19,8 +19,8 @@ async function geometry(page, selector) {
   return page.evaluate(selectorText => {
     const node = document.querySelector(selectorText);
     const comments = node?.closest(".article-footer");
-    const reading = node?.closest(".article-reading-content");
-    const reference = [...document.querySelectorAll(".article-reading-content > .article-footer")].filter(item => item !== comments).at(-1);
+    const reference = [...document.querySelectorAll(".article-footer")].filter(item => item !== comments).at(-1);
+    const reading = document.querySelector(".article-reading-content");
     const rect = item => item ? (() => { const box = item.getBoundingClientRect(); return { left:box.left, right:box.right, width:box.width }; })() : null;
     return { comments:rect(comments), reference:rect(reference), reading:rect(reading) };
   }, selector);
