@@ -7,13 +7,14 @@ echo "Hugo / Go runtime"
 hugo version
 go version
 
-python3 -m py_compile scripts/optimize-managed-covers.py scripts/localize-multilingual-page-resources.py
+python3 -m py_compile scripts/optimize-managed-covers.py scripts/localize-multilingual-page-resources.py scripts/apply-editorial-metadata.py scripts/test-editorial-metadata.py
 node --check scripts/check-notion-publication-contract.mjs
 node --check scripts/live-reader-qa.mjs
 node --check scripts/verify-comments-integration.mjs
 python3 scripts/test-language-route-alias-contract.py
 python3 scripts/verify-translation-workflow-safety.py
-node scripts/test-main-release-contract.mjs
+python3 scripts/test-main-release-contract.mjs
+python3 scripts/test-editorial-metadata.py
 node scripts/test-notion-video-transformer.mjs
 node scripts/test-notion-audio-transformer.mjs
 node workers/notion-media-gateway/test-paths.mjs
