@@ -199,7 +199,8 @@ async function verifyArticleLayout(browser) {
     const context = await browser.newContext({ viewport: { width, height }, colorScheme: "dark", reducedMotion: "reduce" });
     const page = await context.newPage();
     try {
-      await page.goto(`${BASE_URL}/posts/first-hackathon/`, { waitUntil: "networkidle", timeout: 45_000 });
+      await page.goto(`${BASE_URL}/posts/first-hackathon/`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
       await ensureTheme(page, "dark", `article-layout/${label}`);
       const geometry = await page.evaluate(() => {
         const layout = document.querySelector(".article-reading-layout");
@@ -256,7 +257,8 @@ async function captureVisualEvidence(browser) {
         const context = await browser.newContext({ viewport: { width, height }, colorScheme, reducedMotion: "reduce" });
         const page = await context.newPage();
         try {
-          const response = await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
+          const response = await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "domcontentloaded", timeout: 45_000 });
+          await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
           if (!response?.ok()) fail(`visual/${routeName}/${viewportName}/${colorScheme}: HTTP ${response?.status() ?? "NO_RESPONSE"}`);
           const actualDark = await ensureTheme(page, colorScheme, `visual/${routeName}/${viewportName}/${colorScheme}`);
           const fileName = `${routeName}-${viewportName}-${colorScheme}.png`;
