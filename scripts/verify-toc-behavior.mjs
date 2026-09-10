@@ -64,8 +64,10 @@ async function desktopStickyMode(browser) {
       const toc = document.querySelector(".article-toc");
       const desktop = document.querySelector(".article-toc #TOCView");
       const compact = document.querySelector(".article-toc .toc-inside");
-      const link = document.querySelector(".article-toc #TableOfContents a");
-      if (!toc || !desktop || !link) return null;
+      const links = [...document.querySelectorAll(".article-toc #TableOfContents a")];
+      const inactiveLink = links.find(link => !link.classList.contains("active"));
+      const activeLink = links.find(link => link.classList.contains("active"));
+      if (!toc || !desktop || !inactiveLink) return null;
       const visible = element => {
         if (!element) return false;
         const style = getComputedStyle(element);
@@ -75,7 +77,8 @@ async function desktopStickyMode(browser) {
       const rect = toc.getBoundingClientRect();
       const style = getComputedStyle(toc);
       const desktopStyle = getComputedStyle(desktop);
-      const linkStyle = getComputedStyle(link);
+      const inactiveStyle = getComputedStyle(inactiveLink);
+      const activeStyle = activeLink ? getComputedStyle(activeLink) : null;
       return {
         top: rect.top,
         bottom: rect.bottom,
@@ -85,8 +88,9 @@ async function desktopStickyMode(browser) {
         desktopVisible: visible(desktop),
         compactVisible: visible(compact),
         desktopMaxHeight: desktopStyle.maxHeight,
-        fontSize: parseFloat(linkStyle.fontSize || "0"),
-        fontWeight: linkStyle.fontWeight,
+        fontSize: parseFloat(inactiveStyle.fontSize || "0"),
+        inactiveFontWeight: inactiveStyle.fontWeight,
+        activeFontWeight: activeStyle?.fontWeight || null,
         viewportHeight: window.innerHeight,
         scrollHeight: document.documentElement.scrollHeight,
       };
@@ -96,7 +100,8 @@ async function desktopStickyMode(browser) {
     if (!before.desktopVisible) fail("desktop: expanded TOC is not visible at 1440px");
     if (before.compactVisible) fail("desktop: compact TOC must be hidden when sidebar mode is active");
     if (!(before.fontSize > 0 && before.fontSize <= 15)) fail(`desktop: TOC link font size is ${before.fontSize}px, expected <=15px`);
-    if (Number.parseInt(before.fontWeight, 10) >= 600) fail(`desktop: TOC link weight is ${before.fontWeight}, expected normal/subordinate navigation weight`);
+    if (Number.parseInt(before.inactiveFontWeight, 10) >= 600) fail(`desktop: inactive TOC link weight is ${before.inactiveFontWeight}, expected normal/subordinate navigation weight`);
+    if (before.activeFontWeight !== null && Number.parseInt(before.activeFontWeight, 10) < 600) fail(`desktop: active TOC link weight is ${before.activeFontWeight}, expected current-section emphasis`);
     if (before.height > before.viewportHeight - before.stickyOffset + 2) fail(`desktop: TOC sidebar height ${before.height.toFixed(1)}px exceeds sticky viewport budget`);
 
     const maxScroll = await page.evaluate(() => Math.max(0, document.documentElement.scrollHeight - window.innerHeight));
@@ -143,7 +148,7 @@ async function main() {
     console.error(`TOC behavior verification: FAIL (${failures.length} issue(s))`);
     process.exit(1);
   }
-  console.log("TOC behavior verification: PASS (compact <1280px + native typography + actual desktop sticky scroll)");
+  console.log("TOC behavior verification: PASS (compact <1280px + subordinate inactive typography + current-section emphasis + actual desktop sticky scroll)");
 }
 
 main().catch(error => {

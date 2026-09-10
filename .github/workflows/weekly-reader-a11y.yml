@@ -9,12 +9,15 @@ on:
       - "scripts/weekly-reader-a11y-qa.mjs"
       - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-toc-behavior.mjs"
+      - "scripts/verify-longform-reading.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
       - "assets/js/huikai-comments.js"
+      - "assets/js/reading-progress.js"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
       - "layouts/partials/comments.html"
+      - "layouts/partials/extend-head-uncached.html"
       - "config/_default/params.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
@@ -32,12 +35,15 @@ on:
       - "scripts/weekly-reader-a11y-qa.mjs"
       - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-toc-behavior.mjs"
+      - "scripts/verify-longform-reading.mjs"
       - "assets/css/custom.css"
       - "assets/css/huikai-comments.css"
       - "assets/js/huikai-comments.js"
+      - "assets/js/reading-progress.js"
       - "layouts/_default/single.html"
       - "layouts/partials/article/**"
       - "layouts/partials/comments.html"
+      - "layouts/partials/extend-head-uncached.html"
       - "config/_default/params.toml"
       - "i18n/zh-TW.yaml"
       - "i18n/zh-CN.yaml"
@@ -177,6 +183,9 @@ jobs:
 
       - name: Verify TOC responsive and sticky behavior
         run: node scripts/verify-toc-behavior.mjs
+
+      - name: Verify long-form and CJK reading behavior
+        run: node scripts/verify-longform-reading.mjs
 
       - name: Upload cross-browser accessibility evidence
         if: ${{ !cancelled() }}

@@ -1,3 +1,73 @@
 {{- if strings.HasSuffix .RelPermalink "/404.html" -}}
 <meta name="robots" content="noindex,follow">
 {{- end -}}
+
+<style>
+  /* Long-form reading polish. Kept tightly scoped so non-article surfaces are unchanged. */
+  .article-reading-progress {
+    position: fixed;
+    inset: 0 auto auto 0;
+    z-index: 100;
+    width: 0;
+    height: 2px;
+    pointer-events: none;
+    background: rgb(var(--color-primary-500, 59 130 246));
+    transition: width 80ms linear;
+  }
+
+  .dark .article-reading-progress {
+    background: rgb(var(--color-primary-400, 96 165 250));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .article-reading-progress {
+      transition: none;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .article-toc #TableOfContents a.active {
+      color: rgb(var(--color-primary-600, 37 99 235));
+      font-weight: 600;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 0.2em;
+    }
+
+    .dark .article-toc #TableOfContents a.active {
+      color: rgb(var(--color-primary-300, 147 197 253));
+    }
+  }
+
+  /* CJK long-form baseline: keep body metrics unchanged, improve line breaking
+     and prevent awkward one- or two-character heading tails on supported engines. */
+  html:lang(zh-TW) .article-main,
+  html:lang(zh-CN) .article-main {
+    line-break: strict;
+  }
+
+  .article-main > h1,
+  .article-main > h2,
+  .article-main > h3 {
+    text-wrap: balance;
+  }
+
+  .article-main > h2 {
+    margin-top: 3rem;
+    margin-bottom: 1.15rem;
+  }
+
+  .article-main > h3 {
+    margin-top: 2.25rem;
+    margin-bottom: 0.9rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .article-main > h2 {
+      margin-top: 2.5rem;
+    }
+
+    .article-main > h3 {
+      margin-top: 2rem;
+    }
+  }
+</style>
