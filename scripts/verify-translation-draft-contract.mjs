@@ -15,17 +15,25 @@ import {
 } from "./translation-draft-contract.mjs";
 
 const editorial = {
-  visibility: "Public",
+  visibility: "Test",
   language: "zh-TW",
   translationGroup: "sample",
   translationStatus: "Source",
-  translateTo: ["zh-CN", "en", "zh-CN"]
+  translateTo: ["zh-CN", "zh-CN"]
 };
-assert.deepEqual(sourceTranslationTargets(editorial), ["zh-CN", "en"]);
+assert.deepEqual(sourceTranslationTargets(editorial), ["zh-CN"]);
 assert.deepEqual(validateSourceForTranslation({ pageId: "source", editorial }), []);
+assert.deepEqual(
+  validateSourceForTranslation({ pageId: "source", editorial: { ...editorial, visibility: "Public" } }),
+  []
+);
 assert.deepEqual(
   validateSourceForTranslation({ pageId: "", editorial: { ...editorial, translationStatus: "Draft" } }),
   ["missing page id", "Translation Status must be Source"]
+);
+assert.deepEqual(
+  validateSourceForTranslation({ pageId: "source", editorial: { ...editorial, translateTo: ["en"] } }),
+  ["unsupported target language en"]
 );
 
 const blocks = [
@@ -109,6 +117,8 @@ const source = {
     Category: { select: { name: "教育" } },
     Type: { select: { name: "文章" } },
     tags: { multi_select: [{ name: "測試" }] },
+    Source: { rich_text: [{ plain_text: "Paul Graham 精选文" }] },
+    "Source URL": { url: "https://paulgraham.com/example.html" },
     "Translation Group": { rich_text: [{ plain_text: "sample" }] }
   }
 };
@@ -127,6 +137,8 @@ assert.equal(props["Translation Status"].select.name, "Draft");
 assert.equal(props["Translation Source"].relation[0].id, "source-page");
 assert.equal(props["Translation Source Revision"].rich_text[0].text.content, source.last_edited_time);
 assert.equal(props.slug.rich_text[0].text.content, "same-slug");
+assert.equal(props.Source.rich_text[0].text.content, "Paul Graham 精选文");
+assert.equal(props["Source URL"].url, "https://paulgraham.com/example.html");
 
 const writable = writableBlock(translated.blocks[0]);
 assert.equal(writable.type, "paragraph");
@@ -138,6 +150,7 @@ assert.throws(
 );
 
 assert.match(translationInstructions("zh-TW", "zh-CN"), /Taiwan/);
+assert.throws(() => translationInstructions("zh-TW", "en"), /Unsupported translation direction/);
 assert.equal(translationResponseSchema().properties.translations.type, "array");
 assert.equal(extractOpenAIOutputText({ output_text: '{"ok":true}' }), '{"ok":true}');
 assert.equal(

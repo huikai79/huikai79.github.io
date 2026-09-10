@@ -19,16 +19,18 @@ import { extractEditorialFields } from "./notion-content-contract.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
-const apply = process.env.TRANSLATION_APPLY === "1";
-const apiKey = process.env.OPENAI_API_KEY || "";
+const requestedApply = process.env.TRANSLATION_APPLY === "1";
+const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
+const apply = requestedApply && Boolean(apiKey);
 const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-5.6-luna";
 const reportPath = process.env.TRANSLATION_REPORT_PATH || "/tmp/notion-translation-drafts.json";
+const applyWarning = requestedApply && !apiKey
+  ? "OPENAI_API_KEY is not configured; running translation preflight only and creating no drafts"
+  : "";
 
 if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
-if (apply && !apiKey) {
-  throw new Error("TRANSLATION_APPLY=1 requires OPENAI_API_KEY; no draft was created");
-}
+if (applyWarning) console.warn(`::warning::${applyWarning}`);
 
 const notion = new Client({ auth: token });
 
@@ -175,14 +177,21 @@ async function createDraft({ source, group, targetLanguage, translated }) {
 const sources = await queryAll({
   and: [
     { property: "status", status: { equals: "Published" } },
-    { property: "Visibility", select: { equals: "Public" } },
+    {
+      or: [
+        { property: "Visibility", select: { equals: "Public" } },
+        { property: "Visibility", select: { equals: "Test" } }
+      ]
+    },
     { property: "Translate To", multi_select: { is_not_empty: true } }
   ]
 });
 
 const report = {
-  status: "complete",
+  status: applyWarning ? "preflight" : "complete",
+  requestedApply,
   apply,
+  warning: applyWarning || null,
   provider: "openai-responses",
   model,
   sourceCount: sources.length,
@@ -301,7 +310,7 @@ await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 
 console.log(
   `Translation drafts: ${report.status.toUpperCase()} ` +
-  `(apply=${apply}, sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
+  `(requestedApply=${requestedApply}, apply=${apply}, sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
   `planned=${report.planned.length}, generated=${report.generated.length}, ` +
   `skipped=${report.skipped.length}, blocked=${report.blocked.length}, report=${reportPath})`
 );

@@ -1,5 +1,5 @@
 const VALID_SYNC_MODES = new Set(["legacy", "production", "preview"]);
-export const VALID_CONTENT_LANGUAGES = new Set(["zh-TW", "zh-CN", "en"]);
+export const VALID_CONTENT_LANGUAGES = new Set(["zh-TW", "zh-CN"]);
 export const VALID_TRANSLATION_STATUSES = new Set(["Source", "Draft", "Review", "Approved", "Stale"]);
 
 export function normalizeSyncMode(value = "legacy") {
@@ -56,6 +56,10 @@ function relationIds(property) {
   return property?.relation?.map(item => item.id?.trim()).filter(Boolean) ?? [];
 }
 
+function urlValue(property) {
+  return String(property?.url || "").trim();
+}
+
 export function extractEditorialFields(properties = {}) {
   const translationSourceIds = relationIds(properties["Translation Source"]);
   const explicitTranslationStatus = selectValue(properties["Translation Status"]);
@@ -69,6 +73,8 @@ export function extractEditorialFields(properties = {}) {
     summary: richTextValue(properties.Summary),
     homePlacement: selectValue(properties.Home),
     language: selectValue(properties.Language),
+    source: richTextValue(properties.Source),
+    sourceUrl: urlValue(properties["Source URL"]),
     translationGroup: explicitTranslationGroup || slug,
     translateTo: multiSelectValues(properties["Translate To"]),
     translationStatus: explicitTranslationStatus || (translationSourceIds.length === 0 ? "Source" : ""),
@@ -76,6 +82,15 @@ export function extractEditorialFields(properties = {}) {
     translationSourceRevision: richTextValue(properties["Translation Source Revision"]),
     translationEngine: richTextValue(properties["Translation Engine"])
   };
+}
+
+export function provenanceIssues(candidate = {}) {
+  const issues = [];
+  const source = String(candidate.source || "").trim();
+  const sourceUrl = String(candidate.sourceUrl || "").trim();
+  if (source && !sourceUrl) issues.push("Source URL");
+  if (sourceUrl && !source) issues.push("Source");
+  return issues;
 }
 
 export function translationGovernanceIssues(candidate = {}) {
@@ -140,6 +155,7 @@ export function productionMetadataMissing(candidate) {
   }
   if (!candidate.translationGroup) missing.push("Translation Group");
   if (!candidate.translationStatus) missing.push("Translation Status");
+  missing.push(...provenanceIssues(candidate));
   return missing;
 }
 
@@ -167,14 +183,15 @@ export function editorialFrontMatter(candidate = {}) {
     contentVisibility: candidate.visibility,
     homePlacement: candidate.homePlacement || "None",
     contentLanguage: candidate.language,
-    translationKey: candidate.translationGroup
+    translationKey: candidate.translationGroup,
+    sourceLabel: candidate.source || "",
+    sourceURL: candidate.sourceUrl || ""
   };
 }
 
 export function contentFilename(language) {
   if (language === "zh-TW") return "index.md";
   if (language === "zh-CN") return "index.zh-cn.md";
-  if (language === "en") return "index.en.md";
   throw new Error(`Unsupported content language: ${JSON.stringify(language)}`);
 }
 

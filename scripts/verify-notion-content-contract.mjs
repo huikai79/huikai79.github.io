@@ -8,6 +8,7 @@ import {
   normalizeSyncMode,
   productionMetadataMissing,
   productionTranslationIssues,
+  provenanceIssues,
   publicationRecordMissing,
   publicSlugChangeBlocked,
   shouldQuarantineDeletion,
@@ -54,8 +55,10 @@ const fields = extractEditorialFields({
   Summary: { rich_text: [{ plain_text: "摘要" }] },
   Home: { select: { name: "Rotation" } },
   Language: { select: { name: "zh-TW" } },
+  Source: { rich_text: [{ plain_text: "Paul Graham 精选文" }] },
+  "Source URL": { url: "https://paulgraham.com/example.html" },
   "Translation Group": { rich_text: [{ plain_text: "example-article" }] },
-  "Translate To": { multi_select: [{ name: "zh-CN" }, { name: "en" }] },
+  "Translate To": { multi_select: [{ name: "zh-CN" }] },
   "Translation Status": { select: { name: "Source" } },
   "Translation Source": { relation: [] },
   "Translation Source Revision": { rich_text: [] },
@@ -68,13 +71,20 @@ assert.deepEqual(fields, {
   summary: "摘要",
   homePlacement: "Rotation",
   language: "zh-TW",
+  source: "Paul Graham 精选文",
+  sourceUrl: "https://paulgraham.com/example.html",
   translationGroup: "example-article",
-  translateTo: ["zh-CN", "en"],
+  translateTo: ["zh-CN"],
   translationStatus: "Source",
   translationSourceIds: [],
   translationSourceRevision: "",
   translationEngine: ""
 });
+
+assert.deepEqual(provenanceIssues({ source: "", sourceUrl: "" }), []);
+assert.deepEqual(provenanceIssues({ source: "Source", sourceUrl: "https://example.com" }), []);
+assert.deepEqual(provenanceIssues({ source: "Source", sourceUrl: "" }), ["Source URL"]);
+assert.deepEqual(provenanceIssues({ source: "", sourceUrl: "https://example.com" }), ["Source"]);
 
 assert.deepEqual(
   productionMetadataMissing({
@@ -83,6 +93,8 @@ assert.deepEqual(
     category: "教育",
     entryType: "文章",
     language: "zh-CN",
+    source: "",
+    sourceUrl: "",
     translationGroup: "article-key",
     translationStatus: "Source"
   }),
@@ -95,6 +107,8 @@ assert.deepEqual(
     category: "",
     entryType: "",
     language: "",
+    source: "",
+    sourceUrl: "",
     translationGroup: "",
     translationStatus: ""
   }),
@@ -106,24 +120,44 @@ assert.deepEqual(
     summary: "摘要",
     category: "教育",
     entryType: "文章",
-    language: "xx",
+    language: "en",
+    source: "",
+    sourceUrl: "",
     translationGroup: "article-key",
     translationStatus: "Source"
   }),
-  ["Language=xx"]
+  ["Language=en"]
+);
+assert.deepEqual(
+  productionMetadataMissing({
+    visibility: "Public",
+    summary: "摘要",
+    category: "教育",
+    entryType: "文章",
+    language: "zh-TW",
+    source: "Imported essay",
+    sourceUrl: "",
+    translationGroup: "article-key",
+    translationStatus: "Source"
+  }),
+  ["Source URL"]
 );
 
 const sourceTranslation = {
   visibility: "Public",
   language: "zh-TW",
   translationStatus: "Source",
-  translateTo: ["zh-CN", "en"],
+  translateTo: ["zh-CN"],
   translationSourceIds: [],
   translationSourceRevision: "",
   translationEngine: ""
 };
 assert.deepEqual(translationGovernanceIssues(sourceTranslation), []);
 assert.deepEqual(productionTranslationIssues(sourceTranslation), []);
+assert.deepEqual(
+  translationGovernanceIssues({ ...sourceTranslation, translateTo: ["en"] }),
+  ["Translate To=en"]
+);
 assert.deepEqual(
   translationGovernanceIssues({ ...sourceTranslation, translateTo: ["zh-TW"] }),
   ["Translate To includes source language zh-TW"]
@@ -168,6 +202,8 @@ const publicationCandidate = {
   entryType: "推薦／整理",
   homePlacement: "None",
   language: "zh-TW",
+  source: "Paul Graham 精选文",
+  sourceUrl: "https://paulgraham.com/prepare.html",
   translationGroup: "daxuepeiyangchuangyezhe",
   translationStatus: "Source",
   translateTo: [],
@@ -184,7 +220,9 @@ assert.deepEqual(editorialFrontMatter(publicationCandidate), {
   contentVisibility: "Public",
   homePlacement: "None",
   contentLanguage: "zh-TW",
-  translationKey: "daxuepeiyangchuangyezhe"
+  translationKey: "daxuepeiyangchuangyezhe",
+  sourceLabel: "Paul Graham 精选文",
+  sourceURL: "https://paulgraham.com/prepare.html"
 });
 assert.throws(
   () => editorialFrontMatter({ ...publicationCandidate, summary: "" }),
@@ -196,7 +234,7 @@ assert.throws(
 );
 assert.equal(contentFilename("zh-TW"), "index.md");
 assert.equal(contentFilename("zh-CN"), "index.zh-cn.md");
-assert.equal(contentFilename("en"), "index.en.md");
+assert.throws(() => contentFilename("en"), /Unsupported content language/);
 assert.throws(() => contentFilename("fr"), /Unsupported content language/);
 
 assert.equal(
