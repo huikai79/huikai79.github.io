@@ -4,4 +4,4 @@ description: "庄辉恺的文章与笔记。"
 outputs: ["HTML", "RSS"]
 ---
 
-{{< page-lead >}}
+{{< page-lead >}}{{< /page-lead >}}
