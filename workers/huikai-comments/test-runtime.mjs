@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import worker, { handleRequest, normalizeBody, reservedNameKey, sha256Hex, validArticleKey, validArticlePath, validBody, validDisplayName } from "./index.js";
+import worker, { handleRequest, normalizeBody, publishedArticleAllowsComments, reservedNameKey, sha256Hex, validArticleKey, validArticlePath, validBody, validDisplayName } from "./index.js";
 
 const ARTICLE = "notion:3d07a59e-0439-8048-ae89-da587d3ba5d0";
 const PATH = "/posts/first-hackathon/";
@@ -63,11 +63,12 @@ function req(path, { method="GET", body=null, headers={} }={}) {
 function post(body, headers={}) { return req("/api/comments/v1/comments", { method:"POST", body, headers:{ Origin:ORIGIN, "Sec-Fetch-Site":"same-origin", "CF-Connecting-IP":"203.0.113.9", ...headers } }); }
 function env(db) { return { DB:db, TURNSTILE_SECRET:"test-secret", COMMENTS_ADMIN_TOKEN:"admin-test-token-with-enough-entropy", COMMENT_RATE_LIMITER:{ limit:async()=>({success:true}) }, SOURCE_SHA:"test-sha" }; }
 
+let articleHtml = `<main><section data-comment-key="${ARTICLE}"></section></main>`;
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async input => {
   const url = typeof input === "string" ? input : input.url;
   if (url === "https://challenges.cloudflare.com/turnstile/v0/siteverify") return new Response(JSON.stringify({ success:true, hostname:"huikai.com.kg", action:"comment-submit" }), { status:200, headers:{"content-type":"application/json"} });
-  if (url === `${ORIGIN}${PATH}`) return new Response(`<main><section data-comment-key="${ARTICLE}"></section></main>`, { status:200 });
+  if (url === `${ORIGIN}${PATH}`) return new Response(articleHtml, { status:200 });
   throw new Error(`Unexpected fetch: ${url}`);
 };
 
@@ -84,6 +85,16 @@ try {
   assert.equal(normalizeBody(" hello\r\nworld "), "hello\nworld");
   assert.equal(validBody("a".repeat(4000)), true);
   assert.equal(validBody("a".repeat(4001)), false);
+
+  articleHtml = `<main data-comment-key="${ARTICLE}"></main>`;
+  assert.equal(await publishedArticleAllowsComments(ARTICLE, PATH), true);
+  articleHtml = `<main data-comment-key='${ARTICLE}'></main>`;
+  assert.equal(await publishedArticleAllowsComments(ARTICLE, PATH), true);
+  articleHtml = `<main data-comment-key=${ARTICLE}></main>`;
+  assert.equal(await publishedArticleAllowsComments(ARTICLE, PATH), true);
+  articleHtml = `<main data-comment-key=${ARTICLE}-extra></main>`;
+  assert.equal(await publishedArticleAllowsComments(ARTICLE, PATH), false);
+  articleHtml = `<main><section data-comment-key="${ARTICLE}"></section></main>`;
 
   let response = await worker.fetch(req("/api/comments/v1/health"), env(new DB()));
   assert.equal(response.status, 200);
