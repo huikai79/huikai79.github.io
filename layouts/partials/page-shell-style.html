@@ -1,0 +1,55 @@
+<style>
+  /* Shared HUIKAI shell for the four editorial entry pages that opt in via
+     the page-lead shortcode. Keep layout roles intact; only normalize the
+     title/lead rhythm and typography. */
+  #main-content:has(.huikai-page-lead) > header h1,
+  #main-content:has(.huikai-page-lead) > article > header h1 {
+    margin-top: 1.25rem;
+    margin-bottom: 0;
+    text-wrap: balance;
+  }
+
+  #main-content:has(.huikai-page-lead) > article > section {
+    margin-top: 0.75rem;
+  }
+
+  .huikai-page-lead {
+    max-width: 42rem;
+    margin-top: 0;
+    color: rgb(var(--color-neutral-600, 82 82 82));
+  }
+
+  .huikai-page-lead > :first-child {
+    margin-top: 0;
+  }
+
+  .huikai-page-lead > :last-child {
+    margin-bottom: 0;
+  }
+
+  .huikai-page-lead p {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 1.0625rem;
+    line-height: 1.8;
+  }
+
+  .huikai-page-lead:not(:last-child) {
+    margin-bottom: 2.25rem;
+  }
+
+  .dark .huikai-page-lead {
+    color: rgb(var(--color-neutral-300, 212 212 212));
+  }
+
+  @media (max-width: 639.98px) {
+    .huikai-page-lead p {
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+
+    .huikai-page-lead:not(:last-child) {
+      margin-bottom: 1.75rem;
+    }
+  }
+</style>
