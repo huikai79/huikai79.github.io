@@ -7,6 +7,7 @@
     {{- end -}}
   {{- end -}}
 {{- end -}}
+{{- $articleManifestJSON := jsonify $articleManifest -}}
 {{- $adminCSS := resources.Get "css/huikai-comments-admin.css" | minify -}}
 <style data-huikai-comments-admin-style>{{ $adminCSS.Content | safeCSS }}</style>
 <section class="huikai-comments-admin not-prose" data-api-base="/api/comments/v1" aria-labelledby="comments-admin-title">
@@ -66,7 +67,7 @@
     </nav>
   </section>
 
-  <script type="application/json" data-comments-admin-article-manifest>{{ $articleManifest | jsonify | safeHTML }}</script>
+  <script type="application/json" data-comments-admin-article-manifest>{{ $articleManifestJSON | safeHTML }}</script>
 </section>
 {{- $adminJS := resources.Get "js/huikai-comments-admin.js" | minify | fingerprint site.Params.fingerprintAlgorithm -}}
 <script src="{{ $adminJS.RelPermalink }}" integrity="{{ $adminJS.Data.Integrity }}" defer></script>
