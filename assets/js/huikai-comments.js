@@ -60,12 +60,14 @@
 
   function clearReply(root) {
     q(root, "[data-comments-reply-to]").value = "";
+    root.dataset.legacyReplyTarget = "";
     q(root, "[data-comments-reply-name]").textContent = "";
     q(root, "[data-comments-reply-state]").hidden = true;
   }
 
   function chooseReply(root, comment) {
     q(root, "[data-comments-reply-to]").value = comment.id;
+    root.dataset.legacyReplyTarget = Object.prototype.hasOwnProperty.call(comment, "replyToId") ? "" : comment.id;
     q(root, "[data-comments-reply-name]").textContent = comment.displayName || tombstoneLabel(root, comment);
     q(root, "[data-comments-reply-state]").hidden = false;
     q(root, "[data-comments-body]").focus();
@@ -122,7 +124,8 @@
       item.append(body);
 
       const actions = make("div", "huikai-comment__actions");
-      if (comment.replyable) {
+      const replyable = comment.replyable ?? !tombstone;
+      if (replyable) {
         const reply = make("button", "huikai-comment__action", label(root, "replyLabel", "回覆"));
         reply.type = "button";
         reply.addEventListener("click", () => chooseReply(root, comment));
@@ -224,16 +227,19 @@
       const submit = q(root, "[data-comments-submit]");
       submit.disabled = true;
       try {
+        const replyToId = q(root, "[data-comments-reply-to]").value || null;
+        const submission = {
+          articleKey: root.dataset.commentKey,
+          pagePath: root.dataset.pagePath || location.pathname,
+          displayName: q(root, "[data-comments-name]").value,
+          body: body.value,
+          replyToId,
+          turnstileToken: state.token,
+        };
+        if (replyToId && root.dataset.legacyReplyTarget === replyToId) submission.parentId = replyToId;
         const payload = await json(`${api(root)}/comments`, {
           method: "POST",
-          body: JSON.stringify({
-            articleKey: root.dataset.commentKey,
-            pagePath: root.dataset.pagePath || location.pathname,
-            displayName: q(root, "[data-comments-name]").value,
-            body: body.value,
-            replyToId: q(root, "[data-comments-reply-to]").value || null,
-            turnstileToken: state.token,
-          }),
+          body: JSON.stringify(submission),
         });
         if (payload.id && payload.managementToken) saveCap(payload.id, payload.managementToken);
         body.value = "";
