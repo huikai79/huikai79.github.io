@@ -1,0 +1,8 @@
+{{- $inner := strings.TrimSpace .Inner -}}
+<div class="huikai-page-lead">
+  {{- if $inner -}}
+    {{ $inner | markdownify }}
+  {{- else -}}
+    <p>{{ .Page.Description }}</p>
+  {{- end -}}
+</div>
