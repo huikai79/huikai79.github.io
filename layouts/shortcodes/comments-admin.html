@@ -1,7 +1,7 @@
 {{- $adminCSS := resources.Get "css/huikai-comments-admin.css" | minify -}}
 <style data-huikai-comments-admin-style>{{ $adminCSS.Content | safeCSS }}</style>
 <section class="huikai-comments-admin not-prose" data-api-base="/api/comments/v1" aria-labelledby="comments-admin-title">
-  <h2 id="comments-admin-title">留言審核</h2>
+  <h2 id="comments-admin-title">留言管理</h2>
   <p class="huikai-comments-admin__intro">管理密碼只保留在這個頁面的記憶體中，不會寫入瀏覽器儲存空間。重新整理或關閉頁面後，需要重新輸入。</p>
 
   <form class="huikai-comments-admin__login" data-comments-admin-login>
@@ -10,21 +10,26 @@
       <input type="password" data-comments-admin-token autocomplete="off" spellcheck="false" required>
     </label>
     <div class="huikai-comments-admin__actions">
-      <button type="submit" class="huikai-comments-admin__button">登入審核</button>
+      <button type="submit" class="huikai-comments-admin__button">登入管理</button>
     </div>
   </form>
 
   <div class="huikai-comments-admin__status" data-comments-admin-status role="status" aria-live="polite"></div>
 
-  <section class="huikai-comments-admin__panel" data-comments-admin-panel hidden aria-labelledby="comments-admin-pending-title">
+  <section class="huikai-comments-admin__panel" data-comments-admin-panel hidden aria-labelledby="comments-admin-list-title">
+    <nav class="huikai-comments-admin__tabs" aria-label="留言狀態">
+      <button type="button" class="huikai-comments-admin__tab" data-comments-admin-filter="pending" aria-pressed="true">待審核</button>
+      <button type="button" class="huikai-comments-admin__tab" data-comments-admin-filter="approved" aria-pressed="false">已公開</button>
+      <button type="button" class="huikai-comments-admin__tab" data-comments-admin-filter="hidden" aria-pressed="false">已隱藏</button>
+    </nav>
     <div class="huikai-comments-admin__toolbar">
-      <h3 id="comments-admin-pending-title">待審核 <span data-comments-admin-count>0</span></h3>
+      <h3 id="comments-admin-list-title"><span data-comments-admin-heading>待審核</span> <span data-comments-admin-count>0</span></h3>
       <div class="huikai-comments-admin__actions">
         <button type="button" class="huikai-comments-admin__button huikai-comments-admin__button--muted" data-comments-admin-refresh>重新整理</button>
         <button type="button" class="huikai-comments-admin__button huikai-comments-admin__button--muted" data-comments-admin-logout>登出</button>
       </div>
     </div>
-    <div class="huikai-comments-admin__list" data-comments-admin-list></div>
+    <div class="huikai-comments-admin__list" data-comments-admin-list aria-live="polite"></div>
   </section>
 </section>
 {{- $adminJS := resources.Get "js/huikai-comments-admin.js" | minify | fingerprint site.Params.fingerprintAlgorithm -}}
