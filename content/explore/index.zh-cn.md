@@ -6,7 +6,9 @@ showBreadcrumbs: false
 sharingLinks: []
 ---
 
+{{< page-lead >}}
 不一定要按发布日期阅读。这里直接使用文章已有的分类、内容形式与标签建立入口；Notion 内容增加、删除或调整后，探索页会跟着网站更新，不另外维护一份重复的分类资料。
+{{< /page-lead >}}
 
 {{< explore-topics >}}
 
