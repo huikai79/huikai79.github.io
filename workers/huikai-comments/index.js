@@ -6,9 +6,10 @@ const MAX_NAME_LENGTH = 40;
 const MAX_BODY_LENGTH = 4000;
 const MAX_REQUEST_BYTES = 12_000;
 const PUBLIC_COMMENT_LIMIT = 300;
-const ADMIN_PENDING_LIMIT = 100;
+const ADMIN_COMMENT_LIMIT = 100;
 const ARTICLE_KEY_RE = /^notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const COMMENT_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ADMIN_STATUSES = new Set(["pending", "approved", "hidden"]);
 
 const RESERVED_NAMES = new Set([
   "huikai",
@@ -67,8 +68,7 @@ function validBody(value) {
   const body = normalizeBody(value);
   if (!body || body.length > MAX_BODY_LENGTH) return false;
   const controlChars = body.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/gu) || [];
-  if (controlChars.length) return false;
-  return true;
+  return controlChars.length === 0;
 }
 
 function validArticleKey(value) {
@@ -203,16 +203,24 @@ async function rateLimitSubmission(request, env) {
   }
 }
 
+function isTombstoneStatus(status) {
+  return status === "withdrawn";
+}
+
 function publicComment(row) {
-  const withdrawn = row.status === "withdrawn";
+  const tombstone = isTombstoneStatus(row.status);
+  const removed = tombstone && Boolean(row.removed_by_admin);
   return {
     id: row.id,
     parentId: row.parent_id || null,
-    displayName: withdrawn ? "" : row.display_name,
-    body: withdrawn ? "" : row.body,
+    replyToId: row.reply_to_id || null,
+    displayName: tombstone ? "" : row.display_name,
+    body: tombstone ? "" : row.body,
     isAuthor: Boolean(row.is_author),
     createdAt: row.created_at,
-    withdrawn,
+    withdrawn: tombstone && !removed,
+    removed,
+    replyable: row.status === "approved",
   };
 }
 
@@ -221,7 +229,7 @@ async function listPublicComments(url, env) {
   if (!validArticleKey(articleKey)) return errorJson("invalid_article_key", "Invalid article key.", 400);
 
   const result = await env.DB.prepare(
-    `SELECT id, parent_id, display_name, body, is_author, created_at, status
+    `SELECT id, parent_id, reply_to_id, display_name, body, is_author, created_at, status, removed_by_admin
        FROM comments
       WHERE article_key = ? AND status IN ('approved', 'withdrawn')
       ORDER BY created_at ASC, id ASC
@@ -232,6 +240,24 @@ async function listPublicComments(url, env) {
   const visibleTopLevel = new Set(rows.filter(row => !row.parent_id).map(row => row.id));
   const visibleRows = rows.filter(row => !row.parent_id || visibleTopLevel.has(row.parent_id));
   return responseJson({ ok: true, comments: visibleRows.map(publicComment) });
+}
+
+async function resolveReplyTarget(env, articleKey, replyToId, { requireApproved = true } = {}) {
+  const target = await env.DB.prepare(
+    `SELECT id, article_key, parent_id, page_path, status FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
+  ).bind(replyToId, articleKey).first();
+  if (!target) return { ok: false, error: "not_found" };
+  if (requireApproved && target.status !== "approved") return { ok: false, error: "not_replyable" };
+
+  if (!target.parent_id) {
+    return { ok: true, target, root: target, parentId: target.id };
+  }
+
+  const root = await env.DB.prepare(
+    `SELECT id, article_key, parent_id, page_path, status FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
+  ).bind(target.parent_id, articleKey).first();
+  if (!root || root.parent_id) return { ok: false, error: "invalid_thread" };
+  return { ok: true, target, root, parentId: root.id };
 }
 
 async function submitComment(request, env) {
@@ -250,23 +276,23 @@ async function submitComment(request, env) {
   const pagePath = String(payload?.pagePath || "");
   const displayName = normalizeName(payload?.displayName);
   const body = normalizeBody(payload?.body);
-  const parentId = payload?.parentId ? String(payload.parentId) : null;
+  const replyToId = payload?.replyToId ? String(payload.replyToId) : null;
 
   if (!validArticleKey(articleKey)) return errorJson("invalid_article_key", "Invalid article key.");
   if (!validArticlePath(pagePath)) return errorJson("invalid_article_path", "Invalid article path.");
   if (!validDisplayName(displayName)) return errorJson("invalid_display_name", "Display name is invalid or reserved.");
   if (!validBody(body)) return errorJson("invalid_body", `Comment must be 1-${MAX_BODY_LENGTH} characters.`);
-  if (parentId && !validCommentId(parentId)) return errorJson("invalid_parent", "Invalid reply target.");
+  if (replyToId && !validCommentId(replyToId)) return errorJson("invalid_reply_target", "Invalid reply target.");
 
   const turnstile = await verifyTurnstile(payload?.turnstileToken, env);
   if (!turnstile.ok) return errorJson("turnstile_failed", "Human verification failed.", 403);
   if (!(await publishedArticleAllowsComments(articleKey, pagePath))) return errorJson("article_not_eligible", "This article is not currently accepting comments.", 409);
 
-  if (parentId) {
-    const parent = await env.DB.prepare(
-      `SELECT id, parent_id, status FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
-    ).bind(parentId, articleKey).first();
-    if (!parent || parent.status !== "approved" || parent.parent_id) return errorJson("invalid_parent", "Replies are limited to approved top-level comments.", 409);
+  let parentId = null;
+  if (replyToId) {
+    const resolved = await resolveReplyTarget(env, articleKey, replyToId, { requireApproved: true });
+    if (!resolved.ok) return errorJson("invalid_reply_target", "Reply target is not currently available.", 409);
+    parentId = resolved.parentId;
   }
 
   const id = crypto.randomUUID();
@@ -276,9 +302,9 @@ async function submitComment(request, env) {
 
   await env.DB.prepare(
     `INSERT INTO comments
-      (id, article_key, parent_id, display_name, body, status, is_author, manage_token_hash, created_at)
-     VALUES (?, ?, ?, ?, ?, 'pending', 0, ?, ?)`
-  ).bind(id, articleKey, parentId, displayName, body, capabilityHash, createdAt).run();
+      (id, article_key, parent_id, reply_to_id, page_path, display_name, body, status, is_author, manage_token_hash, created_at, removed_by_admin)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, 0)`
+  ).bind(id, articleKey, parentId, replyToId, pagePath, displayName, body, capabilityHash, createdAt).run();
 
   return responseJson({ ok: true, id, status: "pending", managementToken: capabilityToken }, 201);
 }
@@ -304,7 +330,10 @@ async function withdrawComment(request, env, commentId) {
   }
 
   await env.DB.prepare(
-    `UPDATE comments SET status = 'withdrawn', display_name = '', body = '', manage_token_hash = NULL, moderated_at = ? WHERE id = ?`
+    `UPDATE comments
+        SET status = 'withdrawn', display_name = '', body = '', manage_token_hash = NULL,
+            removed_by_admin = 0, moderated_at = ?
+      WHERE id = ?`
   ).bind(new Date().toISOString(), commentId).run();
   return responseJson({ ok: true, status: "withdrawn" });
 }
@@ -316,14 +345,45 @@ function adminAuthorized(request, env) {
   return constantTimeEqual(header.slice(prefix.length), env.COMMENTS_ADMIN_TOKEN);
 }
 
-async function listPending(requestUrl, request, env) {
+function adminStatus(value) {
+  const status = String(value || "").toLowerCase();
+  return ADMIN_STATUSES.has(status) ? status : "";
+}
+
+async function listAdminComments(requestUrl, request, env, forcedStatus = "") {
   if (!adminAuthorized(request, env)) return errorJson("unauthorized", "Unauthorized.", 401);
+  const status = forcedStatus || adminStatus(requestUrl.searchParams.get("status"));
+  if (!status) return errorJson("invalid_status", "Invalid comment status.", 400);
   const requested = Number(requestUrl.searchParams.get("limit") || 50);
-  const limit = Math.min(ADMIN_PENDING_LIMIT, Math.max(1, Number.isFinite(requested) ? Math.floor(requested) : 50));
+  const limit = Math.min(ADMIN_COMMENT_LIMIT, Math.max(1, Number.isFinite(requested) ? Math.floor(requested) : 50));
   const result = await env.DB.prepare(
-    `SELECT id, article_key, parent_id, display_name, body, created_at FROM comments WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?`
-  ).bind(limit).all();
-  return responseJson({ ok: true, comments: result?.results || [] });
+    `SELECT c.id, c.article_key, c.parent_id, c.reply_to_id, c.page_path, c.display_name, c.body,
+            c.created_at, c.status, c.is_author,
+            root.display_name AS root_display_name, root.status AS root_status, root.removed_by_admin AS root_removed_by_admin,
+            target.display_name AS reply_to_display_name, target.status AS reply_to_status,
+            target.is_author AS reply_to_is_author, target.removed_by_admin AS reply_to_removed_by_admin
+       FROM comments c
+       LEFT JOIN comments root ON root.id = c.parent_id
+       LEFT JOIN comments target ON target.id = c.reply_to_id
+      WHERE c.status = ?
+      ORDER BY c.created_at ASC, c.id ASC
+      LIMIT ?`
+  ).bind(status, limit).all();
+  return responseJson({ ok: true, status, comments: result?.results || [] });
+}
+
+async function validateThreadReferences(env, row) {
+  if (!row.parent_id) return true;
+  const root = await env.DB.prepare(
+    `SELECT id, parent_id FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
+  ).bind(row.parent_id, row.article_key).first();
+  if (!root || root.parent_id) return false;
+  if (!row.reply_to_id) return false;
+  const target = await env.DB.prepare(
+    `SELECT id, parent_id FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
+  ).bind(row.reply_to_id, row.article_key).first();
+  if (!target) return false;
+  return (target.parent_id || target.id) === root.id;
 }
 
 async function moderateComment(request, env, commentId, nextStatus) {
@@ -331,20 +391,45 @@ async function moderateComment(request, env, commentId, nextStatus) {
   if (!validCommentId(commentId)) return errorJson("invalid_comment_id", "Invalid comment ID.");
 
   const row = await env.DB.prepare(
-    `SELECT id, article_key, parent_id, status FROM comments WHERE id = ? LIMIT 1`
+    `SELECT id, article_key, parent_id, reply_to_id, status FROM comments WHERE id = ? LIMIT 1`
   ).bind(commentId).first();
   if (!row) return errorJson("not_found", "Comment not found.", 404);
 
-  if (nextStatus === "approved" && row.parent_id) {
-    const parent = await env.DB.prepare(
-      `SELECT id, parent_id, status FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
-    ).bind(row.parent_id, row.article_key).first();
-    if (!parent || parent.parent_id || parent.status !== "approved") return errorJson("invalid_parent", "Reply parent must be an approved top-level comment.", 409);
+  if (nextStatus === "approved" && !(await validateThreadReferences(env, row))) {
+    return errorJson("invalid_thread", "Reply thread references are no longer valid.", 409);
   }
 
   await env.DB.prepare(`UPDATE comments SET status = ?, moderated_at = ? WHERE id = ?`)
     .bind(nextStatus, new Date().toISOString(), commentId).run();
   return responseJson({ ok: true, id: commentId, status: nextStatus });
+}
+
+async function deleteAdminComment(request, env, commentId) {
+  if (!adminAuthorized(request, env)) return errorJson("unauthorized", "Unauthorized.", 401);
+  if (!validCommentId(commentId)) return errorJson("invalid_comment_id", "Invalid comment ID.");
+
+  const row = await env.DB.prepare(
+    `SELECT id, status FROM comments WHERE id = ? LIMIT 1`
+  ).bind(commentId).first();
+  if (!row) return errorJson("not_found", "Comment not found.", 404);
+  if (!ADMIN_STATUSES.has(row.status)) return errorJson("invalid_status", "This comment cannot be deleted from the current lifecycle state.", 409);
+
+  const dependent = await env.DB.prepare(
+    `SELECT id FROM comments WHERE id != ? AND (parent_id = ? OR reply_to_id = ?) LIMIT 1`
+  ).bind(commentId, commentId, commentId).first();
+
+  if (!dependent) {
+    await env.DB.prepare(`DELETE FROM comments WHERE id = ?`).bind(commentId).run();
+    return responseJson({ ok: true, id: commentId, deleted: "hard" });
+  }
+
+  await env.DB.prepare(
+    `UPDATE comments
+        SET status = 'withdrawn', display_name = '', body = '', manage_token_hash = NULL,
+            removed_by_admin = 1, moderated_at = ?
+      WHERE id = ?`
+  ).bind(new Date().toISOString(), commentId).run();
+  return responseJson({ ok: true, id: commentId, deleted: "tombstone", status: "withdrawn" });
 }
 
 async function createAuthorReply(request, env) {
@@ -357,25 +442,24 @@ async function createAuthorReply(request, env) {
     return errorJson("invalid_json", "Invalid request body.", 400);
   }
   const articleKey = String(payload?.articleKey || "");
-  const parentId = String(payload?.parentId || "");
+  const replyToId = String(payload?.replyToId || "");
   const body = normalizeBody(payload?.body);
 
   if (!validArticleKey(articleKey)) return errorJson("invalid_article_key", "Invalid article key.");
-  if (!validCommentId(parentId)) return errorJson("invalid_parent", "Invalid reply target.");
+  if (!validCommentId(replyToId)) return errorJson("invalid_reply_target", "Invalid reply target.");
   if (!validBody(body)) return errorJson("invalid_body", `Comment must be 1-${MAX_BODY_LENGTH} characters.`);
 
-  const parent = await env.DB.prepare(
-    `SELECT id, parent_id, status FROM comments WHERE id = ? AND article_key = ? LIMIT 1`
-  ).bind(parentId, articleKey).first();
-  if (!parent || parent.parent_id || parent.status !== "approved") return errorJson("invalid_parent", "Author replies require an approved top-level comment.", 409);
+  const resolved = await resolveReplyTarget(env, articleKey, replyToId, { requireApproved: true });
+  if (!resolved.ok) return errorJson("invalid_reply_target", "Author replies require a published reply target.", 409);
 
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
+  const pagePath = resolved.target.page_path || resolved.root.page_path || null;
   await env.DB.prepare(
     `INSERT INTO comments
-      (id, article_key, parent_id, display_name, body, status, is_author, manage_token_hash, created_at, moderated_at)
-     VALUES (?, ?, ?, 'HUIKAI', ?, 'approved', 1, NULL, ?, ?)`
-  ).bind(id, articleKey, parentId, body, createdAt, createdAt).run();
+      (id, article_key, parent_id, reply_to_id, page_path, display_name, body, status, is_author, manage_token_hash, created_at, moderated_at, removed_by_admin)
+     VALUES (?, ?, ?, ?, ?, 'HUIKAI', ?, 'approved', 1, NULL, ?, ?, 0)`
+  ).bind(id, articleKey, resolved.parentId, replyToId, pagePath, body, createdAt, createdAt).run();
   return responseJson({ ok: true, id, status: "approved" }, 201);
 }
 
@@ -390,10 +474,18 @@ export async function handleRequest(request, env) {
 
   const withdrawMatch = url.pathname.match(new RegExp(`^${API_PREFIX}/comments/([0-9a-f-]+)/withdraw$`, "i"));
   if (withdrawMatch && request.method === "POST") return withdrawComment(request, env, withdrawMatch[1]);
-  if (url.pathname === `${API_PREFIX}/admin/pending` && request.method === "GET") return listPending(url, request, env);
 
-  const moderationMatch = url.pathname.match(new RegExp(`^${API_PREFIX}/admin/comments/([0-9a-f-]+)/(approve|hide)$`, "i"));
-  if (moderationMatch && request.method === "POST") return moderateComment(request, env, moderationMatch[1], moderationMatch[2].toLowerCase() === "approve" ? "approved" : "hidden");
+  if (url.pathname === `${API_PREFIX}/admin/pending` && request.method === "GET") return listAdminComments(url, request, env, "pending");
+  if (url.pathname === `${API_PREFIX}/admin/comments` && request.method === "GET") return listAdminComments(url, request, env);
+
+  const moderationMatch = url.pathname.match(new RegExp(`^${API_PREFIX}/admin/comments/([0-9a-f-]+)/(approve|hide|restore)$`, "i"));
+  if (moderationMatch && request.method === "POST") {
+    const action = moderationMatch[2].toLowerCase();
+    return moderateComment(request, env, moderationMatch[1], action === "hide" ? "hidden" : "approved");
+  }
+
+  const deleteMatch = url.pathname.match(new RegExp(`^${API_PREFIX}/admin/comments/([0-9a-f-]+)/delete$`, "i"));
+  if (deleteMatch && request.method === "POST") return deleteAdminComment(request, env, deleteMatch[1]);
   if (url.pathname === `${API_PREFIX}/admin/replies` && request.method === "POST") return createAuthorReply(request, env);
 
   return new Response("Not found", { status: 404, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
