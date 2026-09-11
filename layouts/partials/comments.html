@@ -72,6 +72,10 @@
              data-author-label="{{ i18n "huikai.comments_author" }}"
              data-withdraw-label="{{ i18n "huikai.comments_withdraw" }}"
              data-withdrawn-label="{{ i18n "huikai.comments_withdrawn" }}"
+             data-removed-label="{{ i18n "huikai.comments_removed" }}"
+             data-reply-to-withdrawn-label="{{ i18n "huikai.comments_reply_to_withdrawn" }}"
+             data-reply-to-removed-label="{{ i18n "huikai.comments_reply_to_removed" }}"
+             data-reply-to-unavailable-label="{{ i18n "huikai.comments_reply_to_unavailable" }}"
              data-verification-required="{{ i18n "huikai.comments_verification_required" }}"
              data-submit-success="{{ i18n "huikai.comments_submit_success" }}"
              data-submit-error="{{ i18n "huikai.comments_submit_error" }}"
@@ -90,7 +94,7 @@
           <span>{{ i18n "huikai.comments_replying_to" }} <strong data-comments-reply-name></strong></span>
           <button type="button" class="huikai-comments__text-button" data-comments-cancel-reply>{{ i18n "huikai.comments_cancel_reply" }}</button>
         </div>
-        <input type="hidden" data-comments-parent value="">
+        <input type="hidden" data-comments-reply-to value="">
         <div class="huikai-comments__field">
           <label for="huikai-comments-name"><span>{{ i18n "huikai.comments_name" }}</span></label>
           <input id="huikai-comments-name" type="text" name="displayName" data-comments-name maxlength="40" autocomplete="nickname" required>
