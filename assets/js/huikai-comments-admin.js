@@ -151,9 +151,11 @@
         await request(root, state, `/admin/comments/${encodeURIComponent(comment.id)}/approve`, { method: "POST", body: "{}" });
         approved = true;
       }
+      const replyPayload = { articleKey: comment.article_key, replyToId: comment.id, body };
+      if (!Object.prototype.hasOwnProperty.call(comment, "reply_to_id")) replyPayload.parentId = comment.id;
       await request(root, state, "/admin/replies", {
         method: "POST",
-        body: JSON.stringify({ articleKey: comment.article_key, replyToId: comment.id, body }),
+        body: JSON.stringify(replyPayload),
       });
       textarea.value = "";
       setStatus(root, approveFirst ? "留言已通過，作者回覆也已發布。" : "作者回覆已發布。", "success");
@@ -255,7 +257,13 @@
     const panel = q(root, "[data-comments-admin-panel]");
     panel.setAttribute("aria-busy", "true");
     try {
-      const payload = await request(root, state, `/admin/comments?status=${encodeURIComponent(state.status)}&limit=100`, { method: "GET", headers: {} });
+      let payload;
+      try {
+        payload = await request(root, state, `/admin/comments?status=${encodeURIComponent(state.status)}&limit=100`, { method: "GET", headers: {} });
+      } catch (error) {
+        if (state.status !== "pending" || error.status !== 404) throw error;
+        payload = await request(root, state, "/admin/pending?limit=100", { method: "GET", headers: {} });
+      }
       render(root, state, Array.isArray(payload.comments) ? payload.comments : []);
       q(root, "[data-comments-admin-login]").hidden = true;
       panel.hidden = false;
