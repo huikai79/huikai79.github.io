@@ -6,7 +6,9 @@ showBreadcrumbs: false
 sharingLinks: []
 ---
 
+{{< page-lead >}}
 我是莊輝愷。HUIKAI 是我整理所見、所學與所歷的地方；有些內容已整理成文章，有些仍只是正在形成的理解。
+{{< /page-lead >}}
 
 **想先認識這裡，可以從三個入口開始：**
 

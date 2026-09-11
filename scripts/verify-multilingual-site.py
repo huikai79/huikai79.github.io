@@ -127,8 +127,8 @@ for left, right in (
         fail(f"Translated page does not expose its Simplified counterpart: {left} -> {right}")
 
 expected_indexes = {
-    "_index.md": '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\noutputs: ["HTML", "RSS"]\n---\n',
-    "_index.zh-cn.md": '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\noutputs: ["HTML", "RSS"]\n---\n',
+    "_index.md": '---\ntitle: "文章"\ndescription: "莊輝愷的文章與筆記。"\noutputs: ["HTML", "RSS"]\n---\n\n{{< page-lead >}}{{< /page-lead >}}\n',
+    "_index.zh-cn.md": '---\ntitle: "文章"\ndescription: "庄辉恺的文章与笔记。"\noutputs: ["HTML", "RSS"]\n---\n\n{{< page-lead >}}{{< /page-lead >}}\n',
 }
 for name, expected in expected_indexes.items():
     source = ROOT / "content" / "posts" / name
