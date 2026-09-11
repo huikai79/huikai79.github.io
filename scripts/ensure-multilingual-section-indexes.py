@@ -12,12 +12,16 @@ title: \"文章\"
 description: \"莊輝愷的文章與筆記。\"
 outputs: [\"HTML\", \"RSS\"]
 ---
+
+{{< page-lead >}}
 """,
     "_index.zh-cn.md": """---
 title: \"文章\"
 description: \"庄辉恺的文章与笔记。\"
 outputs: [\"HTML\", \"RSS\"]
 ---
+
+{{< page-lead >}}
 """,
 }
 
