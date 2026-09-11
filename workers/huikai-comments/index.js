@@ -173,7 +173,7 @@ async function verifyTurnstile(token, env) {
 
 function articleMarkerPattern(articleKey) {
   const escaped = articleKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`data-comment-key\\s*=\\s*(?:"${escaped}"|'${escaped}')`, "i");
+  return new RegExp(`data-comment-key\\s*=\\s*(?:"${escaped}"|'${escaped}'|${escaped}(?=[\\s>]))`, "i");
 }
 
 async function publishedArticleAllowsComments(articleKey, pagePath) {
