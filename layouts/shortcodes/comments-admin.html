@@ -1,3 +1,12 @@
+{{- $articleManifest := slice -}}
+{{- range hugo.Sites -}}
+  {{- $language := .Language.Lang -}}
+  {{- range .RegularPages -}}
+    {{- if and (eq .Section "posts") .Params.commentKey -}}
+      {{- $articleManifest = $articleManifest | append (dict "articleKey" .Params.commentKey "title" .Title "path" .RelPermalink "language" $language) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 {{- $adminCSS := resources.Get "css/huikai-comments-admin.css" | minify -}}
 <style data-huikai-comments-admin-style>{{ $adminCSS.Content | safeCSS }}</style>
 <section class="huikai-comments-admin not-prose" data-api-base="/api/comments/v1" aria-labelledby="comments-admin-title">
@@ -22,6 +31,24 @@
       <button type="button" class="huikai-comments-admin__tab" data-comments-admin-filter="approved" aria-pressed="false">已公開</button>
       <button type="button" class="huikai-comments-admin__tab" data-comments-admin-filter="hidden" aria-pressed="false">已隱藏</button>
     </nav>
+
+    <form class="huikai-comments-admin__published-tools" data-comments-admin-published-tools data-comments-admin-search-form hidden role="search">
+      <label class="huikai-comments-admin__field huikai-comments-admin__search-field">
+        <span>搜尋已公開文章</span>
+        <input type="search" data-comments-admin-search placeholder="文章標題、路徑或 article key" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="huikai-comments-admin__actions">
+        <button type="submit" class="huikai-comments-admin__button">搜尋</button>
+        <button type="button" class="huikai-comments-admin__button huikai-comments-admin__button--muted" data-comments-admin-search-clear>清除</button>
+      </div>
+    </form>
+
+    <div class="huikai-comments-admin__detail-header" data-comments-admin-detail-header hidden>
+      <button type="button" class="huikai-comments-admin__back" data-comments-admin-back>← 返回文章列表</button>
+      <h3 data-comments-admin-detail-title>文章討論</h3>
+      <div class="huikai-comments-admin__detail-links" data-comments-admin-detail-links></div>
+    </div>
+
     <div class="huikai-comments-admin__toolbar">
       <h3 id="comments-admin-list-title"><span data-comments-admin-heading>待審核</span> <span data-comments-admin-count>0</span></h3>
       <div class="huikai-comments-admin__actions">
@@ -29,8 +56,17 @@
         <button type="button" class="huikai-comments-admin__button huikai-comments-admin__button--muted" data-comments-admin-logout>登出</button>
       </div>
     </div>
+
     <div class="huikai-comments-admin__list" data-comments-admin-list aria-live="polite"></div>
+
+    <nav class="huikai-comments-admin__pagination" data-comments-admin-pagination aria-label="留言管理分頁" hidden>
+      <button type="button" class="huikai-comments-admin__button huikai-comments-admin__button--muted" data-comments-admin-prev>上一頁</button>
+      <span data-comments-admin-page-label>0 / 0</span>
+      <button type="button" class="huikai-comments-admin__button huikai-comments-admin__button--muted" data-comments-admin-next>下一頁</button>
+    </nav>
   </section>
+
+  <script type="application/json" data-comments-admin-article-manifest>{{ $articleManifest | jsonify | safeHTML }}</script>
 </section>
 {{- $adminJS := resources.Get "js/huikai-comments-admin.js" | minify | fingerprint site.Params.fingerprintAlgorithm -}}
 <script src="{{ $adminJS.RelPermalink }}" integrity="{{ $adminJS.Data.Integrity }}" defer></script>
