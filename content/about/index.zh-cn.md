@@ -6,7 +6,9 @@ showBreadcrumbs: false
 sharingLinks: []
 ---
 
+{{< page-lead >}}
 我是庄辉恺。HUIKAI 是我整理所见、所学与所历的地方；有些内容已整理成文章，有些仍只是正在形成的理解。
+{{< /page-lead >}}
 
 **想先认识这里，可以从三个入口开始：**
 
