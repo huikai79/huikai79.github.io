@@ -5,12 +5,14 @@ on:
     branches:
       - main
     paths:
+      - "docs/external-reading-ingestion-v1.md"
       - "scripts/external-source-ingest-contract.mjs"
       - "scripts/external-source-inbox-contract.mjs"
       - "scripts/external-source-ingest.mjs"
       - "scripts/verify-external-source-ingest-contract.mjs"
       - "scripts/verify-external-source-inbox-contract.mjs"
       - "scripts/verify-external-source-ingest-workflow.mjs"
+      - "scripts/verify-external-source-ingest-doc.mjs"
       - ".github/workflows/external-source-ingest.yml"
       - ".github/workflows/external-source-ingest-validate.yml"
 
@@ -36,6 +38,7 @@ jobs:
           node scripts/verify-external-source-ingest-contract.mjs
           node scripts/verify-external-source-inbox-contract.mjs
           node scripts/verify-external-source-ingest-workflow.mjs
+          node scripts/verify-external-source-ingest-doc.mjs
           node --check scripts/external-source-ingest-contract.mjs
           node --check scripts/external-source-inbox-contract.mjs
           node --check scripts/external-source-ingest.mjs
