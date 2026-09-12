@@ -42,7 +42,9 @@ jobs:
       - name: Verify translation draft contracts
         run: |
           node scripts/verify-translation-draft-contract.mjs
+          node scripts/verify-translation-readiness-contract.mjs
           node --check scripts/transmith-runtime-profile.mjs
+          node --check scripts/translation-readiness-contract.mjs
           node --check scripts/generate-translation-drafts.mjs
 
       - name: Preflight translation plan or create manually approved drafts
