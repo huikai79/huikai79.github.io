@@ -42,6 +42,7 @@ jobs:
       - name: Verify translation draft contracts
         run: |
           node scripts/verify-translation-draft-contract.mjs
+          node --check scripts/transmith-runtime-profile.mjs
           node --check scripts/generate-translation-drafts.mjs
 
       - name: Preflight translation plan or create manually approved drafts
@@ -60,7 +61,7 @@ jobs:
         if: always()
         run: |
           if [ -s /tmp/notion-translation-drafts.json ]; then
-            jq '{status,apply,provider,model,sourceCount,requestedTargetCount,planned,generated,skipped,blocked}' /tmp/notion-translation-drafts.json
+            jq '{status,apply,provider,model,translationProfile,sourceCount,requestedTargetCount,planned,generated,skipped,blocked}' /tmp/notion-translation-drafts.json
           else
             echo "Translation report was not created."
           fi
