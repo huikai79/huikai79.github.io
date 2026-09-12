@@ -56,7 +56,7 @@ jobs:
           node --check workers/huikai-comments/index.js
           node --check workers/huikai-comments/test-runtime.mjs
           node --check assets/js/huikai-comments.js
-          node workers/huikai-comments/test-runtime.mjs
+          node --import ./workers/huikai-comments/test-clock.mjs workers/huikai-comments/test-runtime.mjs
 
       - name: Apply comments schema to local D1
         run: |
@@ -128,7 +128,7 @@ jobs:
       - name: Verify source and compile before data write
         run: |
           set -euo pipefail
-          node workers/huikai-comments/test-runtime.mjs
+          node --import ./workers/huikai-comments/test-clock.mjs workers/huikai-comments/test-runtime.mjs
           npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config "$RUNTIME_CONFIG" --dry-run --outdir /tmp/huikai-comments-worker-predeploy
 
       - name: Require Cloudflare credentials and pre-provisioned secrets
