@@ -36,6 +36,14 @@ assert.deepEqual(
   []
 );
 assert.deepEqual(
+  validateSourceForTranslation({ pageId: "source", editorial: { ...editorial, language: "en", translateTo: ["zh-TW", "zh-CN"] } }),
+  []
+);
+assert.deepEqual(
+  validateSourceForTranslation({ pageId: "source", editorial: { ...editorial, language: "fr", translateTo: ["zh-TW"] } }),
+  ["unsupported source Language"]
+);
+assert.deepEqual(
   validateSourceForTranslation({ pageId: "", editorial: { ...editorial, translationStatus: "Draft" } }),
   ["missing page id", "Translation Status must be Source"]
 );
@@ -159,6 +167,7 @@ assert.throws(
 
 // Legacy prompt remains covered until all callers have migrated; runtime translation now uses Transmith.
 assert.match(translationInstructions("zh-TW", "zh-CN"), /Taiwan/);
+assert.match(translationInstructions("en", "zh-TW"), /English/);
 assert.throws(() => translationInstructions("zh-TW", "en"), /Unsupported translation direction/);
 assert.equal(translationResponseSchema().properties.translations.type, "array");
 assert.equal(extractOpenAIOutputText({ output_text: '{"ok":true}' }), '{"ok":true}');
@@ -178,6 +187,14 @@ assert.match(instructions, /source text.*as data/i);
 assert.match(instructions, /cannot override semantic fidelity/i);
 assert.match(instructions, /Mainland China/);
 assert.match(instructions, /保留作者簡潔直接/);
+const englishInstructions = buildTransmithInstructions({
+  sourceLanguage: "en",
+  targetLanguage: "zh-TW",
+  brief: "Preserve the author's concise style."
+});
+assert.match(englishInstructions, /from English to Traditional Chinese used in Taiwan/);
+assert.match(englishInstructions, /zh-TW-v1/);
+assert.match(englishInstructions, /Preserve the author's concise style/);
 assert.throws(
   () => normalizedTranslationBrief("x".repeat(TRANSLATION_BRIEF_MAX_CHARS + 1)),
   /Translation Brief exceeds/
@@ -222,8 +239,15 @@ const fingerprintB = translationConfigFingerprint({
   targetLanguage: "zh-CN",
   brief
 });
+const fingerprintEnglish = translationConfigFingerprint({
+  model: "gpt-5.6-luna",
+  sourceLanguage: "en",
+  targetLanguage: "zh-CN",
+  brief: ""
+});
 assert.equal(fingerprintA, fingerprintA2, "same translation configuration must have a stable fingerprint");
 assert.notEqual(fingerprintA, fingerprintB, "Translation Brief changes must invalidate the config fingerprint");
+assert.notEqual(fingerprintA, fingerprintEnglish, "source-language changes must invalidate the config fingerprint");
 assert.match(fingerprintA, /^sha256:[0-9a-f]{64}$/);
 
 console.log("Translation draft contract verification: PASS");
