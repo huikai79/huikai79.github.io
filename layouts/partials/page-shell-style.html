@@ -1,21 +1,23 @@
-{{/* Release-lane follow-up: no rendered output; preserves the validated shared page shell. */}}
 <style>
-  /* Shared HUIKAI shell for the four editorial entry pages that opt in via
-     the page-lead shortcode. Keep layout roles intact; only normalize the
-     title/lead rhythm and typography. */
+  /* Shared HUIKAI entry header for the four editorial entry pages that opt in
+     via the page-lead shortcode. Preserve each page's native body role while
+     making the first viewport visibly part of one editorial system. */
   #main-content:has(.huikai-page-lead) > header h1,
   #main-content:has(.huikai-page-lead) > article > header h1 {
-    margin-top: 1.25rem;
+    margin-top: 2rem;
     margin-bottom: 0;
+    font-size: clamp(2.5rem, 4.5vw, 3.25rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
     text-wrap: balance;
   }
 
   #main-content:has(.huikai-page-lead) > article > section {
-    margin-top: 0.75rem;
+    margin-top: 1rem;
   }
 
   .huikai-page-lead {
-    max-width: 42rem;
+    max-width: 44rem;
     margin-top: 0;
     color: rgb(var(--color-neutral-600, 82 82 82));
   }
@@ -29,28 +31,49 @@
   }
 
   .huikai-page-lead p {
-    margin-top: 0;
-    margin-bottom: 0;
-    font-size: 1.0625rem;
-    line-height: 1.8;
+    margin: 0;
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+
+  .huikai-page-lead::after {
+    content: "";
+    display: block;
+    width: 100%;
+    margin-top: 2rem;
+    border-top: 1px solid rgb(var(--color-neutral-200, 229 229 229));
   }
 
   .huikai-page-lead:not(:last-child) {
-    margin-bottom: 2.25rem;
+    margin-bottom: 2.75rem;
   }
 
   .dark .huikai-page-lead {
     color: rgb(var(--color-neutral-300, 212 212 212));
   }
 
+  .dark .huikai-page-lead::after {
+    border-color: rgb(var(--color-neutral-700, 64 64 64));
+  }
+
   @media (max-width: 639.98px) {
+    #main-content:has(.huikai-page-lead) > header h1,
+    #main-content:has(.huikai-page-lead) > article > header h1 {
+      margin-top: 1.5rem;
+      font-size: 2.25rem;
+    }
+
     .huikai-page-lead p {
       font-size: 1rem;
       line-height: 1.75;
     }
 
+    .huikai-page-lead::after {
+      margin-top: 1.5rem;
+    }
+
     .huikai-page-lead:not(:last-child) {
-      margin-bottom: 1.75rem;
+      margin-bottom: 2rem;
     }
   }
 </style>
