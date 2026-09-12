@@ -45,7 +45,7 @@ jobs:
           node scripts/verify-translation-readiness-contract.mjs
           node --check scripts/transmith-runtime-profile.mjs
           node --check scripts/translation-readiness-contract.mjs
-          node --check scripts/generate-translation-drafts-v2.mjs
+          node --check scripts/generate-translation-drafts.mjs
 
       - name: Preflight translation plan or create manually approved drafts
         env:
@@ -57,7 +57,7 @@ jobs:
           # and Notion writes require an explicit workflow_dispatch apply=true.
           TRANSLATION_APPLY: ${{ github.event_name == 'workflow_dispatch' && inputs.apply && '1' || '0' }}
           TRANSLATION_REPORT_PATH: /tmp/notion-translation-drafts.json
-        run: node scripts/generate-translation-drafts-v2.mjs
+        run: node scripts/generate-translation-drafts.mjs
 
       - name: Report translation result
         if: always()
