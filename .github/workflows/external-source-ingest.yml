@@ -30,10 +30,13 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Verify external source ingestion contract
+      - name: Verify external source ingestion contracts
         run: |
           node scripts/verify-external-source-ingest-contract.mjs
+          node scripts/verify-external-source-inbox-contract.mjs
+          node scripts/verify-external-source-ingest-workflow.mjs
           node --check scripts/external-source-ingest-contract.mjs
+          node --check scripts/external-source-inbox-contract.mjs
           node --check scripts/external-source-ingest.mjs
 
       - name: Ingest pending external reading URLs into Notion
