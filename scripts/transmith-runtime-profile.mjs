@@ -6,7 +6,8 @@ export const TRANSLATION_BRIEF_MAX_CHARS = 4000;
 
 const LANGUAGE_LABELS = {
   "zh-TW": "Traditional Chinese used in Taiwan",
-  "zh-CN": "Simplified Chinese used in Mainland China"
+  "zh-CN": "Simplified Chinese used in Mainland China",
+  en: "English"
 };
 
 const LOCALE_PROFILES = {
@@ -52,7 +53,7 @@ export function normalizedTranslationBrief(value = "") {
 export function buildTransmithInstructions({ sourceLanguage, targetLanguage, brief = "" } = {}) {
   const source = LANGUAGE_LABELS[sourceLanguage];
   const target = LANGUAGE_LABELS[targetLanguage];
-  if (!source || !target) {
+  if (!source || !target || !LOCALE_PROFILES[targetLanguage]) {
     throw new Error(`Unsupported translation direction: ${sourceLanguage} -> ${targetLanguage}`);
   }
   const targetProfile = localeProfile(targetLanguage);

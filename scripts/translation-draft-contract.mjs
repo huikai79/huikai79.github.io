@@ -26,7 +26,13 @@ export const SAFE_EXTERNAL_MEDIA_BLOCK_TYPES = new Set([
   "pdf"
 ]);
 
-const LANGUAGE_LABELS = {
+const SOURCE_LANGUAGE_LABELS = {
+  "zh-TW": "Traditional Chinese used in Taiwan",
+  "zh-CN": "Simplified Chinese",
+  en: "English"
+};
+
+const TARGET_LANGUAGE_LABELS = {
   "zh-TW": "Traditional Chinese used in Taiwan",
   "zh-CN": "Simplified Chinese"
 };
@@ -65,10 +71,10 @@ export function validateSourceForTranslation({ pageId = "", editorial = {} } = {
   if (!new Set(["Test", "Public"]).has(editorial.visibility)) {
     errors.push("Visibility must be Test or Public");
   }
-  if (!editorial.language || !LANGUAGE_LABELS[editorial.language]) errors.push("unsupported source Language");
+  if (!editorial.language || !SOURCE_LANGUAGE_LABELS[editorial.language]) errors.push("unsupported source Language");
   if (!editorial.translationGroup) errors.push("missing Translation Group");
   for (const target of sourceTranslationTargets(editorial)) {
-    if (!LANGUAGE_LABELS[target]) errors.push(`unsupported target language ${target}`);
+    if (!TARGET_LANGUAGE_LABELS[target]) errors.push(`unsupported target language ${target}`);
   }
   return errors;
 }
@@ -213,8 +219,8 @@ export function applyTranslations({ title = "", summary = "", blocks = [] }, res
 }
 
 export function translationInstructions(sourceLanguage, targetLanguage) {
-  const source = LANGUAGE_LABELS[sourceLanguage];
-  const target = LANGUAGE_LABELS[targetLanguage];
+  const source = SOURCE_LANGUAGE_LABELS[sourceLanguage];
+  const target = TARGET_LANGUAGE_LABELS[targetLanguage];
   if (!source || !target) throw new Error(`Unsupported translation direction: ${sourceLanguage} -> ${targetLanguage}`);
   return [
     `Translate the supplied text segments from ${source} to ${target}.`,
