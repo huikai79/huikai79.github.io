@@ -1,0 +1,54 @@
+name: "External reading inbox ingestion"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-reading-inbox-ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify external source ingestion contract
+        run: |
+          node scripts/verify-external-source-ingest-contract.mjs
+          node --check scripts/external-source-ingest-contract.mjs
+          node --check scripts/external-source-ingest.mjs
+
+      - name: Ingest pending external reading URLs into Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          INGESTION_REPORT_PATH: /tmp/external-source-ingest.json
+          INGESTION_TIMEOUT_MS: "15000"
+        run: node scripts/external-source-ingest.mjs
+
+      - name: Summarize ingestion result
+        if: always()
+        run: |
+          if [ -s /tmp/external-source-ingest.json ]; then
+            jq '{status,candidateCount,ready,duplicate,needsReview}' /tmp/external-source-ingest.json
+          else
+            echo "External source ingestion report was not created."
+          fi
