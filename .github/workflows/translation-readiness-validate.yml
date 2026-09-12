@@ -1,0 +1,36 @@
+name: "Translation readiness validation"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/translation-readiness-contract.mjs"
+      - "scripts/verify-translation-readiness-contract.mjs"
+      - "scripts/generate-translation-drafts-v2.mjs"
+      - ".github/workflows/translation-drafts.yml"
+      - ".github/workflows/translation-readiness-validate.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Verify translation readiness contract
+        run: |
+          node scripts/verify-translation-readiness-contract.mjs
+          node scripts/verify-translation-draft-contract.mjs
+          node --check scripts/translation-readiness-contract.mjs
+          node --check scripts/generate-translation-drafts-v2.mjs
