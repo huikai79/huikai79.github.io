@@ -13,6 +13,7 @@ import {
   notionBlocksFromArticle,
   validateIngestionUrl
 } from "./external-source-ingest-contract.mjs";
+import { buildExternalIngestionCandidateFilter } from "./external-source-inbox-contract.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -23,10 +24,6 @@ if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
 
 const notion = new Client({ auth: token });
-
-function richTextValue(property) {
-  return property?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
-}
 
 function titleValue(properties = {}) {
   return properties.Title?.title?.map(item => item.plain_text).join("").trim() ?? "";
@@ -64,13 +61,7 @@ async function queryAll(filter) {
 }
 
 async function pendingCandidates() {
-  return queryAll({
-    and: [
-      { property: "Source URL", url: { is_not_empty: true } },
-      { property: "Ingestion Status", select: { is_empty: true } },
-      { property: "Translation Source", relation: { is_empty: true } }
-    ]
-  });
+  return queryAll(buildExternalIngestionCandidateFilter());
 }
 
 async function pageHasMaterialChildren(pageId) {
@@ -266,6 +257,9 @@ for (const stub of candidates) {
   const originalTitle = titleValue(source.properties ?? {});
   const sourceUrl = source.properties?.["Source URL"]?.url || "";
   try {
+    if (originalTitle) {
+      throw new Error("candidate page acquired a title after selection; ingestion only fills an empty inbox page");
+    }
     if (await pageHasMaterialChildren(source.id)) {
       throw new Error("candidate page already contains body content; ingestion only fills an empty inbox page");
     }
