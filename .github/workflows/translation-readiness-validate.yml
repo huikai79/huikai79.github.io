@@ -7,7 +7,7 @@ on:
     paths:
       - "scripts/translation-readiness-contract.mjs"
       - "scripts/verify-translation-readiness-contract.mjs"
-      - "scripts/generate-translation-drafts-v2.mjs"
+      - "scripts/generate-translation-drafts.mjs"
       - ".github/workflows/translation-drafts.yml"
       - ".github/workflows/translation-readiness-validate.yml"
 
@@ -33,4 +33,4 @@ jobs:
           node scripts/verify-translation-readiness-contract.mjs
           node scripts/verify-translation-draft-contract.mjs
           node --check scripts/translation-readiness-contract.mjs
-          node --check scripts/generate-translation-drafts-v2.mjs
+          node --check scripts/generate-translation-drafts.mjs
