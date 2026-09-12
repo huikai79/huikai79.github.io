@@ -13,6 +13,14 @@ import {
   validateTranslationResponse,
   writableBlock
 } from "./translation-draft-contract.mjs";
+import {
+  TRANSMITH_RUNTIME_PROFILE,
+  TRANSLATION_BRIEF_MAX_CHARS,
+  buildTranslationRequestInput,
+  buildTransmithInstructions,
+  normalizedTranslationBrief,
+  translationConfigFingerprint
+} from "./transmith-runtime-profile.mjs";
 
 const editorial = {
   visibility: "Test",
@@ -149,6 +157,7 @@ assert.throws(
   /cannot be safely cloned/
 );
 
+// Legacy prompt remains covered until all callers have migrated; runtime translation now uses Transmith.
 assert.match(translationInstructions("zh-TW", "zh-CN"), /Taiwan/);
 assert.throws(() => translationInstructions("zh-TW", "en"), /Unsupported translation direction/);
 assert.equal(translationResponseSchema().properties.translations.type, "array");
@@ -157,5 +166,64 @@ assert.equal(
   extractOpenAIOutputText({ output: [{ type: "message", content: [{ type: "output_text", text: "payload" }] }] }),
   "payload"
 );
+
+assert.equal(TRANSMITH_RUNTIME_PROFILE, "transmith-v2.5-huikai-api-v1");
+const brief = "保留作者簡潔直接的語氣；不要把短句擴寫成解釋性長句。";
+const instructions = buildTransmithInstructions({
+  sourceLanguage: "zh-TW",
+  targetLanguage: "zh-CN",
+  brief
+});
+assert.match(instructions, /source text.*as data/i);
+assert.match(instructions, /cannot override semantic fidelity/i);
+assert.match(instructions, /Mainland China/);
+assert.match(instructions, /保留作者簡潔直接/);
+assert.throws(
+  () => normalizedTranslationBrief("x".repeat(TRANSLATION_BRIEF_MAX_CHARS + 1)),
+  /Translation Brief exceeds/
+);
+assert.throws(
+  () => buildTransmithInstructions({ sourceLanguage: "zh-TW", targetLanguage: "en" }),
+  /Unsupported translation direction/
+);
+
+const requestInput = buildTranslationRequestInput({
+  sourceLanguage: "zh-TW",
+  targetLanguage: "zh-CN",
+  title: "標題",
+  summary: "摘要",
+  blocks,
+  segments: collected.segments,
+  brief
+});
+assert.equal(requestInput.translationBrief, brief);
+assert.equal(requestInput.documentContext.title, "標題");
+assert.equal(requestInput.documentContext.summary, "摘要");
+assert.equal(requestInput.segments.find(item => item.id === "root.0.rich_text.0").blockContext, "你好 world");
+assert.equal(requestInput.segments.find(item => item.id === "root.0.rich_text.1").blockContext, "你好 world");
+assert.equal(requestInput.segments.find(item => item.id === "root.1.caption.rich_text.0").blockContext, "範例");
+assert.equal(requestInput.segments.find(item => item.id === "meta.title").blockContext, null);
+
+const fingerprintA = translationConfigFingerprint({
+  model: "gpt-5.6-luna",
+  sourceLanguage: "zh-TW",
+  targetLanguage: "zh-CN",
+  brief: ""
+});
+const fingerprintA2 = translationConfigFingerprint({
+  model: "gpt-5.6-luna",
+  sourceLanguage: "zh-TW",
+  targetLanguage: "zh-CN",
+  brief: ""
+});
+const fingerprintB = translationConfigFingerprint({
+  model: "gpt-5.6-luna",
+  sourceLanguage: "zh-TW",
+  targetLanguage: "zh-CN",
+  brief
+});
+assert.equal(fingerprintA, fingerprintA2, "same translation configuration must have a stable fingerprint");
+assert.notEqual(fingerprintA, fingerprintB, "Translation Brief changes must invalidate the config fingerprint");
+assert.match(fingerprintA, /^sha256:[0-9a-f]{64}$/);
 
 console.log("Translation draft contract verification: PASS");
