@@ -10,12 +10,18 @@ import {
   extractOpenAIOutputText,
   inspectBlockTree,
   sourceTranslationTargets,
-  translationInstructions,
   translationResponseSchema,
   validateSourceForTranslation,
   writableBlock
 } from "./translation-draft-contract.mjs";
 import { extractEditorialFields } from "./notion-content-contract.mjs";
+import {
+  TRANSMITH_RUNTIME_PROFILE,
+  buildTranslationRequestInput,
+  buildTransmithInstructions,
+  normalizedTranslationBrief,
+  translationConfigFingerprint
+} from "./transmith-runtime-profile.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -89,16 +95,49 @@ async function listBlockTree(parentId) {
 }
 
 async function findExistingTarget(group, language) {
-  const matches = await queryAll({
+  return queryAll({
     and: [
       { property: "Translation Group", rich_text: { equals: group } },
       { property: "Language", select: { equals: language } }
     ]
   });
-  return matches;
 }
 
-async function translateSegments({ sourceLanguage, targetLanguage, segments }) {
+function existingTargetStaleReasons(page, { sourceRevision, configFingerprint }) {
+  const properties = page?.properties ?? {};
+  const existingSourceRevision = richTextValue(properties["Translation Source Revision"]);
+  const existingConfigFingerprint = richTextValue(properties["Translation Config Fingerprint"]);
+  const reasons = [];
+  if (!existingSourceRevision || existingSourceRevision !== sourceRevision) {
+    reasons.push("source revision differs from existing translation");
+  }
+  if (!existingConfigFingerprint) {
+    reasons.push("existing translation has no Translation Config Fingerprint");
+  } else if (existingConfigFingerprint !== configFingerprint) {
+    reasons.push("translation configuration differs from existing translation");
+  }
+  return reasons;
+}
+
+async function translateSegments({
+  sourceLanguage,
+  targetLanguage,
+  title,
+  summary,
+  blocks,
+  segments,
+  brief
+}) {
+  const instructions = buildTransmithInstructions({ sourceLanguage, targetLanguage, brief });
+  const input = buildTranslationRequestInput({
+    sourceLanguage,
+    targetLanguage,
+    title,
+    summary,
+    blocks,
+    segments,
+    brief
+  });
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -108,8 +147,8 @@ async function translateSegments({ sourceLanguage, targetLanguage, segments }) {
     body: JSON.stringify({
       model,
       store: false,
-      instructions: translationInstructions(sourceLanguage, targetLanguage),
-      input: JSON.stringify({ sourceLanguage, targetLanguage, segments }),
+      instructions,
+      input: JSON.stringify(input),
       max_output_tokens: 65536,
       text: {
         format: {
@@ -138,7 +177,7 @@ async function appendChildren(pageId, blocks) {
   }
 }
 
-async function createDraft({ source, group, targetLanguage, translated }) {
+async function createDraft({ source, group, targetLanguage, translated, configFingerprint }) {
   const engine = `openai:${model}`;
   const properties = draftProperties({
     source: sourceWithEffectiveGroup(source, group),
@@ -147,6 +186,13 @@ async function createDraft({ source, group, targetLanguage, translated }) {
     translatedSummary: translated.summary,
     engine
   });
+  properties["Translation Profile"] = {
+    rich_text: [{ type: "text", text: { content: TRANSMITH_RUNTIME_PROFILE } }]
+  };
+  properties["Translation Config Fingerprint"] = {
+    rich_text: [{ type: "text", text: { content: configFingerprint } }]
+  };
+
   const request = {
     parent: { database_id: databaseId },
     properties
@@ -194,6 +240,7 @@ const report = {
   warning: applyWarning || null,
   provider: "openai-responses",
   model,
+  translationProfile: TRANSMITH_RUNTIME_PROFILE,
   sourceCount: sources.length,
   requestedTargetCount: 0,
   planned: [],
@@ -213,6 +260,13 @@ for (const sourceStub of sources) {
   if (!title) sourceErrors.push("missing Title");
   if (!summary) sourceErrors.push("missing Summary");
 
+  let translationBrief = "";
+  try {
+    translationBrief = normalizedTranslationBrief(richTextValue(properties["Translation Brief"]));
+  } catch (error) {
+    sourceErrors.push(error.message);
+  }
+
   const targets = sourceTranslationTargets(editorial);
   report.requestedTargetCount += targets.length;
   if (sourceErrors.length) {
@@ -226,14 +280,31 @@ for (const sourceStub of sources) {
   }
 
   for (const targetLanguage of targets) {
+    const configFingerprint = translationConfigFingerprint({
+      model,
+      sourceLanguage: editorial.language,
+      targetLanguage,
+      brief: translationBrief
+    });
     const existing = await findExistingTarget(group, targetLanguage);
     if (existing.length) {
+      const stale = existing.map(page => ({
+        pageId: page.id,
+        reasons: existingTargetStaleReasons(page, {
+          sourceRevision: source.last_edited_time ?? "",
+          configFingerprint
+        })
+      }));
       report.skipped.push({
         sourcePageId: source.id,
         title,
         targetLanguage,
-        reason: "target language already exists in Translation Group",
-        existingPageIds: existing.map(page => page.id)
+        reason: "target language already exists in Translation Group; automatic overwrite is disabled",
+        existingPageIds: existing.map(page => page.id),
+        stale: stale.some(item => item.reasons.length > 0),
+        staleDetails: stale.filter(item => item.reasons.length > 0),
+        translationProfile: TRANSMITH_RUNTIME_PROFILE,
+        configFingerprint
       });
       continue;
     }
@@ -270,6 +341,9 @@ for (const sourceStub of sources) {
       targetLanguage,
       translationGroup: group,
       sourceRevision: source.last_edited_time ?? "",
+      translationProfile: TRANSMITH_RUNTIME_PROFILE,
+      configFingerprint,
+      translationBriefApplied: Boolean(translationBrief),
       textSegmentCount: collected.segments.length,
       blockCount: inspection.count,
       warnings: inspection.warnings
@@ -281,10 +355,20 @@ for (const sourceStub of sources) {
       const translatedResponse = await translateSegments({
         sourceLanguage: editorial.language,
         targetLanguage,
-        segments: collected.segments
+        title,
+        summary,
+        blocks,
+        segments: collected.segments,
+        brief: translationBrief
       });
       const translated = applyTranslations({ title, summary, blocks }, translatedResponse);
-      const result = await createDraft({ source, group, targetLanguage, translated });
+      const result = await createDraft({
+        source,
+        group,
+        targetLanguage,
+        translated,
+        configFingerprint
+      });
       report.generated.push({
         sourcePageId: source.id,
         pageId: result.pageId,
@@ -292,7 +376,9 @@ for (const sourceStub of sources) {
         targetLanguage,
         translationGroup: group,
         sourceRevision: source.last_edited_time ?? "",
-        engine: result.engine
+        engine: result.engine,
+        translationProfile: TRANSMITH_RUNTIME_PROFILE,
+        configFingerprint
       });
     } catch (error) {
       report.blocked.push({
@@ -310,7 +396,8 @@ await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 
 console.log(
   `Translation drafts: ${report.status.toUpperCase()} ` +
-  `(requestedApply=${requestedApply}, apply=${apply}, sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
+  `(profile=${TRANSMITH_RUNTIME_PROFILE}, requestedApply=${requestedApply}, apply=${apply}, ` +
+  `sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
   `planned=${report.planned.length}, generated=${report.generated.length}, ` +
   `skipped=${report.skipped.length}, blocked=${report.blocked.length}, report=${reportPath})`
 );
