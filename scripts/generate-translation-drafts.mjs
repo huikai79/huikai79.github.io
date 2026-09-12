@@ -6,15 +6,19 @@ import {
   collectTranslationSegments,
   copyablePageCover,
   copyablePageIcon,
-  draftProperties,
   extractOpenAIOutputText,
   inspectBlockTree,
   sourceTranslationTargets,
   translationResponseSchema,
-  validateSourceForTranslation,
   writableBlock
 } from "./translation-draft-contract.mjs";
 import { extractEditorialFields } from "./notion-content-contract.mjs";
+import {
+  buildTranslationCandidateFilter,
+  effectiveTranslationSummary,
+  translationDraftProperties,
+  translationReadinessIssues
+} from "./translation-readiness-contract.mjs";
 import {
   TRANSMITH_RUNTIME_PROFILE,
   buildTranslationRequestInput,
@@ -48,15 +52,8 @@ function richTextValue(property) {
   return property?.rich_text?.map(item => item.plain_text).join("").trim() ?? "";
 }
 
-function sourceWithEffectiveGroup(source, group) {
-  if (richTextValue(source.properties?.["Translation Group"])) return source;
-  return {
-    ...source,
-    properties: {
-      ...(source.properties ?? {}),
-      "Translation Group": { rich_text: [{ plain_text: group }] }
-    }
-  };
+function statusValue(property) {
+  return property?.status?.name?.trim() ?? "";
 }
 
 async function queryAll(filter) {
@@ -179,8 +176,9 @@ async function appendChildren(pageId, blocks) {
 
 async function createDraft({ source, group, targetLanguage, translated, configFingerprint }) {
   const engine = `openai:${model}`;
-  const properties = draftProperties({
-    source: sourceWithEffectiveGroup(source, group),
+  const properties = translationDraftProperties({
+    source,
+    group,
     targetLanguage,
     translatedTitle: translated.title,
     translatedSummary: translated.summary,
@@ -220,21 +218,10 @@ async function createDraft({ source, group, targetLanguage, translated, configFi
   return { pageId: created.id, engine };
 }
 
-const sources = await queryAll({
-  and: [
-    { property: "status", status: { equals: "Published" } },
-    {
-      or: [
-        { property: "Visibility", select: { equals: "Public" } },
-        { property: "Visibility", select: { equals: "Test" } }
-      ]
-    },
-    { property: "Translate To", multi_select: { is_not_empty: true } }
-  ]
-});
+const sources = await queryAll(buildTranslationCandidateFilter());
 
 const report = {
-  status: applyWarning ? "preflight" : "complete",
+  status: apply ? "complete" : "preflight",
   requestedApply,
   apply,
   warning: applyWarning || null,
@@ -254,11 +241,9 @@ for (const sourceStub of sources) {
   const properties = source.properties ?? {};
   const editorial = extractEditorialFields(properties);
   const title = titleValue(properties);
-  const summary = richTextValue(properties.Summary);
+  const explicitSummary = richTextValue(properties.Summary);
   const group = editorial.translationGroup;
-  const sourceErrors = validateSourceForTranslation({ pageId: source.id, editorial });
-  if (!title) sourceErrors.push("missing Title");
-  if (!summary) sourceErrors.push("missing Summary");
+  const sourceErrors = translationReadinessIssues({ pageId: source.id, title, editorial });
 
   let translationBrief = "";
   try {
@@ -277,6 +262,16 @@ for (const sourceStub of sources) {
       reasons: sourceErrors
     });
     continue;
+  }
+
+  let cachedMaterial;
+  async function sourceMaterial() {
+    if (cachedMaterial) return cachedMaterial;
+    const blocks = await listBlockTree(source.id);
+    const inspection = inspectBlockTree(blocks);
+    const summary = effectiveTranslationSummary(explicitSummary, blocks);
+    cachedMaterial = { blocks, inspection, summary };
+    return cachedMaterial;
   }
 
   for (const targetLanguage of targets) {
@@ -309,8 +304,7 @@ for (const sourceStub of sources) {
       continue;
     }
 
-    const blocks = await listBlockTree(source.id);
-    const inspection = inspectBlockTree(blocks);
+    const { blocks, inspection, summary } = await sourceMaterial();
     if (inspection.errors.length) {
       report.blocked.push({
         sourcePageId: source.id,
@@ -323,7 +317,7 @@ for (const sourceStub of sources) {
       continue;
     }
 
-    const collected = collectTranslationSegments({ title, summary, blocks });
+    const collected = collectTranslationSegments({ title, summary: summary.summary, blocks });
     if (!collected.segments.length) {
       report.blocked.push({
         sourcePageId: source.id,
@@ -341,6 +335,9 @@ for (const sourceStub of sources) {
       targetLanguage,
       translationGroup: group,
       sourceRevision: source.last_edited_time ?? "",
+      sourceWorkflowStatus: statusValue(properties.status),
+      sourceVisibility: editorial.visibility || "",
+      summarySource: summary.source,
       translationProfile: TRANSMITH_RUNTIME_PROFILE,
       configFingerprint,
       translationBriefApplied: Boolean(translationBrief),
@@ -356,12 +353,16 @@ for (const sourceStub of sources) {
         sourceLanguage: editorial.language,
         targetLanguage,
         title,
-        summary,
+        summary: summary.summary,
         blocks,
         segments: collected.segments,
         brief: translationBrief
       });
-      const translated = applyTranslations({ title, summary, blocks }, translatedResponse);
+      const translated = applyTranslations({
+        title,
+        summary: summary.summary,
+        blocks
+      }, translatedResponse);
       const result = await createDraft({
         source,
         group,
@@ -376,6 +377,7 @@ for (const sourceStub of sources) {
         targetLanguage,
         translationGroup: group,
         sourceRevision: source.last_edited_time ?? "",
+        summarySource: summary.source,
         engine: result.engine,
         translationProfile: TRANSMITH_RUNTIME_PROFILE,
         configFingerprint
