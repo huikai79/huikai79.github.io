@@ -24,15 +24,26 @@ assert.equal(normalizeSyncMode(undefined), "legacy");
 assert.equal(normalizeSyncMode("PRODUCTION"), "production");
 assert.throws(() => normalizeSyncMode("unsafe"), /NOTION_SYNC_MODE/);
 
+const websiteLanguageFilter = {
+  or: [
+    { property: "Language", select: { equals: "zh-TW" } },
+    { property: "Language", select: { equals: "zh-CN" } },
+    { property: "Language", select: { is_empty: true } }
+  ]
+};
+
 assert.deepEqual(buildNotionFilter("legacy"), {
-  property: "status",
-  status: { equals: "Published" }
+  and: [
+    { property: "status", status: { equals: "Published" } },
+    websiteLanguageFilter
+  ]
 });
 
 assert.deepEqual(buildNotionFilter("production"), {
   and: [
     { property: "status", status: { equals: "Published" } },
-    { property: "Visibility", select: { equals: "Public" } }
+    { property: "Visibility", select: { equals: "Public" } },
+    websiteLanguageFilter
   ]
 });
 
@@ -44,7 +55,8 @@ assert.deepEqual(buildNotionFilter("preview"), {
         { property: "Visibility", select: { equals: "Public" } },
         { property: "Visibility", select: { equals: "Test" } }
       ]
-    }
+    },
+    websiteLanguageFilter
   ]
 });
 
@@ -155,6 +167,14 @@ const sourceTranslation = {
 assert.deepEqual(translationGovernanceIssues(sourceTranslation), []);
 assert.deepEqual(productionTranslationIssues(sourceTranslation), []);
 assert.deepEqual(
+  translationGovernanceIssues({ ...sourceTranslation, language: "en", translateTo: ["zh-TW", "zh-CN"] }),
+  []
+);
+assert.deepEqual(
+  translationGovernanceIssues({ ...sourceTranslation, language: "fr", translateTo: ["zh-TW"] }),
+  ["Source Language=fr"]
+);
+assert.deepEqual(
   translationGovernanceIssues({ ...sourceTranslation, translateTo: ["en"] }),
   ["Translate To=en"]
 );
@@ -178,6 +198,10 @@ const approvedTranslation = {
 };
 assert.deepEqual(translationGovernanceIssues(approvedTranslation), []);
 assert.deepEqual(productionTranslationIssues(approvedTranslation), []);
+assert.deepEqual(
+  translationGovernanceIssues({ ...approvedTranslation, language: "en" }),
+  ["Translated Language=en"]
+);
 assert.deepEqual(
   productionTranslationIssues({ ...approvedTranslation, translationStatus: "Review" }),
   ["Public translation lifecycle requires Source or Approved; found Review"]
