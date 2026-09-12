@@ -6,8 +6,11 @@ on:
       - main
     paths:
       - "scripts/external-source-ingest-contract.mjs"
+      - "scripts/external-source-inbox-contract.mjs"
       - "scripts/external-source-ingest.mjs"
       - "scripts/verify-external-source-ingest-contract.mjs"
+      - "scripts/verify-external-source-inbox-contract.mjs"
+      - "scripts/verify-external-source-ingest-workflow.mjs"
       - ".github/workflows/external-source-ingest.yml"
       - ".github/workflows/external-source-ingest-validate.yml"
 
@@ -28,8 +31,11 @@ jobs:
         with:
           node-version: 24
 
-      - name: Verify external source ingestion contract
+      - name: Verify external source ingestion contracts
         run: |
           node scripts/verify-external-source-ingest-contract.mjs
+          node scripts/verify-external-source-inbox-contract.mjs
+          node scripts/verify-external-source-ingest-workflow.mjs
           node --check scripts/external-source-ingest-contract.mjs
+          node --check scripts/external-source-inbox-contract.mjs
           node --check scripts/external-source-ingest.mjs
