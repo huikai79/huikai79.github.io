@@ -1,5 +1,7 @@
 const VALID_SYNC_MODES = new Set(["legacy", "production", "preview"]);
 export const VALID_CONTENT_LANGUAGES = new Set(["zh-TW", "zh-CN"]);
+export const VALID_TRANSLATION_SOURCE_LANGUAGES = new Set(["zh-TW", "zh-CN", "en"]);
+export const VALID_TRANSLATION_TARGET_LANGUAGES = new Set(["zh-TW", "zh-CN"]);
 export const VALID_TRANSLATION_STATUSES = new Set(["Source", "Draft", "Review", "Approved", "Stale"]);
 
 export function normalizeSyncMode(value = "legacy") {
@@ -12,17 +14,33 @@ export function normalizeSyncMode(value = "legacy") {
   return mode;
 }
 
+function websiteLanguageFilter() {
+  return {
+    or: [
+      { property: "Language", select: { equals: "zh-TW" } },
+      { property: "Language", select: { equals: "zh-CN" } },
+      { property: "Language", select: { is_empty: true } }
+    ]
+  };
+}
+
 export function buildNotionFilter(modeValue = "legacy") {
   const mode = normalizeSyncMode(modeValue);
   const published = { property: "status", status: { equals: "Published" } };
+  const websiteLanguage = websiteLanguageFilter();
 
-  if (mode === "legacy") return published;
+  if (mode === "legacy") {
+    return {
+      and: [published, websiteLanguage]
+    };
+  }
 
   if (mode === "production") {
     return {
       and: [
         published,
-        { property: "Visibility", select: { equals: "Public" } }
+        { property: "Visibility", select: { equals: "Public" } },
+        websiteLanguage
       ]
     };
   }
@@ -35,7 +53,8 @@ export function buildNotionFilter(modeValue = "legacy") {
           { property: "Visibility", select: { equals: "Public" } },
           { property: "Visibility", select: { equals: "Test" } }
         ]
-      }
+      },
+      websiteLanguage
     ]
   };
 }
@@ -108,8 +127,15 @@ export function translationGovernanceIssues(candidate = {}) {
     issues.push(`Translation Status=${status}`);
   }
 
+  if (status === "Source" && language && !VALID_TRANSLATION_SOURCE_LANGUAGES.has(language)) {
+    issues.push(`Source Language=${language}`);
+  }
+  if (status !== "Source" && language && !VALID_CONTENT_LANGUAGES.has(language)) {
+    issues.push(`Translated Language=${language}`);
+  }
+
   for (const target of targets) {
-    if (!VALID_CONTENT_LANGUAGES.has(target)) {
+    if (!VALID_TRANSLATION_TARGET_LANGUAGES.has(target)) {
       issues.push(`Translate To=${target}`);
     }
     if (language && target === language) {
