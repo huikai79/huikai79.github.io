@@ -10,8 +10,10 @@ import {
   inspectBlockTree,
   sourceTranslationTargets,
   translationResponseSchema,
+  validateTranslationResponse,
   writableBlock
 } from "./translation-draft-contract.mjs";
+import { chunkTranslationSegments } from "./translation-batch-contract.mjs";
 import { extractEditorialFields } from "./notion-content-contract.mjs";
 import {
   buildTranslationCandidateFilter,
@@ -130,7 +132,7 @@ function existingTargetStaleReasons(page, { sourceRevision, configFingerprint })
   return reasons;
 }
 
-async function translateSegments({
+async function translateSegmentBatch({
   sourceLanguage,
   targetLanguage,
   title,
@@ -177,6 +179,19 @@ async function translateSegments({
     throw new Error(`OpenAI Responses request failed (${response.status}): ${message}`);
   }
   return JSON.parse(extractOpenAIOutputText(payload));
+}
+
+async function translateSegments(args) {
+  const batches = chunkTranslationSegments(args.segments);
+  const translations = [];
+  for (const segments of batches) {
+    const response = await translateSegmentBatch({ ...args, segments });
+    const validated = validateTranslationResponse(segments, response);
+    for (const segment of segments) {
+      translations.push({ id: segment.id, text: validated.get(segment.id) });
+    }
+  }
+  return { translations };
 }
 
 async function appendChildren(pageId, blocks) {
@@ -353,6 +368,7 @@ for (const sourceStub of sources) {
       continue;
     }
 
+    const translationBatchCount = chunkTranslationSegments(collected.segments).length;
     report.planned.push({
       sourcePageId: source.id,
       title,
@@ -367,6 +383,7 @@ for (const sourceStub of sources) {
       configFingerprint,
       translationBriefApplied: Boolean(translationBrief),
       textSegmentCount: collected.segments.length,
+      translationBatchCount,
       blockCount: inspection.count,
       warnings: inspection.warnings
     });
@@ -415,7 +432,8 @@ for (const sourceStub of sources) {
         summarySource: summary.source,
         engine: result.engine,
         translationProfile: TRANSMITH_RUNTIME_PROFILE,
-        configFingerprint
+        configFingerprint,
+        translationBatchCount
       });
     } catch (error) {
       report.blocked.push({
