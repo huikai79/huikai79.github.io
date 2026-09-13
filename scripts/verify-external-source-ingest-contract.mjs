@@ -7,6 +7,7 @@ import {
   sourceHash,
   validateIngestionUrl
 } from "./external-source-ingest-contract.mjs";
+import { createPinnedLookup } from "./external-source-network-contract.mjs";
 
 assert.equal(validateIngestionUrl("https://example.com/path#section").toString(), "https://example.com/path");
 assert.equal(validateIngestionUrl("http://example.com/").protocol, "http:");
@@ -23,6 +24,33 @@ assert.equal(isPublicIpAddress("172.16.0.1"), false);
 assert.equal(isPublicIpAddress("100.64.1.1"), false);
 assert.equal(isPublicIpAddress("::1"), false);
 assert.equal(isPublicIpAddress("2606:4700:4700::1111"), true);
+
+const pinnedIpv4 = createPinnedLookup({ address: "8.8.8.8", family: 4 });
+await new Promise((resolve, reject) => {
+  pinnedIpv4("example.com", {}, (error, address, family) => {
+    try {
+      assert.equal(error, null);
+      assert.equal(address, "8.8.8.8");
+      assert.equal(family, 4);
+      resolve();
+    } catch (assertionError) {
+      reject(assertionError);
+    }
+  });
+});
+await new Promise((resolve, reject) => {
+  pinnedIpv4("example.com", { all: true }, (error, addresses) => {
+    try {
+      assert.equal(error, null);
+      assert.deepEqual(addresses, [{ address: "8.8.8.8", family: 4 }]);
+      resolve();
+    } catch (assertionError) {
+      reject(assertionError);
+    }
+  });
+});
+assert.throws(() => createPinnedLookup({ address: "not-an-ip", family: 4 }), /valid IP address/);
+assert.throws(() => createPinnedLookup({ address: "8.8.8.8", family: 6 }), /valid IP address/);
 
 const html = `<!doctype html>
 <html lang="en">
