@@ -9,8 +9,16 @@ import {
 
 export const TRANSLATION_SUMMARY_MAX_CHARS = 150;
 
-export function buildTranslationCandidateFilter() {
-  return { property: "Translate To", multi_select: { is_not_empty: true } };
+export function buildTranslationCandidateFilter(translationGroup = process.env.TRANSLATION_SOURCE_GROUP || "") {
+  const baseFilter = { property: "Translate To", multi_select: { is_not_empty: true } };
+  const group = String(translationGroup || "").trim();
+  if (!group) return baseFilter;
+  return {
+    and: [
+      baseFilter,
+      { property: "Translation Group", rich_text: { equals: group } }
+    ]
+  };
 }
 
 function normalizedTargets(editorial = {}) {
