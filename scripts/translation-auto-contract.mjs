@@ -1,6 +1,17 @@
 export const DEFAULT_AUTO_TRANSLATION_MAX_GENERATED = 2;
 export const MAX_AUTO_TRANSLATION_MAX_GENERATED = 5;
 
+export function automaticTranslationCandidateFilter() {
+  return {
+    and: [
+      { property: "Translate To", multi_select: { is_not_empty: true } },
+      { property: "Translation Status", select: { equals: "Source" } },
+      { property: "status", status: { equals: "Published" } },
+      { property: "Visibility", select: { equals: "Public" } }
+    ]
+  };
+}
+
 export function automaticTranslationMaxGenerated(
   raw = process.env.TRANSLATION_MAX_GENERATED
 ) {
