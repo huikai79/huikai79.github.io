@@ -18,6 +18,41 @@ build:
 
 - 本頁分成三層：已完成事項按日期留下；需要等規模、資料或使用情境成熟後才值得處理的項目放在「待條件成熟再評估」；已有明確下一步但尚未完成的事項放在「下次可完善」。條件達成且實際完成後，再移入當天紀錄。一般小修補不逐項記錄。
 
+## 2026-09-13｜外部閱讀收件、翻譯自動化與發布鏈閉環
+
+### 外部 URL 收件與文章發布
+
+- 完成 External Reading URL Ingestion MVP：Notion 新增 `Ingestion Status`、`Canonical URL`、`Source Hash`、`Retrieved At`、`Source Published At`、`Ingestion Note`、`Rights Status`，並建立「📥 外文閱讀收件箱」。作者只要先放入 `Source URL`，背景流程即可辨認待處理項目。
+- ingestion worker 以排程／手動方式運作，v1 僅接受一般英文 HTML；會檢查 URL scheme、credentials、DNS／IP、redirect、content type、timeout 與 response size，阻擋 private／loopback／link-local 等位址。成功內容只進入 `Draft + Test + Translation Status=Source + Rights Status=Unknown`，重複或不支援來源則標成 `Duplicate`／`Needs Review`，不自動翻譯、核准或公開。
+- 正式發布《如何讓一個想法生長》、《小寫 b 的部落格寫作》與《我的網站是知識之河旁一棟不斷變動的房子。你的呢？》；補齊來源、摘要、分類、類型、Canonical URL、來源日期與 semantic cover，並修正「只是之河」為「知識之河」。三篇通過 publication contract、Notion sync、Hugo build、GitHub Pages deployment 與 production reader QA。
+
+### Transmith 從單篇批准走到 Notion-native 自動佇列
+
+- 先完成 targeted translation approval guard：任何付費 `apply=true` 都必須明確指定一個 canonical Notion Source page ID／URL；resolver 會驗證 Source、Translation Group、readiness、資料庫成員資格與唯一候選，不能由操作者直接塞入 Translation Group。同步觸發仍只做全庫 preflight，因此保留單篇人工 fallback 而不會誤掃整池付費翻譯。
+- 實際以《小寫 b 的部落格寫作》完成第一個 targeted zh-CN Draft；過程也確認 GitHub Actions 使用的 Notion integration 必須具備 Insert content capability。權限補齊後，Draft 正確保留 `Draft + Test`，並寫入 Translation Source／Group／Source Revision／Engine／Profile／Config Fingerprint。
+- 完成 Notion-native automatic translation queue：正式 Source 只要符合 `Published + Public + Translation Status=Source` 且勾選 `Translate To`，背景流程便會每 15 分鐘及成功 Notion sync 後自動尋找缺少的目標語言。每輪最多建立 2 個新 Draft，既有目標語言一律跳過，不自動覆寫，也永遠不自動 `Approved` 或 `Published`。
+- automatic queue 對文章本身的 unsupported block／media 採非致命 blocker，避免一篇異常卡死整批；OpenAI、Notion 寫入或缺少必要 API key 等 runtime 問題則會明確失敗。第一輪 production 自動化已實際建立《如何活著》zh-TW 與《我的網站是知識之河旁一棟不斷變動的房子。你的呢？》zh-CN Draft，兩篇均驗證為 `Draft + Test` 且 provenance 完整；既有《小寫 b》zh-CN 被正確跳過。
+- 《如何讓一個想法生長》zh-CN 目前仍因正文含 Notion-hosted/file-upload 圖片而被 durable-media contract 安全阻擋；系統沒有複製短效 signed URL，也沒有因此阻塞其他文章翻譯。
+
+### 部署可靠性與留言管理正式整合
+
+- Comments Admin V3 已由候選實作合併進 `main`，article-first 管理與 build-time article manifest 因此進入正式網站程式；對應 exact-main GitHub Pages deployment 已成功。Comments Worker 是獨立 deployment surface，本筆不以 Pages 成功推定 Worker 已同步到同一版。
+- 修正 Notion sync「push 新 main 後立即 dispatch deployment」的競態：workflow_dispatch context 曾仍綁定上一個 `GITHUB_SHA`，導致正確的新 main 被 lineage guard 誤拒。現在 guard 直接讀取遠端 `refs/heads/main`，仍要求 requested SHA 等於當前 main，且後續 exact checkout、main 未移動檢查、Pages artifact 與 live QA 邊界全部保留。
+- 修正後的 exact-main deployment 已在 production 成功；Notion-native automatic translation queue 合併後，code-only release、Notion sync 與 GitHub Pages deployment 亦再次成功，確認新自動化已進入正式 `main`，而不只停留在 PR 候選。
+
+## 2026-09-12｜Entry Header 與 Transmith 翻譯基礎補齊
+
+### 內容入口視覺系統
+
+- Posts、Projects、Explore、About 共用 HUIKAI Entry Header v2：桌面統一較強的 H1 尺度、lead 寬度／字級與低調分隔線，手機則保留較克制的 36px 標題，避免 CJK 窄螢幕標題過度膨脹。
+- 這次只統一入口層的 title／lead／spacing grammar，不重做 Projects 卡片、taxonomy 元件或 About 長文結構；候選曾以 4 類頁面 × 桌面／手機 × 亮／暗模式共 32 張截圖檢查，未發現水平 overflow。
+
+### Transmith runtime、English Source 與 readiness 分層
+
+- 將 Transmith v2.5 的規則落成可執行 translation runtime profile，加入 `Translation Brief`、段落／區塊語境、Translation Profile 與 Config Fingerprint；既有翻譯不會被自動覆寫，revision／config 差異可被辨認為 stale 訊號。
+- `Language=en` 正式成為可翻譯的 Source language，但目標仍只允許 `zh-TW`／`zh-CN`；英文 Source 不會直接進入 Hugo 公開內容，因此擴大來源能力沒有等同新增英文網站 locale。
+- translation readiness 與 publication readiness 正式拆開：`Translate To` 可以選出待翻譯 Source，不再要求來源先 `Published`；缺少顯式 Summary 時可由正文產生 deterministic translation-only fallback，且 date／slug／Category／Type 僅在存在時繼承到 Draft。production publication 的 Summary 等 metadata gate 維持原規則，不因翻譯需求而放寬。
+
 ## 2026-09-12｜留言管理 V3 完成候選實作與驗證
 
 ### Article-first 管理與可達性
@@ -179,13 +214,14 @@ build:
 
 - Managed media 接近現有 100 MiB 管理預算，或大型影音需求明顯增加時：重新評估 Cloudflare R2／object storage。
 - 正式文章約達 30–50 篇時：重新檢查 Category／Tag 的 canonical taxonomy 與命名治理。
-- 翻譯文章約達 10 篇以上，或來源文章開始頻繁修訂時：評估自動 stale detection 與 translation refresh。
+- 翻譯文章約達 10 篇以上，或來源文章開始頻繁修訂時：評估自動 translation refresh、Stale 狀態寫回與人工重審策略；目前已能用 Source Revision／Config Fingerprint 辨認 stale 訊號，但不自動覆寫既有翻譯。
 - 正式內容約達 50 篇以上，或讀者開始難以找到舊內容時：重新評估搜尋排序、推薦與相關文章策略。
 - 垃圾訊息、濫用或通知需求明顯增加時：再評估 spam moderation、通知與更進階的社群管理；不因文章管理需求已成熟而一併擴大功能。
 - 同步／建置時間持續明顯上升時：再評估 cache、圖片處理與 pipeline 效能優化；目前不為預期中的未來規模提前加複雜度。
 
 ## 下次可完善
 
+- 補齊翻譯 Draft 對 Notion-hosted／file-upload 圖片的 durable-media contract；目前《如何讓一個想法生長》zh-CN 因此安全阻擋，不應以複製短效 signed URL 繞過。
 - 取得 Umami Website ID 後再正式啟用 Analytics，並以真實讀者資料決定後續 UX 調整；在此之前不把 Analytics 記為已啟用。
 - 逐步壓縮仍超過 media warning threshold 的舊封面，降低 repository 與 build 的媒體負擔。
 - 逐篇決定哪些 Test 內容值得修訂後轉成正式文章，不批次公開。
