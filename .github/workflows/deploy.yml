@@ -38,8 +38,14 @@ jobs:
             exit 1
           fi
 
-          if [ "$REQUESTED_SHA" != "$GITHUB_SHA" ]; then
-            echo "::error::Deployment lineage mismatch: requested $REQUESTED_SHA but workflow main SHA is $GITHUB_SHA"
+          current_main="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
+          if ! printf '%s' "$current_main" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::Could not resolve the current main commit"
+            exit 1
+          fi
+
+          if [ "$REQUESTED_SHA" != "$current_main" ]; then
+            echo "::error::Deployment lineage mismatch: requested $REQUESTED_SHA but current main is $current_main"
             exit 1
           fi
 
