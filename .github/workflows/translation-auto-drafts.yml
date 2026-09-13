@@ -1,0 +1,66 @@
+name: "Notion automatic translation drafts"
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_run:
+    workflows:
+      - "Notion sync -> validated main commit"
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-automatic-translation-drafts
+  cancel-in-progress: false
+
+jobs:
+  translate:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify automatic translation contracts
+        run: |
+          node scripts/verify-translation-draft-contract.mjs
+          node scripts/verify-translation-readiness-contract.mjs
+          node scripts/verify-translation-auto-contract.mjs
+          node scripts/verify-automatic-translation-workflow.mjs
+          node --check scripts/translation-auto-contract.mjs
+          node --check scripts/generate-translation-drafts.mjs
+
+      - name: Create missing public-source translation drafts
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_TRANSLATION_MODEL: gpt-5.6-luna
+          TRANSLATION_APPLY: "1"
+          TRANSLATION_AUTOMATIC: "1"
+          TRANSLATION_MAX_GENERATED: "2"
+          TRANSLATION_REPORT_PATH: /tmp/notion-automatic-translation-drafts.json
+        run: node scripts/generate-translation-drafts.mjs
+
+      - name: Report automatic translation result
+        if: always()
+        run: |
+          if [ -s /tmp/notion-automatic-translation-drafts.json ]; then
+            jq '{status,apply,automatic,maxGenerated,provider,model,translationProfile,sourceCount,requestedTargetCount,planned,generated,skipped,blocked}' /tmp/notion-automatic-translation-drafts.json
+          else
+            echo "Automatic translation report was not created."
+          fi
