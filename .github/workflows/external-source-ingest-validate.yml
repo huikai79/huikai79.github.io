@@ -1,0 +1,44 @@
+name: "External source ingestion validation"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "docs/external-reading-ingestion-v1.md"
+      - "scripts/external-source-ingest-contract.mjs"
+      - "scripts/external-source-inbox-contract.mjs"
+      - "scripts/external-source-ingest.mjs"
+      - "scripts/verify-external-source-ingest-contract.mjs"
+      - "scripts/verify-external-source-inbox-contract.mjs"
+      - "scripts/verify-external-source-ingest-workflow.mjs"
+      - "scripts/verify-external-source-ingest-doc.mjs"
+      - ".github/workflows/external-source-ingest.yml"
+      - ".github/workflows/external-source-ingest-validate.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Verify external source ingestion contracts
+        run: |
+          node scripts/verify-external-source-ingest-contract.mjs
+          node scripts/verify-external-source-inbox-contract.mjs
+          node scripts/verify-external-source-ingest-workflow.mjs
+          node scripts/verify-external-source-ingest-doc.mjs
+          node --check scripts/external-source-ingest-contract.mjs
+          node --check scripts/external-source-inbox-contract.mjs
+          node --check scripts/external-source-ingest.mjs
