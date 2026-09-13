@@ -3,7 +3,7 @@ import { isIP } from "node:net";
 export function createPinnedLookup(pinnedAddress = {}) {
   const address = String(pinnedAddress.address || "").trim();
   const family = Number(pinnedAddress.family);
-  if (!isIP(address) || !new Set([4, 6]).has(family)) {
+  if (isIP(address) !== family || !new Set([4, 6]).has(family)) {
     throw new Error("Pinned lookup requires a valid IP address and family");
   }
 
