@@ -14,6 +14,7 @@ import {
   validateIngestionUrl
 } from "./external-source-ingest-contract.mjs";
 import { buildExternalIngestionCandidateFilter } from "./external-source-inbox-contract.mjs";
+import { createPinnedLookup } from "./external-source-network-contract.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -100,9 +101,7 @@ function requestHtmlOnce(url, pinnedAddress) {
         Accept: "text/html,application/xhtml+xml;q=0.9",
         "Accept-Encoding": "identity"
       },
-      lookup(_hostname, _options, callback) {
-        callback(null, pinnedAddress.address, pinnedAddress.family);
-      }
+      lookup: createPinnedLookup(pinnedAddress)
     }, response => {
       const status = response.statusCode || 0;
       const headers = response.headers;
