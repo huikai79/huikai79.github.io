@@ -7,12 +7,16 @@ on:
     paths:
       - "scripts/translation-readiness-contract.mjs"
       - "scripts/translation-source-selection-contract.mjs"
+      - "scripts/translation-auto-contract.mjs"
       - "scripts/resolve-targeted-translation-source.mjs"
       - "scripts/verify-translation-readiness-contract.mjs"
       - "scripts/verify-translation-source-selection-contract.mjs"
       - "scripts/verify-targeted-translation-workflow.mjs"
+      - "scripts/verify-translation-auto-contract.mjs"
+      - "scripts/verify-automatic-translation-workflow.mjs"
       - "scripts/generate-translation-drafts.mjs"
       - ".github/workflows/translation-drafts.yml"
+      - ".github/workflows/translation-auto-drafts.yml"
       - ".github/workflows/translation-readiness-validate.yml"
 
 permissions:
@@ -38,7 +42,10 @@ jobs:
           node scripts/verify-translation-draft-contract.mjs
           node scripts/verify-translation-source-selection-contract.mjs
           node scripts/verify-targeted-translation-workflow.mjs
+          node scripts/verify-translation-auto-contract.mjs
+          node scripts/verify-automatic-translation-workflow.mjs
           node --check scripts/translation-readiness-contract.mjs
           node --check scripts/translation-source-selection-contract.mjs
+          node --check scripts/translation-auto-contract.mjs
           node --check scripts/resolve-targeted-translation-source.mjs
           node --check scripts/generate-translation-drafts.mjs

@@ -20,6 +20,12 @@ import {
   translationReadinessIssues
 } from "./translation-readiness-contract.mjs";
 import {
+  automaticTranslationCandidateFilter,
+  automaticTranslationFatalBlockers,
+  automaticTranslationMaxGenerated,
+  sortAutomaticTranslationSources
+} from "./translation-auto-contract.mjs";
+import {
   TRANSMITH_RUNTIME_PROFILE,
   buildTranslationRequestInput,
   buildTransmithInstructions,
@@ -30,16 +36,24 @@ import {
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
 const requestedApply = process.env.TRANSLATION_APPLY === "1";
+const automaticMode = process.env.TRANSLATION_AUTOMATIC === "1";
 const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
 const apply = requestedApply && Boolean(apiKey);
 const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-5.6-luna";
 const reportPath = process.env.TRANSLATION_REPORT_PATH || "/tmp/notion-translation-drafts.json";
+const automaticMaxGenerated = automaticMode ? automaticTranslationMaxGenerated() : null;
 const applyWarning = requestedApply && !apiKey
   ? "OPENAI_API_KEY is not configured; running translation preflight only and creating no drafts"
   : "";
 
 if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
+if (automaticMode && !requestedApply) {
+  throw new Error("TRANSLATION_AUTOMATIC=1 requires TRANSLATION_APPLY=1");
+}
+if (automaticMode && !apiKey) {
+  throw new Error("OPENAI_API_KEY is required when TRANSLATION_AUTOMATIC=1");
+}
 if (applyWarning) console.warn(`::warning::${applyWarning}`);
 
 const notion = new Client({ auth: token });
@@ -218,12 +232,20 @@ async function createDraft({ source, group, targetLanguage, translated, configFi
   return { pageId: created.id, engine };
 }
 
-const sources = await queryAll(buildTranslationCandidateFilter());
+const candidateFilter = automaticMode
+  ? automaticTranslationCandidateFilter()
+  : buildTranslationCandidateFilter();
+const queriedSources = await queryAll(candidateFilter);
+const sources = automaticMode
+  ? sortAutomaticTranslationSources(queriedSources)
+  : queriedSources;
 
 const report = {
   status: apply ? "complete" : "preflight",
   requestedApply,
   apply,
+  automatic: automaticMode,
+  maxGenerated: automaticMaxGenerated,
   warning: applyWarning || null,
   provider: "openai-responses",
   model,
@@ -259,7 +281,8 @@ for (const sourceStub of sources) {
       sourcePageId: source.id,
       title,
       targetLanguage: null,
-      reasons: sourceErrors
+      reasons: sourceErrors,
+      fatal: false
     });
     continue;
   }
@@ -312,7 +335,8 @@ for (const sourceStub of sources) {
         targetLanguage,
         reasons: inspection.errors,
         warnings: inspection.warnings,
-        blockCount: inspection.count
+        blockCount: inspection.count,
+        fatal: false
       });
       continue;
     }
@@ -323,7 +347,8 @@ for (const sourceStub of sources) {
         sourcePageId: source.id,
         title,
         targetLanguage,
-        reasons: ["source contains no translatable text segments"]
+        reasons: ["source contains no translatable text segments"],
+        fatal: false
       });
       continue;
     }
@@ -347,6 +372,16 @@ for (const sourceStub of sources) {
     });
 
     if (!apply) continue;
+
+    if (automaticMode && report.generated.length >= automaticMaxGenerated) {
+      report.skipped.push({
+        sourcePageId: source.id,
+        title,
+        targetLanguage,
+        reason: `automatic generation limit ${automaticMaxGenerated} reached; deferred to a future run`
+      });
+      continue;
+    }
 
     try {
       const translatedResponse = await translateSegments({
@@ -387,7 +422,8 @@ for (const sourceStub of sources) {
         sourcePageId: source.id,
         title,
         targetLanguage,
-        reasons: [error.message]
+        reasons: [error.message],
+        fatal: true
       });
     }
   }
@@ -399,17 +435,26 @@ await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 console.log(
   `Translation drafts: ${report.status.toUpperCase()} ` +
   `(profile=${TRANSMITH_RUNTIME_PROFILE}, requestedApply=${requestedApply}, apply=${apply}, ` +
+  `automatic=${automaticMode}, maxGenerated=${automaticMaxGenerated ?? "none"}, ` +
   `sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
   `planned=${report.planned.length}, generated=${report.generated.length}, ` +
   `skipped=${report.skipped.length}, blocked=${report.blocked.length}, report=${reportPath})`
 );
 
+const fatalBlockers = automaticMode
+  ? automaticTranslationFatalBlockers(report.blocked)
+  : report.blocked;
+
 if (apply && report.blocked.length) {
   for (const item of report.blocked) {
+    const annotation = automaticMode && !item.fatal ? "warning" : "error";
     console.error(
-      `::error::Translation draft blocked: source=${item.sourcePageId}, target=${item.targetLanguage ?? "n/a"}, ` +
+      `::${annotation}::Translation draft blocked: source=${item.sourcePageId}, target=${item.targetLanguage ?? "n/a"}, ` +
       `${(item.reasons ?? []).join("; ")}`
     );
   }
+}
+
+if (apply && fatalBlockers.length) {
   process.exitCode = 1;
 }
