@@ -8,6 +8,11 @@ on:
         required: true
         default: false
         type: boolean
+      source_page_id:
+        description: "Canonical Notion Source page ID or URL. Required when apply=true."
+        required: false
+        default: ""
+        type: string
   workflow_run:
     workflows:
       - "Notion sync -> validated main commit"
@@ -43,9 +48,22 @@ jobs:
         run: |
           node scripts/verify-translation-draft-contract.mjs
           node scripts/verify-translation-readiness-contract.mjs
+          node scripts/verify-translation-source-selection-contract.mjs
+          node scripts/verify-targeted-translation-workflow.mjs
           node --check scripts/transmith-runtime-profile.mjs
           node --check scripts/translation-readiness-contract.mjs
+          node --check scripts/translation-source-selection-contract.mjs
+          node --check scripts/resolve-targeted-translation-source.mjs
           node --check scripts/generate-translation-drafts.mjs
+
+      - name: Resolve manually approved translation source
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          TRANSLATION_APPLY: "1"
+          TRANSLATION_SOURCE_PAGE_ID: ${{ inputs.source_page_id }}
+        run: node scripts/resolve-targeted-translation-source.mjs
 
       - name: Preflight translation plan or create manually approved drafts
         env:
