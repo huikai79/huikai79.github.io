@@ -10,9 +10,15 @@ import {
   translationReadinessIssues
 } from "./translation-readiness-contract.mjs";
 
-assert.deepEqual(buildTranslationCandidateFilter(), {
+assert.deepEqual(buildTranslationCandidateFilter(""), {
   property: "Translate To",
   multi_select: { is_not_empty: true }
+});
+assert.deepEqual(buildTranslationCandidateFilter("writing-advice"), {
+  and: [
+    { property: "Translate To", multi_select: { is_not_empty: true } },
+    { property: "Translation Group", rich_text: { equals: "writing-advice" } }
+  ]
 });
 
 const draftEditorial = {
