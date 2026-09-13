@@ -51,6 +51,9 @@ if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
 if (automaticMode && !requestedApply) {
   throw new Error("TRANSLATION_AUTOMATIC=1 requires TRANSLATION_APPLY=1");
 }
+if (automaticMode && !apiKey) {
+  throw new Error("OPENAI_API_KEY is required when TRANSLATION_AUTOMATIC=1");
+}
 if (applyWarning) console.warn(`::warning::${applyWarning}`);
 
 const notion = new Client({ auth: token });
