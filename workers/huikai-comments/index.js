@@ -7,6 +7,7 @@ const MAX_BODY_LENGTH = 4000;
 const MAX_REQUEST_BYTES = 12_000;
 const PUBLIC_COMMENT_LIMIT = 300;
 const ADMIN_COMMENT_LIMIT = 100;
+const ADMIN_ARTICLE_LIMIT = 100;
 const ARTICLE_KEY_RE = /^notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const COMMENT_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ADMIN_STATUSES = new Set(["pending", "approved", "hidden"]);
@@ -350,26 +351,132 @@ function adminStatus(value) {
   return ADMIN_STATUSES.has(status) ? status : "";
 }
 
+function paginationParams(url, maximum, defaultLimit) {
+  const requestedLimit = Number(url.searchParams.get("limit") || defaultLimit);
+  const requestedOffset = Number(url.searchParams.get("offset") || 0);
+  const limit = Math.min(maximum, Math.max(1, Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : defaultLimit));
+  const offset = Math.max(0, Number.isFinite(requestedOffset) ? Math.floor(requestedOffset) : 0);
+  return { limit, offset };
+}
+
+function adminCommentSelectSql(whereSql) {
+  return `SELECT c.id, c.article_key, c.parent_id, c.reply_to_id, c.page_path, c.display_name, c.body,
+            c.created_at, c.status, c.is_author, c.removed_by_admin,
+            root.display_name AS root_display_name, root.status AS root_status, root.removed_by_admin AS root_removed_by_admin,
+            target.display_name AS reply_to_display_name, target.status AS reply_to_status,
+            target.is_author AS reply_to_is_author, target.removed_by_admin AS reply_to_removed_by_admin,
+            CASE
+              WHEN c.status IN ('approved', 'withdrawn')
+               AND (c.parent_id IS NULL OR root.status IN ('approved', 'withdrawn'))
+              THEN 1 ELSE 0
+            END AS effective_visible
+       FROM comments c
+       LEFT JOIN comments root ON root.id = c.parent_id
+       LEFT JOIN comments target ON target.id = c.reply_to_id
+      ${whereSql}`;
+}
+
 async function listAdminComments(requestUrl, request, env, forcedStatus = "") {
   if (!adminAuthorized(request, env)) return errorJson("unauthorized", "Unauthorized.", 401);
   const status = forcedStatus || adminStatus(requestUrl.searchParams.get("status"));
   if (!status) return errorJson("invalid_status", "Invalid comment status.", 400);
-  const requested = Number(requestUrl.searchParams.get("limit") || 50);
-  const limit = Math.min(ADMIN_COMMENT_LIMIT, Math.max(1, Number.isFinite(requested) ? Math.floor(requested) : 50));
-  const result = await env.DB.prepare(
-    `SELECT c.id, c.article_key, c.parent_id, c.reply_to_id, c.page_path, c.display_name, c.body,
-            c.created_at, c.status, c.is_author,
-            root.display_name AS root_display_name, root.status AS root_status, root.removed_by_admin AS root_removed_by_admin,
-            target.display_name AS reply_to_display_name, target.status AS reply_to_status,
-            target.is_author AS reply_to_is_author, target.removed_by_admin AS reply_to_removed_by_admin
+  const articleKey = String(requestUrl.searchParams.get("articleKey") || "");
+  if (articleKey && !validArticleKey(articleKey)) return errorJson("invalid_article_key", "Invalid article key.", 400);
+  const { limit, offset } = paginationParams(requestUrl, ADMIN_COMMENT_LIMIT, 50);
+
+  const articleConversation = status === "approved" && Boolean(articleKey);
+  let whereSql;
+  let args;
+  if (articleConversation) {
+    whereSql = `WHERE c.article_key = ?
+                  AND c.status IN ('approved', 'withdrawn')
+                  AND (c.parent_id IS NULL OR root.status IN ('approved', 'withdrawn'))`;
+    args = [articleKey];
+  } else if (articleKey) {
+    whereSql = `WHERE c.status = ? AND c.article_key = ?`;
+    args = [status, articleKey];
+  } else {
+    whereSql = `WHERE c.status = ?`;
+    args = [status];
+  }
+
+  const countRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS total
        FROM comments c
        LEFT JOIN comments root ON root.id = c.parent_id
-       LEFT JOIN comments target ON target.id = c.reply_to_id
-      WHERE c.status = ?
+      ${whereSql}`
+  ).bind(...args).first();
+  const total = Number(countRow?.total || 0);
+
+  const result = await env.DB.prepare(
+    `${adminCommentSelectSql(whereSql)}
       ORDER BY c.created_at ASC, c.id ASC
-      LIMIT ?`
-  ).bind(status, limit).all();
-  return responseJson({ ok: true, status, comments: result?.results || [] });
+      LIMIT ? OFFSET ?`
+  ).bind(...args, limit, offset).all();
+
+  return responseJson({
+    ok: true,
+    status,
+    articleKey: articleKey || null,
+    comments: result?.results || [],
+    total,
+    limit,
+    offset,
+    hasMore: offset + (result?.results?.length || 0) < total,
+  });
+}
+
+async function listAdminArticles(requestUrl, request, env) {
+  if (!adminAuthorized(request, env)) return errorJson("unauthorized", "Unauthorized.", 401);
+  const status = String(requestUrl.searchParams.get("status") || "approved").toLowerCase();
+  if (status !== "approved") return errorJson("invalid_status", "Article-first management currently supports published conversations only.", 400);
+  const { limit, offset } = paginationParams(requestUrl, ADMIN_ARTICLE_LIMIT, 20);
+
+  const visibilityWhere = `WHERE c.status IN ('approved', 'withdrawn')
+      AND (c.parent_id IS NULL OR root.status IN ('approved', 'withdrawn'))`;
+
+  const countRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS total FROM (
+       SELECT c.article_key
+         FROM comments c
+         LEFT JOIN comments root ON root.id = c.parent_id
+        ${visibilityWhere}
+        GROUP BY c.article_key
+     ) visible_articles`
+  ).first();
+  const total = Number(countRow?.total || 0);
+
+  const result = await env.DB.prepare(
+    `SELECT c.article_key,
+            COUNT(*) AS comment_count,
+            SUM(CASE WHEN c.parent_id IS NULL THEN 1 ELSE 0 END) AS thread_count,
+            MAX(c.created_at) AS latest_at,
+            (
+              SELECT p.page_path
+                FROM comments p
+               WHERE p.article_key = c.article_key
+                 AND p.page_path IS NOT NULL
+                 AND p.page_path != ''
+               ORDER BY p.created_at DESC, p.id DESC
+               LIMIT 1
+            ) AS page_path
+       FROM comments c
+       LEFT JOIN comments root ON root.id = c.parent_id
+      ${visibilityWhere}
+      GROUP BY c.article_key
+      ORDER BY latest_at DESC, c.article_key ASC
+      LIMIT ? OFFSET ?`
+  ).bind(limit, offset).all();
+
+  return responseJson({
+    ok: true,
+    status: "approved",
+    articles: result?.results || [],
+    total,
+    limit,
+    offset,
+    hasMore: offset + (result?.results?.length || 0) < total,
+  });
 }
 
 async function validateThreadReferences(env, row) {
@@ -476,6 +583,7 @@ export async function handleRequest(request, env) {
   if (withdrawMatch && request.method === "POST") return withdrawComment(request, env, withdrawMatch[1]);
 
   if (url.pathname === `${API_PREFIX}/admin/pending` && request.method === "GET") return listAdminComments(url, request, env, "pending");
+  if (url.pathname === `${API_PREFIX}/admin/articles` && request.method === "GET") return listAdminArticles(url, request, env);
   if (url.pathname === `${API_PREFIX}/admin/comments` && request.method === "GET") return listAdminComments(url, request, env);
 
   const moderationMatch = url.pathname.match(new RegExp(`^${API_PREFIX}/admin/comments/([0-9a-f-]+)/(approve|hide|restore)$`, "i"));

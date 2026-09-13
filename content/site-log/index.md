@@ -18,6 +18,23 @@ build:
 
 - 本頁分成三層：已完成事項按日期留下；需要等規模、資料或使用情境成熟後才值得處理的項目放在「待條件成熟再評估」；已有明確下一步但尚未完成的事項放在「下次可完善」。條件達成且實際完成後，再移入當天紀錄。一般小修補不逐項記錄。
 
+## 2026-09-12｜留言管理 V3 完成候選實作與驗證
+
+### Article-first 管理與可達性
+
+- 「已公開」留言管理由 status-first 扁平清單改為 article-first：先依文章與最近活動找到討論，再進入文章內管理完整 thread；待審核仍維持 queue-first，已隱藏仍作為可恢復的 recovery queue。
+- Worker 新增 `/admin/articles`，並讓文章內留言查詢支援 `articleKey + limit + offset + total + hasMore`；原本超過 100 則後新留言可能不可到達的限制已由真正分頁取代，並加入 101+ 留言回歸。
+- Published 管理改用 effective public visibility：hidden root 下仍為 `approved` 的 descendants 不再被誤算成讀者可見；文章內仍保留 direct-reply、作者身份與讀者／管理員 tombstone，對話資料語義不因管理介面扁平化而遺失。
+- Hugo build-time article manifest 以 `commentKey` 對應文章標題、路徑與語言，不把文章標題重複寫入 D1；多語文章採 exact path 優先、單一 variant fallback，遇到多個 variant 時明確顯示而不自行猜測。
+- V3 前端若遇到尚未升級的 Worker `/admin/articles` 404，會安全退回 V2 Published 清單，讓 Pages 與 Worker 可以分階段部署而不讓管理頁暫時失效。
+
+### 驗證與部署邊界
+
+- Worker runtime tests 已涵蓋 article pagination、多文章排序、101+ comments pagination、hidden-root effective visibility、tombstone 與 article conversation 分頁；既有 withdrawal、direct reply、author reply 與 lifecycle 行為保留。
+- Hugo 0.165.0 完整 build、管理路由隱私檢查與 Playwright V3 moderation browser QA 均已通過；瀏覽器驗證涵蓋 article-first 列表、真實文章標題映射、搜尋、文章 drill-down、direct-reply／tombstone，以及桌面與手機版面契約。
+- 驗證過程曾實際抓到 article manifest 在 `<script>` context 被二次 JSON 編碼；最後改以正確的 JSON producer 與 `safeJS` 輸出後，同一套 browser contract 通過，未以放寬測試方式繞過問題。
+- V3 不需要新的 D1 migration，也沒有修改 Notion 內容模型或文章資料。此筆紀錄寫入時，功能已完成候選實作與驗證；production 合併、Pages／Worker 部署與 live source lineage 仍須分別確認，不以候選 CI 代替正式上線證據。
+
 ## 2026-09-11｜留言生命週期與多輪對話管理完成
 
 ### 留言生命週期與對話語義
@@ -169,7 +186,6 @@ build:
 
 ## 下次可完善
 
-- 將「已公開」留言管理改為 article-first：先按文章與最近回應找到討論，再進入文章內管理完整 thread；同步加入文章篩選／搜尋與真正的分頁，避免目前 `limit=100` 的扁平清單在留言增加後出現不可到達的新留言，並在管理語義上區分資料列的 `approved` 與讀者實際可見的 effective public visibility。此方向已完成評估，尚未實作。
 - 取得 Umami Website ID 後再正式啟用 Analytics，並以真實讀者資料決定後續 UX 調整；在此之前不把 Analytics 記為已啟用。
 - 逐步壓縮仍超過 media warning threshold 的舊封面，降低 repository 與 build 的媒體負擔。
 - 逐篇決定哪些 Test 內容值得修訂後轉成正式文章，不批次公開。
