@@ -11,32 +11,63 @@ on:
         required: false
         default: "manual"
         type: string
+      preflight_only:
+        description: "Materialize and validate the latest Notion production candidate without committing or deploying"
+        required: false
+        default: false
+        type: boolean
+      candidate_ref:
+        description: "Repository ref to validate in preflight mode; workflow itself must still be dispatched from main"
+        required: false
+        default: "main"
+        type: string
+      force_deploy:
+        description: "Force an exact-main redeployment after validation even when the site surface did not change"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   actions: write
 
 concurrency:
-  group: notion-sync-main
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: ${{ inputs.preflight_only == true && format('notion-preflight-{0}', inputs.candidate_ref) || 'notion-sync-main' }}
+  cancel-in-progress: ${{ github.event_name == 'push' || inputs.preflight_only == true }}
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce main-only synchronization
+      - name: Enforce trusted synchronization entrypoint
         run: |
           if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "::error::Notion synchronization is restricted to main. Current ref: $GITHUB_REF"
+            echo "::error::Synchronization and preflight orchestration must run from the trusted main workflow definition. Current ref: $GITHUB_REF"
             exit 1
           fi
 
-      - name: Checkout main without persisted credentials
+      - name: Checkout candidate without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: main
+          ref: ${{ inputs.preflight_only == true && inputs.candidate_ref || 'main' }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Record candidate lineage
+        id: candidate
+        env:
+          PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
+          CANDIDATE_REF: ${{ inputs.candidate_ref }}
+        run: |
+          candidate_sha="$(git rev-parse HEAD)"
+          echo "sha=$candidate_sha" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Candidate lineage"
+            echo ""
+            echo "Mode: **$([ "$PREFLIGHT_ONLY" = "true" ] && echo preflight || echo synchronization)**"
+            echo "Requested ref: \`${CANDIDATE_REF:-main}\`"
+            echo "Candidate SHA: \`$candidate_sha\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -211,13 +242,14 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           TRIGGER_SOURCE: ${{ inputs.trigger_source }}
+          PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
         run: |
           refresh=0
-          if [ "$EVENT_NAME" = "push" ] || [ "$TRIGGER_SOURCE" = "manual" ] || [ "$TRIGGER_SOURCE" = "manual-health" ] || [ "$TRIGGER_SOURCE" = "weekly-presentation" ]; then
+          if [ "$PREFLIGHT_ONLY" = "true" ] || [ "$EVENT_NAME" = "push" ] || [ "$TRIGGER_SOURCE" = "manual" ] || [ "$TRIGGER_SOURCE" = "manual-health" ] || [ "$TRIGGER_SOURCE" = "weekly-presentation" ]; then
             refresh=1
           fi
           echo "refresh=$refresh" >> "$GITHUB_OUTPUT"
-          echo "Homepage presentation refresh: $refresh (event=$EVENT_NAME, trigger=${TRIGGER_SOURCE:-none})"
+          echo "Homepage presentation refresh: $refresh (event=$EVENT_NAME, trigger=${TRIGGER_SOURCE:-none}, preflight=${PREFLIGHT_ONLY:-false})"
 
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -248,7 +280,27 @@ jobs:
           echo "material_changed=$material_changed" >> "$GITHUB_OUTPUT"
           echo "Material site change: $material_changed"
 
+      - name: Report full candidate preflight
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.preflight_only == true }}
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          MATERIAL_CHANGED: ${{ steps.site_change.outputs.material_changed }}
+        run: |
+          {
+            echo ""
+            echo "## Full candidate preflight"
+            echo ""
+            echo "Candidate SHA: \`$CANDIDATE_SHA\`"
+            echo "Materialized latest Notion production data: **PASS**"
+            echo "Production-equivalent build-and-verify: **PASS**"
+            echo "Material site change relative to candidate ref: **$MATERIAL_CHANGED**"
+            echo "Commit: **SKIPPED**"
+            echo "Deployment: **SKIPPED**"
+            echo "Runner workspace is ephemeral; generated candidate state is discarded after this run."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit only the validated synchronized snapshot
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.preflight_only != true }}
         id: sync_commit
         env:
           GH_TOKEN: ${{ github.token }}
@@ -274,6 +326,7 @@ jobs:
           echo "Validated site state committed: $source_sha"
 
       - name: Dispatch exact-main deployment when required
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.preflight_only != true }}
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ steps.sync_commit.outputs.source_sha }}
@@ -281,26 +334,35 @@ jobs:
           MATERIAL_CHANGED: ${{ steps.site_change.outputs.material_changed }}
           EVENT_NAME: ${{ github.event_name }}
           TRIGGER_SOURCE: ${{ inputs.trigger_source }}
+          FORCE_DEPLOY: ${{ inputs.force_deploy }}
         run: |
           set -euo pipefail
           should_deploy=false
+          deploy_reason="no-deployment-worthy-change"
 
-          if [ "$EVENT_NAME" = "push" ]; then
-            # A code-only main push has its own release workflow. This sync lane
-            # only deploys when it created a newer synchronized commit.
-            if [ "$CHANGED" = "true" ]; then
-              should_deploy=true
-            fi
-          elif [ "$TRIGGER_SOURCE" = "manual" ] || [ "$TRIGGER_SOURCE" = "manual-health" ]; then
+          if [ "$EVENT_NAME" = "push" ] && [ "$CHANGED" = "true" ]; then
             should_deploy=true
+            deploy_reason="push-created-synchronized-state"
+          elif [ "$FORCE_DEPLOY" = "true" ]; then
+            should_deploy=true
+            deploy_reason="explicit-force-redeploy"
           elif [ "$MATERIAL_CHANGED" = "true" ]; then
-            # Scheduled health and weekly presentation runs publish only when
-            # the synchronized site surface actually changed.
             should_deploy=true
+            deploy_reason="material-site-change"
           fi
 
           if [ "$should_deploy" != "true" ]; then
             echo "Notion synchronization completed without a deployment-worthy site change."
+            {
+              echo ""
+              echo "## Deployment decision"
+              echo ""
+              echo "Dispatch: **SKIPPED**"
+              echo "Reason: **$deploy_reason**"
+              echo "Trigger source: **${TRIGGER_SOURCE:-none}**"
+              echo "Synchronized commit created: **${CHANGED:-false}**"
+              echo "Material site change: **${MATERIAL_CHANGED:-false}**"
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
@@ -319,4 +381,4 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches" \
             -d "$payload"
 
-          echo "Deployment dispatched for exact main SHA: $SOURCE_SHA"
+          echo "Deployment dispatched for exact main SHA: $SOURCE_SHA ($deploy_reason)"
