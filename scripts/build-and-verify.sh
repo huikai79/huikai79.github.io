@@ -9,6 +9,7 @@ go version
 
 python3 -m py_compile scripts/optimize-managed-covers.py scripts/localize-multilingual-page-resources.py scripts/apply-editorial-metadata.py scripts/test-editorial-metadata.py
 node --check scripts/check-notion-publication-contract.mjs
+node --check scripts/notion-translation-family-contract.mjs
 node --check scripts/enrich-notion-metadata.mjs
 node --check scripts/notion-metadata-enrichment-contract.mjs
 node --check scripts/live-reader-qa.mjs
@@ -18,6 +19,7 @@ python3 scripts/test-language-route-alias-contract.py
 python3 scripts/verify-translation-workflow-safety.py
 node scripts/verify-notion-metadata-enrichment.mjs
 node scripts/test-notion-sync-drift.mjs
+node scripts/test-notion-translation-family-contract.mjs
 python3 scripts/test-editorial-metadata.py
 node scripts/test-notion-video-transformer.mjs
 node scripts/test-notion-audio-transformer.mjs
