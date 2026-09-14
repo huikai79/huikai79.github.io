@@ -1,6 +1,8 @@
 {{- $pages := .RegularPages -}}
 {{- if .IsHome -}}
-  {{- $pages = where .Site.RegularPages "Section" "posts" -}}
+  {{- with .Site.GetPage "section" "posts" -}}
+    {{- $pages = .RegularPages -}}
+  {{- end -}}
 {{- end -}}
 {{- $pages = $pages.ByDate.Reverse -}}
 {{- $limit := .Site.Config.Services.RSS.Limit -}}
