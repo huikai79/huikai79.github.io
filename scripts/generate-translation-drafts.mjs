@@ -13,7 +13,10 @@ import {
   validateTranslationResponse,
   writableBlock
 } from "./translation-draft-contract.mjs";
-import { chunkTranslationSegments } from "./translation-batch-contract.mjs";
+import {
+  chunkTranslationSegments,
+  requestValidatedTranslationBatch
+} from "./translation-batch-contract.mjs";
 import { extractEditorialFields } from "./notion-content-contract.mjs";
 import {
   buildTranslationCandidateFilter,
@@ -139,9 +142,15 @@ async function translateSegmentBatch({
   summary,
   blocks,
   segments,
-  brief
+  brief,
+  retryContext = ""
 }) {
-  const instructions = buildTransmithInstructions({ sourceLanguage, targetLanguage, brief });
+  const baseInstructions = buildTransmithInstructions({ sourceLanguage, targetLanguage, brief });
+  const instructions = retryContext
+    ? `${baseInstructions}\n\nPrevious response failed the strict ID contract: ${retryContext}. ` +
+      "Retry this batch from the source data and return exactly one translation for every supplied id, " +
+      "with no missing, duplicate, renamed or extra ids."
+    : baseInstructions;
   const input = buildTranslationRequestInput({
     sourceLanguage,
     targetLanguage,
@@ -185,8 +194,15 @@ async function translateSegments(args) {
   const batches = chunkTranslationSegments(args.segments);
   const translations = [];
   for (const segments of batches) {
-    const response = await translateSegmentBatch({ ...args, segments });
-    const validated = validateTranslationResponse(segments, response);
+    const validated = await requestValidatedTranslationBatch({
+      segments,
+      validate: validateTranslationResponse,
+      request: ({ attempt, previousValidationError }) => translateSegmentBatch({
+        ...args,
+        segments,
+        retryContext: attempt > 1 ? previousValidationError : ""
+      })
+    });
     for (const segment of segments) {
       translations.push({ id: segment.id, text: validated.get(segment.id) });
     }
