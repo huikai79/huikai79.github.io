@@ -72,6 +72,7 @@ const props = notionPropertiesFromMetadataUpdates({
 });
 assert.deepEqual(Object.keys(props).sort(), ["Category", "Source", "Summary", "Translation Group", "Translation Status", "Type"].sort());
 assert.throws(() => notionPropertiesFromMetadataUpdates({ visibility: "Public" }), /unsupported metadata update key/);
+assert.throws(() => notionPropertiesFromMetadataUpdates({ status: "Published" }), /unsupported metadata update key/);
 
 const excerpt = articleExcerpt("a".repeat(20000), 16000);
 assert.ok(excerpt.length <= 16030);
@@ -95,10 +96,10 @@ const runtime = fs.readFileSync("scripts/enrich-notion-metadata.mjs", "utf8");
 assert.match(runtime, /Visibility.*equals: "Test"/s);
 assert.match(runtime, /status.*equals: "Published"/s);
 assert.match(runtime, /state\.visibility !== "Test"/);
-assert.ok(!runtime.includes('properties.Visibility'));
-assert.ok(!runtime.includes('properties.status'));
 assert.ok(!runtime.includes("confidence"));
 assert.match(runtime, /translationSourceIds\.length/);
 assert.match(runtime, /translationStatus !== "Source"/);
+assert.match(runtime, /const properties = notionPropertiesFromMetadataUpdates\(updates\)/);
+assert.match(runtime, /notion\.pages\.update\(\{ page_id: state\.pageId, properties \}\)/);
 
 console.log("Notion staging metadata enrichment verification: PASS");
