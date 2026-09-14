@@ -28,13 +28,14 @@ jobs:
           node scripts/verify-notion-cover-contract.mjs
           node scripts/verify-translation-draft-contract.mjs
           node scripts/test-article-bundle-contract.mjs
-          node scripts/test-main-release-contract.mjs
+          node scripts/test-notion-sync-drift.mjs
           node --check scripts/article-bundle-contract.mjs
           node --check sync.mjs
           node --check scripts/notion-cover-contract.mjs
           node --check scripts/check-notion-publication-contract.mjs
           node --check scripts/check-notion-staged-page.mjs
           node --check scripts/check-sync-deletion-quarantine.mjs
+          node --check scripts/notion-sync-drift.mjs
           node --check scripts/generate-translation-drafts.mjs
           node --check scripts/live-reader-qa.mjs
           node --check scripts/verify-comments-integration.mjs
@@ -163,12 +164,13 @@ jobs:
           require_fixed "cron: '5 0 * * 1'" .github/workflows/notion-publication-health.yml
           require_fixed "timezone: 'Asia/Kuala_Lumpur'" .github/workflows/notion-publication-health.yml
           require_fixed "NOTION_CONTRACT_NONBLOCKING: '1'" .github/workflows/notion-publication-health.yml
+          require_fixed 'Detect production drift before expensive synchronization' .github/workflows/notion-publication-health.yml
+          require_fixed 'scripts/notion-sync-drift.mjs' .github/workflows/notion-publication-health.yml
+          require_fixed "steps.drift.outputs.needs_sync == 'true'" .github/workflows/notion-publication-health.yml
+          require_fixed 'Report healthy no-op without dispatching synchronization' .github/workflows/notion-publication-health.yml
           require_fixed 'name: notion-publication-health-' .github/workflows/notion-publication-health.yml
           require_fixed 'actions/workflows/sync.yml/dispatches' .github/workflows/notion-publication-health.yml
           require_fixed 'production state remains untouched' .github/workflows/notion-publication-health.yml
-
-          require_fixed 'content/posts/' scripts/main-release-contract.mjs
-          require_fixed 'notion-sync-owned' scripts/main-release-contract.mjs
 
           require_fixed 'semantic cover required before production publication' scripts/check-notion-publication-contract.mjs
           require_fixed 'NOTION_CONTRACT_NONBLOCKING' scripts/check-notion-publication-contract.mjs
