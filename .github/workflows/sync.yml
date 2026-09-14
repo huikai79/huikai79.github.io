@@ -17,7 +17,7 @@ on:
         default: false
         type: boolean
       candidate_ref:
-        description: "Repository ref to validate in preflight mode; workflow itself must still be dispatched from main"
+        description: "Trusted same-repository branch to validate in preflight mode"
         required: false
         default: "main"
         type: string
@@ -39,17 +39,27 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce trusted synchronization entrypoint
+      - name: Enforce main-only synchronization
+        env:
+          PREFLIGHT_ONLY: ${{ inputs.preflight_only }}
+          CANDIDATE_REF: ${{ inputs.candidate_ref }}
         run: |
           if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "::error::Synchronization and preflight orchestration must run from the trusted main workflow definition. Current ref: $GITHUB_REF"
+            echo "::error::Notion synchronization is restricted to main as the trusted workflow entrypoint. Current ref: $GITHUB_REF"
             exit 1
+          fi
+
+          if [ "$PREFLIGHT_ONLY" = "true" ]; then
+            if [ -z "$CANDIDATE_REF" ] || ! printf '%s' "$CANDIDATE_REF" | grep -Eq '^[A-Za-z0-9._/-]+$' || printf '%s' "$CANDIDATE_REF" | grep -Eq '(^|/)\.\.(/|$)|^refs/'; then
+              echo "::error::candidate_ref must be a trusted same-repository branch name, not a pull-request ref, raw refs/* value, or traversal path"
+              exit 1
+            fi
           fi
 
       - name: Checkout candidate without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.preflight_only == true && inputs.candidate_ref || 'main' }}
+          ref: ${{ inputs.preflight_only == true && format('refs/heads/{0}', inputs.candidate_ref) || 'main' }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -65,7 +75,7 @@ jobs:
             echo "## Candidate lineage"
             echo ""
             echo "Mode: **$([ "$PREFLIGHT_ONLY" = "true" ] && echo preflight || echo synchronization)**"
-            echo "Requested ref: \`${CANDIDATE_REF:-main}\`"
+            echo "Requested branch: \`${CANDIDATE_REF:-main}\`"
             echo "Candidate SHA: \`$candidate_sha\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -293,7 +303,7 @@ jobs:
             echo "Candidate SHA: \`$CANDIDATE_SHA\`"
             echo "Materialized latest Notion production data: **PASS**"
             echo "Production-equivalent build-and-verify: **PASS**"
-            echo "Material site change relative to candidate ref: **$MATERIAL_CHANGED**"
+            echo "Material site change relative to candidate branch: **$MATERIAL_CHANGED**"
             echo "Commit: **SKIPPED**"
             echo "Deployment: **SKIPPED**"
             echo "Runner workspace is ephemeral; generated candidate state is discarded after this run."
@@ -340,9 +350,13 @@ jobs:
           should_deploy=false
           deploy_reason="no-deployment-worthy-change"
 
-          if [ "$EVENT_NAME" = "push" ] && [ "$CHANGED" = "true" ]; then
+          if [ "$EVENT_NAME" = "push" ]; then
             should_deploy=true
-            deploy_reason="push-created-synchronized-state"
+            if [ "$CHANGED" = "true" ]; then
+              deploy_reason="push-created-synchronized-state"
+            else
+              deploy_reason="push-validated-code-and-materialized-state"
+            fi
           elif [ "$FORCE_DEPLOY" = "true" ]; then
             should_deploy=true
             deploy_reason="explicit-force-redeploy"
