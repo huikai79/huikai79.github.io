@@ -34,6 +34,35 @@ jobs:
       - name: Install locked Notion dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Enrich missing canonical publication metadata
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_METADATA_MODEL: gpt-5.6-luna
+          METADATA_ENRICHMENT_APPLY: "1"
+          METADATA_ENRICHMENT_MIN_CONFIDENCE: "0.78"
+          METADATA_ENRICHMENT_MAX_PAGES: "10"
+          METADATA_ENRICHMENT_REPORT_PATH: /tmp/notion-metadata-enrichment.json
+        run: node scripts/enrich-notion-metadata.mjs
+
+      - name: Summarize metadata enrichment evidence
+        if: ${{ always() }}
+        run: |
+          if [ ! -s /tmp/notion-metadata-enrichment.json ]; then
+            echo "Metadata enrichment report was not produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## Metadata enrichment"
+            echo ""
+            echo "Status: **$(jq -r '.status' /tmp/notion-metadata-enrichment.json)**"
+            echo "Candidates: **$(jq -r '.candidateCount' /tmp/notion-metadata-enrichment.json)**"
+            echo "Updated: **$(jq -r '.updated | length' /tmp/notion-metadata-enrichment.json)**"
+            echo "Blocked / needs review: **$(jq -r '.blocked | length' /tmp/notion-metadata-enrichment.json)**"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Inspect production publication contract without writing
         id: contract
         env:
@@ -67,7 +96,9 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: notion-publication-health-${{ github.run_id }}
-          path: /tmp/notion-publication-contract.json
+          path: |
+            /tmp/notion-metadata-enrichment.json
+            /tmp/notion-publication-contract.json
           retention-days: 14
           if-no-files-found: warn
 
