@@ -38,6 +38,22 @@ function responseHeaders(response) {
   };
 }
 
+async function navigate(page, routePath, label) {
+  const response = await page.goto(`${BASE_URL}${routePath}`, {
+    waitUntil: "domcontentloaded",
+    timeout: 45_000,
+  });
+  if (!response?.ok()) {
+    fail(`${label}: navigation failed (${response?.status() ?? "no response"})`);
+  }
+  // Do not require total network quiescence. These article pages can keep
+  // third-party comments or media requests active after the document is ready.
+  // Route QA owns DOM/canonical/language readiness directly instead.
+  await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
+  await page.locator("main h1").waitFor({ state: "visible", timeout: 10_000 });
+  return response;
+}
+
 async function inspectPage(page, expectedPath, expectedLang) {
   const expectedCanonical = `${CANONICAL_BASE_URL}${expectedPath}`;
   const state = await page.evaluate(() => ({
@@ -112,7 +128,9 @@ async function clickTranslationPath(page, targetPath) {
     page.waitForURL(url => url.pathname === targetPath, { timeout: 15_000 }),
     link.click(),
   ]);
-  await page.waitForLoadState("networkidle", { timeout: 45_000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => {});
+  await page.waitForLoadState("load", { timeout: 20_000 }).catch(() => {});
+  await page.locator("main h1").waitFor({ state: "visible", timeout: 10_000 });
   return true;
 }
 
@@ -123,7 +141,7 @@ async function verifyDirectRoutes(browser) {
   ]) {
     const context = await browser.newContext({ viewport: { width: 1200, height: 900 }, reducedMotion: "reduce" });
     const page = await context.newPage();
-    const response = await page.goto(`${BASE_URL}${routePath}`, { waitUntil: "networkidle", timeout: 45_000 });
+    const response = await navigate(page, routePath, `direct/${label}`);
     const state = await inspectPage(page, routePath, lang);
     const screenshot = path.join(OUT_DIR, `${label}.png`);
     await page.screenshot({ path: screenshot, fullPage: true });
@@ -134,7 +152,7 @@ async function verifyDirectRoutes(browser) {
   const context = await browser.newContext({ viewport: { width: 1200, height: 900 }, reducedMotion: "reduce" });
   const page = await context.newPage();
   const cacheBust = `audit=${Date.now()}`;
-  const response = await page.goto(`${BASE_URL}${TRAD_PATH}?${cacheBust}`, { waitUntil: "networkidle", timeout: 45_000 });
+  const response = await navigate(page, `${TRAD_PATH}?${cacheBust}`, "direct/traditional-cache-bust");
   const state = await inspectPage(page, TRAD_PATH, "zh-TW");
   report.direct.traditionalCacheBust = { response: responseHeaders(response), state, query: cacheBust };
   await context.close();
@@ -144,7 +162,7 @@ async function verifyRoundTrip(browser) {
   const context = await browser.newContext({ viewport: { width: 1200, height: 900 }, reducedMotion: "reduce" });
   const page = await context.newPage();
 
-  await page.goto(`${BASE_URL}${SIMP_PATH}`, { waitUntil: "networkidle", timeout: 45_000 });
+  await navigate(page, SIMP_PATH, "round-trip/simplified-start");
   const simplifiedStart = await inspectPage(page, SIMP_PATH, "zh-CN");
 
   const reachedTraditional = await clickTranslationPath(page, TRAD_PATH);
