@@ -41,8 +41,10 @@ jobs:
 
           decision="$(node scripts/main-release-contract.mjs < /tmp/main-release-paths.txt)"
           echo "$decision" | jq .
-          echo "deploy=$(echo "$decision" | jq -r '.deploy')" >> "$GITHUB_OUTPUT"
-          echo "reason=$(echo "$decision" | jq -r '.reason')" >> "$GITHUB_OUTPUT"
+          {
+            echo "deploy=$(echo "$decision" | jq -r '.deploy')"
+            echo "reason=$(echo "$decision" | jq -r '.reason')"
+          } >> "$GITHUB_OUTPUT"
 
           {
             echo "## Main release classification"
@@ -129,10 +131,12 @@ jobs:
             exit 1
           fi
 
-          echo "skip_deploy=$skip_deploy" >> "$GITHUB_OUTPUT"
-          echo "sync_run_id=$sync_run_id" >> "$GITHUB_OUTPUT"
-          echo "sync_conclusion=$sync_conclusion" >> "$GITHUB_OUTPUT"
-          echo "gate_reason=$gate_reason" >> "$GITHUB_OUTPUT"
+          {
+            echo "skip_deploy=$skip_deploy"
+            echo "sync_run_id=$sync_run_id"
+            echo "sync_conclusion=$sync_conclusion"
+            echo "gate_reason=$gate_reason"
+          } >> "$GITHUB_OUTPUT"
 
           {
             echo ""
