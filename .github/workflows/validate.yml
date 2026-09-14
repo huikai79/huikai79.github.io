@@ -141,6 +141,19 @@ jobs:
           require_fixed 'content/posts/_index.zh-cn.md' .github/workflows/sync.yml
           require_fixed 'persist-credentials: false' .github/workflows/sync.yml
           require_fixed 'data/homepage_runtime.toml' .github/workflows/sync.yml
+          require_fixed 'preflight_only:' .github/workflows/sync.yml
+          require_fixed 'candidate_ref:' .github/workflows/sync.yml
+          require_fixed 'force_deploy:' .github/workflows/sync.yml
+          require_fixed 'candidate_ref must be a trusted same-repository branch name' .github/workflows/sync.yml
+          require_fixed 'Report full candidate preflight' .github/workflows/sync.yml
+          require_fixed 'Commit: **SKIPPED**' .github/workflows/sync.yml
+          require_fixed 'Deployment: **SKIPPED**' .github/workflows/sync.yml
+          require_fixed 'push-validated-code-and-materialized-state' .github/workflows/sync.yml
+          require_fixed 'actions/workflows/deploy.yml/dispatches' .github/workflows/sync.yml
+          if [ -e .github/workflows/main-code-release.yml ]; then
+            echo "::error::main push must have one production release orchestrator; main-code-release.yml must not compete with sync.yml"
+            exit 1
+          fi
           if grep -Eq '^  schedule:' .github/workflows/sync.yml; then
             echo "::error::Periodic polling belongs to publication health, not the mutation-capable synchronization workflow"
             exit 1
@@ -154,11 +167,6 @@ jobs:
           require_fixed 'actions/workflows/sync.yml/dispatches' .github/workflows/notion-publication-health.yml
           require_fixed 'production state remains untouched' .github/workflows/notion-publication-health.yml
 
-          require_fixed 'Classify code-only release eligibility' .github/workflows/main-code-release.yml
-          require_fixed 'STRICT_CONTENT' .github/workflows/main-code-release.yml
-          require_fixed 'main moved before code-only deployment dispatch' .github/workflows/main-code-release.yml
-          require_fixed 'actions/workflows/deploy.yml/dispatches' .github/workflows/main-code-release.yml
-          require_fixed 'persist-credentials: false' .github/workflows/main-code-release.yml
           require_fixed 'content/posts/' scripts/main-release-contract.mjs
           require_fixed 'notion-sync-owned' scripts/main-release-contract.mjs
 
