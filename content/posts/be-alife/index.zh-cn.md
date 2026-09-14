@@ -1,7 +1,7 @@
 ---
 title: "如何活着"
 date: "2025-07-22"
-lastmod: "2026-09-09T01:53:00.000Z"
+lastmod: "2026-09-14T11:33:00.000Z"
 slug: "be-alife"
 description: "新创公司最常见的死亡原因不是瞬间耗尽资源，而是在低潮中停止前进；持续沟通、迭代、专注并避免为自己准备退路，是让团队活下来的核心。"
 tags: ["創業"]
@@ -11,7 +11,7 @@ categories: ["學習"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "Rotation"
+homePlacement: "None"
 contentLanguage: "zh-CN"
 translationKey: "be-alife"
 sourceLabel: "Paul Graham 精选文"

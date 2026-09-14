@@ -1,7 +1,7 @@
 ---
 title: "你是怎么知道的"
 date: "2025-07-26T02:00:00.000+08:00"
-lastmod: "2026-09-09T09:11:00.000Z"
+lastmod: "2026-09-14T11:31:00.000Z"
 slug: "How-you-know"
 description: "阅读与经历留下的，不只是可被回忆的细节，而是持续塑造判断与理解的心智模型；正因为每个生命阶段都会重新「编译」经验，重要的书也值得一读再读。"
 tags: []
@@ -11,7 +11,7 @@ categories: ["學習"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "Pinned"
+homePlacement: "None"
 contentLanguage: "zh-CN"
 translationKey: "How-you-know"
 sourceLabel: "Paul Graham 精选文"

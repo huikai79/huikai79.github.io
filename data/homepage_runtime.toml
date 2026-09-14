@@ -7,7 +7,7 @@ selectedLimit = 3
 recentLimit = 5
 pinnedSize = 3
 rotationSlots = 0
-poolSize = 8
+poolSize = 10
 poolOffset = 0
 
 [[selected]]
@@ -34,15 +34,10 @@ rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
 selectedLimit = 3
 recentLimit = 5
-pinnedSize = 2
-rotationSlots = 1
-poolSize = 2
+pinnedSize = 3
+rotationSlots = 0
+poolSize = 3
 poolOffset = 0
-
-[[secondary.selected]]
-pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
-path = "posts/How-you-know"
-source = "pinned"
 
 [[secondary.selected]]
 pageId = "3da7a59e-0439-811d-8ea6-e9205e59ba1f"
@@ -50,6 +45,11 @@ path = "posts/my-website-is-a-shifting-house--zh-cn"
 source = "pinned"
 
 [[secondary.selected]]
-pageId = "2367a59e-0439-807a-8de1-c7050f44183e"
-path = "posts/be-alife"
-source = "rotationPool"
+pageId = "3da7a59e-0439-81ee-af5a-e8f869c985c3"
+path = "posts/putting-ideas-into-words--zh-cn"
+source = "pinned"
+
+[[secondary.selected]]
+pageId = "3db7a59e-0439-81f2-ade7-c0a11916a5b3"
+path = "posts/website-must-diy--zh-cn"
+source = "pinned"

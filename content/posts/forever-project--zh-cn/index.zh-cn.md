@@ -1,7 +1,7 @@
 ---
 title: "一辈子的计划"
 date: "2026-09-13"
-lastmod: "2026-09-14T01:46:00.000Z"
+lastmod: "2026-09-14T15:00:00.000Z"
 slug: "forever-project"
 description: "“一辈子的计划”把兴趣视为没有完成期限的长期自我投资：选择新的领域，暂时放下效率与产出压力，让好奇心带路，通过持续探索获得成长，而不是追求把项目做完。"
 tags: []
@@ -11,7 +11,7 @@ categories: ["學習"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "None"
+homePlacement: "Rotation"
 contentLanguage: "zh-CN"
 translationKey: "the-forever-project"
 sourceLabel: "Scott Turner / Here Dragons Abound"

@@ -1,7 +1,7 @@
 ---
 title: "在多元交織的社會里寫作"
 date: "2026-09-14"
-lastmod: "2026-09-14T06:44:00.000Z"
+lastmod: "2026-09-14T11:33:00.000Z"
 slug: "menulis-dalam-masyarakat-rencam"
 description: "寫作者總從某個地方出發。本文從多語、多文化社會的生活經驗談起，探討語言、記憶、身分與權力如何進入作家的內在，使寫作不只是表達既有思想，而是在彼此交錯的世界之間協商，為尚未成形的經驗創造可被傳達的形式。"
 tags: []
@@ -11,7 +11,7 @@ categories: ["創作"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "None"
+homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "menulis-dalam-masyarakat-rencam"
 sourceLabel: "penanginstitute.org"
