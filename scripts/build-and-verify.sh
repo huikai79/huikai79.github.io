@@ -13,10 +13,11 @@ node --check scripts/enrich-notion-metadata.mjs
 node --check scripts/notion-metadata-enrichment-contract.mjs
 node --check scripts/live-reader-qa.mjs
 node --check scripts/verify-comments-integration.mjs
+node --check scripts/notion-sync-drift.mjs
 python3 scripts/test-language-route-alias-contract.py
 python3 scripts/verify-translation-workflow-safety.py
 node scripts/verify-notion-metadata-enrichment.mjs
-node scripts/test-main-release-contract.mjs
+node scripts/test-notion-sync-drift.mjs
 python3 scripts/test-editorial-metadata.py
 node scripts/test-notion-video-transformer.mjs
 node scripts/test-notion-audio-transformer.mjs

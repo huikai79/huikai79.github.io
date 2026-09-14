@@ -62,17 +62,46 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Detect production drift before expensive synchronization
+        if: steps.contract.outputs.status == 'pass'
+        id: drift
+        run: |
+          set -euo pipefail
+          node scripts/notion-sync-drift.mjs /tmp/notion-publication-contract.json .notion-sync-manifest.json /tmp/notion-sync-drift.json
+          needs_sync="$(jq -r '.needsSync' /tmp/notion-sync-drift.json)"
+          echo "needs_sync=$needs_sync" >> "$GITHUB_OUTPUT"
+
+          {
+            echo ""
+            echo "### Synchronization drift"
+            echo ""
+            echo "Needs sync: **$needs_sync**"
+            echo "Changed pages: **$(jq -r '.changedPageIds | length' /tmp/notion-sync-drift.json)**"
+            if [ "$needs_sync" = "true" ]; then
+              echo ""
+              echo "Reasons:"
+              jq -r '.reasons[] | "- `" + . + "`"' /tmp/notion-sync-drift.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload publication-health evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: notion-publication-health-${{ github.run_id }}
-          path: /tmp/notion-publication-contract.json
+          path: |
+            /tmp/notion-publication-contract.json
+            /tmp/notion-sync-drift.json
           retention-days: 14
           if-no-files-found: warn
 
-      - name: Dispatch synchronization only when publication health passes
-        if: steps.contract.outputs.status == 'pass'
+      - name: Dispatch synchronization only when publication health passes and work is required
+        if: >-
+          steps.contract.outputs.status == 'pass' &&
+          (
+            steps.drift.outputs.needs_sync == 'true' ||
+            (github.event_name == 'schedule' && github.event.schedule == '5 0 * * 1')
+          )
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
@@ -96,6 +125,15 @@ jobs:
             -d "$payload"
 
           echo "Notion synchronization dispatched from publication health: $trigger_source"
+
+      - name: Report healthy no-op without dispatching synchronization
+        if: >-
+          steps.contract.outputs.status == 'pass' &&
+          steps.drift.outputs.needs_sync == 'false' &&
+          !(github.event_name == 'schedule' && github.event.schedule == '5 0 * * 1')
+        run: |
+          echo "Notion publication health is stable; full synchronization was intentionally skipped."
+          echo "No Notion production drift detected; production state remains untouched."
 
       - name: Report blocked health without mutating production
         if: steps.contract.outputs.status != 'pass'
