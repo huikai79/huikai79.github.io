@@ -80,8 +80,71 @@ jobs:
           STRICT_CONTENT: '1'
         run: bash scripts/build-and-verify.sh public
 
-      - name: Dispatch exact-main production deployment
+      - name: Wait for sibling Notion sync before code-only deployment
         if: steps.classify.outputs.deploy == 'true'
+        id: sync_gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          sync_run_id=""
+          sync_status=""
+          sync_conclusion=""
+
+          for attempt in $(seq 1 120); do
+            response="$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/sync.yml/runs?event=push&head_sha=${SOURCE_SHA}&per_page=10")"
+
+            sync_run_id="$(echo "$response" | jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push")] | sort_by(.created_at) | last | .id // empty')"
+            sync_status="$(echo "$response" | jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push")] | sort_by(.created_at) | last | .status // empty')"
+            sync_conclusion="$(echo "$response" | jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push")] | sort_by(.created_at) | last | .conclusion // empty')"
+
+            if [ -n "$sync_run_id" ] && [ "$sync_status" = "completed" ]; then
+              break
+            fi
+
+            echo "Waiting for sibling Notion sync for $SOURCE_SHA (attempt $attempt/120; run=${sync_run_id:-NOT_FOUND}, status=${sync_status:-NOT_FOUND})"
+            sleep 5
+          done
+
+          if [ -z "$sync_run_id" ] || [ "$sync_status" != "completed" ]; then
+            echo "::error::Sibling Notion sync for $SOURCE_SHA did not reach a completed state before timeout"
+            exit 1
+          fi
+
+          current_main="$(git ls-remote "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
+          skip_deploy=false
+          gate_reason="sync-complete-main-unchanged"
+
+          if [ "$current_main" != "$SOURCE_SHA" ]; then
+            skip_deploy=true
+            gate_reason="superseded-by-synchronized-main"
+          fi
+
+          echo "skip_deploy=$skip_deploy" >> "$GITHUB_OUTPUT"
+          echo "sync_run_id=$sync_run_id" >> "$GITHUB_OUTPUT"
+          echo "sync_conclusion=$sync_conclusion" >> "$GITHUB_OUTPUT"
+          echo "gate_reason=$gate_reason" >> "$GITHUB_OUTPUT"
+
+          {
+            echo ""
+            echo "## Release coordination"
+            echo ""
+            echo "Sibling sync run: **$sync_run_id**"
+            echo "Sibling sync conclusion: **${sync_conclusion:-unknown}**"
+            echo "Current main: \`$current_main\`"
+            echo "Code-only source: \`$SOURCE_SHA\`"
+            echo "Code-only deployment skipped: **$skip_deploy**"
+            echo "Gate reason: **$gate_reason**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dispatch exact-main production deployment
+        if: steps.classify.outputs.deploy == 'true' && steps.sync_gate.outputs.skip_deploy != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ github.sha }}
