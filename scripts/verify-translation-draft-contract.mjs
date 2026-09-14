@@ -14,9 +14,11 @@ import {
   writableBlock
 } from "./translation-draft-contract.mjs";
 import {
+  DEFAULT_TRANSLATION_BATCH_MAX_ATTEMPTS,
   DEFAULT_TRANSLATION_BATCH_MAX_SEGMENTS,
   DEFAULT_TRANSLATION_BATCH_MAX_SOURCE_CHARS,
-  chunkTranslationSegments
+  chunkTranslationSegments,
+  requestValidatedTranslationBatch
 } from "./translation-batch-contract.mjs";
 import {
   TRANSMITH_RUNTIME_PROFILE,
@@ -173,6 +175,68 @@ const oversizedBatches = chunkTranslationSegments(
 );
 assert.deepEqual(oversizedBatches.map(batch => batch.map(item => item.id)), [["oversized"], ["next"]]);
 assert.throws(() => chunkTranslationSegments([{ id: "bad" }]), /requires string id\/text/);
+
+assert.equal(DEFAULT_TRANSLATION_BATCH_MAX_ATTEMPTS, 2);
+const retrySegments = [
+  { id: "a", text: "Alpha" },
+  { id: "b", text: "Beta" }
+];
+const retryCalls = [];
+const retriedBatch = await requestValidatedTranslationBatch({
+  segments: retrySegments,
+  validate: validateTranslationResponse,
+  request: async ({ attempt, previousValidationError }) => {
+    retryCalls.push({ attempt, previousValidationError });
+    if (attempt === 1) {
+      return {
+        translations: [
+          { id: "a", text: "甲" },
+          { id: "a", text: "重複" },
+          { id: "b", text: "乙" }
+        ]
+      };
+    }
+    return {
+      translations: [
+        { id: "a", text: "甲" },
+        { id: "b", text: "乙" }
+      ]
+    };
+  }
+});
+assert.equal(retriedBatch.get("a"), "甲");
+assert.equal(retriedBatch.get("b"), "乙");
+assert.equal(retryCalls.length, 2);
+assert.equal(retryCalls[0].previousValidationError, "");
+assert.match(retryCalls[1].previousValidationError, /Duplicate translation id: a/);
+
+let persistentInvalidCalls = 0;
+await assert.rejects(
+  () => requestValidatedTranslationBatch({
+    segments: retrySegments,
+    validate: validateTranslationResponse,
+    request: async () => {
+      persistentInvalidCalls += 1;
+      return { translations: [{ id: "a", text: "甲" }] };
+    }
+  }),
+  /Missing translation ids: b/
+);
+assert.equal(persistentInvalidCalls, DEFAULT_TRANSLATION_BATCH_MAX_ATTEMPTS);
+
+let requestFailureCalls = 0;
+await assert.rejects(
+  () => requestValidatedTranslationBatch({
+    segments: retrySegments,
+    validate: validateTranslationResponse,
+    request: async () => {
+      requestFailureCalls += 1;
+      throw new Error("network failure");
+    }
+  }),
+  /network failure/
+);
+assert.equal(requestFailureCalls, 1, "request/network failures must not be retried by response validation policy");
 
 const source = {
   id: "source-page",
