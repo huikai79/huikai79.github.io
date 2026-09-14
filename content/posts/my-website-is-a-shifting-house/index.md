@@ -1,7 +1,7 @@
 ---
 title: "我的網站是知識之河旁一棟不斷變動的房子。你的呢？"
 date: "2026-09-13"
-lastmod: "2026-09-13T04:09:00.000Z"
+lastmod: "2026-09-13T15:18:00.000Z"
 slug: "my-website-is-a-shifting-house"
 description: "個人網站不只是作品的容器，也是一個會隨作者成長而改變的空間。把網站想成房間、房子、花園或河流旁的建築，可以重新理解個人 Web 的自主性、創造力，以及它如何反過來塑造創作者。"
 tags: []
@@ -11,13 +11,13 @@ categories: ["創作"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "None"
+homePlacement: "Pinned"
 contentLanguage: "zh-TW"
 translationKey: "my-website-is-a-shifting-house"
 sourceLabel: "Laurel Schwulst / The Creative Independent"
 sourceURL: "https://laurelschwulst.com/e/my-website-is-a-shifting-house"
-cover: "cover.png"
-images: ["cover.png"]
+cover: "cover.jpg"
+images: ["cover.jpg"]
 ---
 
 ## 什麼是網站？

@@ -1,7 +1,7 @@
 ---
 title: "小寫 b 的部落格寫作"
 date: "2026-09-13"
-lastmod: "2026-09-13T01:36:00.000Z"
+lastmod: "2026-09-13T15:09:00.000Z"
 slug: "small-b-blogging"
 description: "部落格不必追逐龐大流量；在碎片化的網路裡，為一小群明確讀者寫作、主動進入小型網絡，反而更能帶來真實連結、思考沉澱，以及可長期回訪與重用的個人知識網絡。"
 tags: ["寫作"]
@@ -11,13 +11,13 @@ categories: ["創作"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "None"
+homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "small-b-blogging"
 sourceLabel: "Tom Critchlow"
 sourceURL: "https://tomcritchlow.com/2018/02/23/small-b-blogging"
-cover: "cover.png"
-images: ["cover.png"]
+cover: "cover.jpg"
+images: ["cover.jpg"]
 ---
 
 ## _網路拓撲，以及 Digg 首頁的幽靈_

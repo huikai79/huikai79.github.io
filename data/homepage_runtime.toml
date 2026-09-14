@@ -1,47 +1,52 @@
-rotationKey = "2026-W37"
-rotationIndex = 1
+rotationKey = "2026-W38"
+rotationIndex = 2
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
 selectedLimit = 3
 recentLimit = 5
-pinnedSize = 1
-rotationSlots = 2
-poolSize = 4
-poolOffset = 2
+pinnedSize = 3
+rotationSlots = 0
+poolSize = 8
+poolOffset = 0
 
 [[selected]]
-pageId = "3d67a59e-0439-80ca-8ca8-d41b61708ad2"
-path = "posts/How-you-know--zh-tw"
+pageId = "3d97a59e-0439-80b3-8567-e3e3c96aefdd"
+path = "posts/my-website-is-a-shifting-house"
 source = "pinned"
 
 [[selected]]
-pageId = "23c7a59e-0439-8054-a78d-c8e89090963e"
-path = "posts/Writes-and-Write-Nots"
-source = "rotationPool"
+pageId = "3da7a59e-0439-8009-b009-dd5dadeb2e88"
+path = "posts/putting-ideas-into-words"
+source = "pinned"
 
 [[selected]]
-pageId = "23b7a59e-0439-80b4-a5d8-e495f79d0ec7"
-path = "posts/Writing-and-speaking"
-source = "rotationPool"
+pageId = "3da7a59e-0439-80f8-a843-d980205a55f0"
+path = "posts/website-must-diy"
+source = "pinned"
 
 [secondary]
 
-rotationKey = "2026-W37"
-rotationIndex = 1
+rotationKey = "2026-W38"
+rotationIndex = 2
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
-selectedLimit = 2
+selectedLimit = 3
 recentLimit = 5
-pinnedSize = 1
+pinnedSize = 2
 rotationSlots = 1
-poolSize = 1
+poolSize = 2
 poolOffset = 0
 
 [[secondary.selected]]
 pageId = "23b7a59e-0439-80a6-9852-c373b03994f5"
 path = "posts/How-you-know"
+source = "pinned"
+
+[[secondary.selected]]
+pageId = "3da7a59e-0439-811d-8ea6-e9205e59ba1f"
+path = "posts/my-website-is-a-shifting-house--zh-cn"
 source = "pinned"
 
 [[secondary.selected]]

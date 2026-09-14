@@ -1,7 +1,7 @@
 ---
 title: "你是怎麼知道的"
 date: "2025-07-26T02:00:00.000+08:00"
-lastmod: "2026-09-09T09:43:00.000Z"
+lastmod: "2026-09-14T10:10:00.000Z"
 slug: "How-you-know"
 description: "閱讀與經歷留下的，不只是可被回憶的細節，而是持續塑造判斷與理解的心智模型；正因為每個生命階段都會重新「編譯」經驗，重要的書也值得一讀再讀。"
 tags: []
@@ -11,7 +11,7 @@ categories: ["學習"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "Pinned"
+homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "How-you-know"
 sourceLabel: "Paul Graham 精选文"
