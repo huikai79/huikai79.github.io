@@ -1,6 +1,5 @@
 export const METADATA_CATEGORIES = Object.freeze(["科技", "學習", "創作", "生活"]);
 export const METADATA_TYPES = Object.freeze(["文章", "札記", "紀錄"]);
-export const DEFAULT_METADATA_CONFIDENCE_THRESHOLD = 0.78;
 
 function clean(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -67,20 +66,10 @@ export function metadataResponseSchema() {
     properties: {
       summary: { type: "string", minLength: 20, maxLength: 320 },
       category: { type: "string", enum: [...METADATA_CATEGORIES] },
-      categoryConfidence: { type: "number", minimum: 0, maximum: 1 },
-      entryType: { type: "string", enum: [...METADATA_TYPES] },
-      typeConfidence: { type: "number", minimum: 0, maximum: 1 }
+      entryType: { type: "string", enum: [...METADATA_TYPES] }
     },
-    required: ["summary", "category", "categoryConfidence", "entryType", "typeConfidence"]
+    required: ["summary", "category", "entryType"]
   };
-}
-
-function confidence(value, field) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < 0 || number > 1) {
-    throw new Error(`${field} must be a number between 0 and 1`);
-  }
-  return number;
 }
 
 export function validateMetadataProposal(value) {
@@ -99,34 +88,16 @@ export function validateMetadataProposal(value) {
   if (!METADATA_TYPES.includes(entryType)) {
     throw new Error(`unsupported type: ${entryType}`);
   }
-  return {
-    summary,
-    category,
-    categoryConfidence: confidence(value.categoryConfidence, "categoryConfidence"),
-    entryType,
-    typeConfidence: confidence(value.typeConfidence, "typeConfidence")
-  };
+  return { summary, category, entryType };
 }
 
-export function selectMetadataAutofill({ existing = {}, proposal, threshold = DEFAULT_METADATA_CONFIDENCE_THRESHOLD } = {}) {
+export function selectMetadataAutofill({ existing = {}, proposal } = {}) {
   const normalized = validateMetadataProposal(proposal);
-  const limit = Number(threshold);
-  if (!Number.isFinite(limit) || limit < 0 || limit > 1) {
-    throw new Error(`metadata confidence threshold must be between 0 and 1; received ${threshold}`);
-  }
-
   const updates = {};
-  const held = [];
   if (!clean(existing.summary)) updates.summary = normalized.summary;
-  if (!clean(existing.category)) {
-    if (normalized.categoryConfidence >= limit) updates.category = normalized.category;
-    else held.push(`Category confidence ${normalized.categoryConfidence.toFixed(2)} < ${limit.toFixed(2)}`);
-  }
-  if (!clean(existing.entryType)) {
-    if (normalized.typeConfidence >= limit) updates.entryType = normalized.entryType;
-    else held.push(`Type confidence ${normalized.typeConfidence.toFixed(2)} < ${limit.toFixed(2)}`);
-  }
-  return { updates, held, proposal: normalized };
+  if (!clean(existing.category)) updates.category = normalized.category;
+  if (!clean(existing.entryType)) updates.entryType = normalized.entryType;
+  return { updates, proposal: normalized };
 }
 
 export function notionPropertiesFromMetadataUpdates(updates = {}) {
