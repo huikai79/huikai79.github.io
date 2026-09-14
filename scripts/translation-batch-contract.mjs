@@ -1,5 +1,6 @@
 export const DEFAULT_TRANSLATION_BATCH_MAX_SEGMENTS = 80;
 export const DEFAULT_TRANSLATION_BATCH_MAX_SOURCE_CHARS = 24000;
+export const DEFAULT_TRANSLATION_BATCH_MAX_ATTEMPTS = 2;
 
 function positiveInteger(value, label) {
   if (!Number.isInteger(value) || value < 1) {
@@ -51,4 +52,31 @@ export function chunkTranslationSegments(
 
   flush();
   return batches;
+}
+
+export async function requestValidatedTranslationBatch({
+  segments = [],
+  request,
+  validate,
+  maxAttempts = DEFAULT_TRANSLATION_BATCH_MAX_ATTEMPTS
+} = {}) {
+  if (!Array.isArray(segments)) throw new Error("segments must be an array");
+  if (typeof request !== "function") throw new Error("request must be a function");
+  if (typeof validate !== "function") throw new Error("validate must be a function");
+  positiveInteger(maxAttempts, "maxAttempts");
+
+  let previousValidationError = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    // Request failures are intentionally not caught here: only a response that
+    // reached the strict translation validator is eligible for a bounded retry.
+    const response = await request({ segments, attempt, previousValidationError });
+    try {
+      return validate(segments, response);
+    } catch (error) {
+      previousValidationError = error instanceof Error ? error.message : String(error);
+      if (attempt >= maxAttempts) throw error;
+    }
+  }
+
+  throw new Error("Translation batch validation exhausted unexpectedly");
 }
