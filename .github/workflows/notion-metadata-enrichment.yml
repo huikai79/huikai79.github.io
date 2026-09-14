@@ -1,0 +1,59 @@
+name: "Notion publication metadata enrichment"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-publication-metadata-enrichment
+  cancel-in-progress: false
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout enrichment source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify metadata enrichment contracts
+        run: |
+          node --check scripts/notion-metadata-enrichment-contract.mjs
+          node --check scripts/enrich-notion-metadata.mjs
+          node scripts/verify-notion-metadata-enrichment.mjs
+
+      - name: Enrich missing canonical publication metadata
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_METADATA_MODEL: gpt-5.6-luna
+          METADATA_ENRICHMENT_APPLY: "1"
+          METADATA_ENRICHMENT_MIN_CONFIDENCE: "0.78"
+          METADATA_ENRICHMENT_MAX_PAGES: "10"
+          METADATA_ENRICHMENT_REPORT_PATH: /tmp/notion-metadata-enrichment.json
+        run: node scripts/enrich-notion-metadata.mjs
+
+      - name: Report metadata enrichment result
+        if: always()
+        run: |
+          if [ -s /tmp/notion-metadata-enrichment.json ]; then
+            jq '{status,apply,provider,model,threshold,productionCount,candidateCount,updated,planned,blocked,skipped}' /tmp/notion-metadata-enrichment.json
+          else
+            echo "Metadata enrichment report was not created."
+          fi
