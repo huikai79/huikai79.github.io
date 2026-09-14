@@ -13,6 +13,7 @@ import {
   resolveCoverReadiness
 } from "./notion-cover-contract.mjs";
 import { notionPresentationFingerprint } from "./notion-presentation-fingerprint.mjs";
+import { translationFamilyContractIssues } from "./notion-translation-family-contract.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -53,6 +54,7 @@ try {
 const routeKeys = new Map();
 const slugFamilies = new Map();
 const familyMembers = new Map();
+const sourceRecordsById = new Map();
 const failures = [];
 const rows = [];
 
@@ -66,6 +68,21 @@ function pageLabel(page, title) {
   const url = notionPageUrl(page);
   const name = title || "Untitled";
   return `${name} [${page.id}]${url ? ` ${url}` : ""}`;
+}
+
+function notionStatus(page) {
+  return page?.properties?.status?.status?.name?.trim() ?? "";
+}
+
+function sourceRecord(page) {
+  const props = page?.properties ?? {};
+  const editorial = extractEditorialFields(props);
+  return {
+    pageId: page.id,
+    title: props.Title?.title?.map(item => item.plain_text).join("").trim() ?? "",
+    notionStatus: notionStatus(page),
+    ...editorial
+  };
 }
 
 for (const page of pages) {
@@ -107,8 +124,12 @@ for (const page of pages) {
 
   if (editorial.translationGroup) {
     const members = familyMembers.get(editorial.translationGroup) ?? [];
-    members.push({ pageId: page.id, title, notionUrl, slug, ...editorial });
+    const member = { pageId: page.id, title, notionUrl, slug, notionStatus: notionStatus(page), ...editorial };
+    members.push(member);
     familyMembers.set(editorial.translationGroup, members);
+    if (member.translationStatus === "Source") {
+      sourceRecordsById.set(page.id, member);
+    }
   }
 
   if (editorial.visibility === "Public") {
@@ -164,6 +185,27 @@ for (const page of pages) {
   });
 }
 
+if (mode === "production") {
+  const referencedSourceIds = new Set();
+  for (const members of familyMembers.values()) {
+    for (const member of members) {
+      for (const sourceId of member.translationSourceIds ?? []) {
+        referencedSourceIds.add(sourceId);
+      }
+    }
+  }
+
+  for (const sourceId of referencedSourceIds) {
+    if (sourceRecordsById.has(sourceId)) continue;
+    try {
+      const sourcePage = await notion.pages.retrieve({ page_id: sourceId });
+      sourceRecordsById.set(sourceId, sourceRecord(sourcePage));
+    } catch (error) {
+      failures.push(`Canonical translation Source ${sourceId}: unable to retrieve referenced page (${error.message})`);
+    }
+  }
+}
+
 for (const [group, members] of familyMembers) {
   const byLanguage = new Map();
   for (const member of members) {
@@ -178,21 +220,8 @@ for (const [group, members] of familyMembers) {
   }
 
   if (mode === "production") {
-    const sourceMembers = members.filter(member => member.translationStatus === "Source");
-    if (sourceMembers.length !== 1) {
-      failures.push(
-        `Translation Group ${group}: production family requires exactly one Source; found ${sourceMembers.length}`
-      );
-    } else {
-      const sourceId = sourceMembers[0].pageId;
-      for (const member of members.filter(item => item.translationStatus === "Approved")) {
-        if (member.translationSourceIds.length !== 1 || member.translationSourceIds[0] !== sourceId) {
-          failures.push(
-            `${member.title || member.pageId} [${member.pageId}]${member.notionUrl ? ` ${member.notionUrl}` : ""}: ` +
-            `Approved translation in ${group} must relate to canonical Source ${sourceId}`
-          );
-        }
-      }
+    for (const issue of translationFamilyContractIssues({ group, members, sourceRecordsById })) {
+      failures.push(`Translation Group ${group}: ${issue}`);
     }
   }
 }
