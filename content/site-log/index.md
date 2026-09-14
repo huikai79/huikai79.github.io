@@ -222,3 +222,21 @@ build:
 
 - GitHub repository 建立於 2025-07-05；目前 Git 歷史的 root commit 為 `4c4bace`（`Vendor bootstrap theme`），是可追溯的網站程式起點。
 - 初始版本已採 Hugo + Blowfish；最早的 `hugo.toml` 使用 `https://huikai79.com.kg/`，預設內容語言仍是 English，之後才逐步演變為今天以繁體中文為主、支援簡體中文的 HUIKAI。
+- 這一階段主要建立可運行的靜態網站骨架；後來的 Notion CMS、多語言、媒體 gateway、Reader QA 與發布治理，都是在這個基礎上逐步形成。
+
+## 待條件成熟再評估
+
+- Managed media 接近現有 100 MiB 管理預算，或大型影音需求明顯增加時：重新評估 Cloudflare R2／object storage。
+- 正式文章約達 30–50 篇時：重新檢查 Category／Tag 的 canonical taxonomy 與命名治理。
+- 翻譯文章約達 10 篇以上，或來源文章開始頻繁修訂時：評估自動 translation refresh、Stale 狀態寫回與人工重審策略；目前已能用 Source Revision／Config Fingerprint 辨認 stale 訊號，但不自動覆寫既有翻譯。
+- 正式內容約達 50 篇以上，或讀者開始難以找到舊內容時：重新評估搜尋排序、推薦與相關文章策略。
+- 垃圾訊息、濫用或通知需求明顯增加時：再評估 spam moderation、通知與更進階的社群管理；不因文章管理需求已成熟而一併擴大功能。
+- 同步／建置時間持續明顯上升時：再評估 cache、圖片處理與 pipeline 效能優化；目前不為預期中的未來規模提前加複雜度。
+
+## 下次可完善
+
+- 補齊翻譯 Draft 對 Notion-hosted／file-upload 圖片的 durable-media contract；目前《如何讓一個想法生長》zh-CN 因此安全阻擋，不應以複製短效 signed URL 繞過。
+- 取得 Umami Website ID 後再正式啟用 Analytics，並以真實讀者資料決定後續 UX 調整；在此之前不把 Analytics 記為已啟用。
+- 逐步壓縮仍超過 media warning threshold 的舊封面，降低 repository 與 build 的媒體負擔。
+- 逐篇決定哪些 Test 內容值得修訂後轉成正式文章，不批次公開。
+- 當主要版面、內容模型或讀者路徑再次有明顯變動時，除既有自動化 QA 外，再做一次人工的桌機／手機、亮／暗模式與主要瀏覽器視覺巡檢。
