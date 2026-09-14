@@ -1,4 +1,4 @@
-name: "Notion publication metadata enrichment"
+name: "Notion authoring metadata enrichment"
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: notion-publication-metadata-enrichment
+  group: notion-authoring-metadata-enrichment
   cancel-in-progress: false
 
 jobs:
@@ -37,14 +37,13 @@ jobs:
           node --check scripts/enrich-notion-metadata.mjs
           node scripts/verify-notion-metadata-enrichment.mjs
 
-      - name: Enrich missing canonical publication metadata
+      - name: Enrich missing Published/Test canonical metadata
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_METADATA_MODEL: gpt-5.6-luna
           METADATA_ENRICHMENT_APPLY: "1"
-          METADATA_ENRICHMENT_MIN_CONFIDENCE: "0.78"
           METADATA_ENRICHMENT_MAX_PAGES: "10"
           METADATA_ENRICHMENT_REPORT_PATH: /tmp/notion-metadata-enrichment.json
         run: node scripts/enrich-notion-metadata.mjs
@@ -53,7 +52,7 @@ jobs:
         if: always()
         run: |
           if [ -s /tmp/notion-metadata-enrichment.json ]; then
-            jq '{status,apply,provider,model,threshold,productionCount,candidateCount,updated,planned,blocked,skipped}' /tmp/notion-metadata-enrichment.json
+            jq '{status,apply,provider,model,stagingCount,candidateCount,updated,planned,blocked,skipped}' /tmp/notion-metadata-enrichment.json
           else
             echo "Metadata enrichment report was not created."
           fi
