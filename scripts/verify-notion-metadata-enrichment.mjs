@@ -87,18 +87,23 @@ const excerpt = articleExcerpt("a".repeat(20000), 16000);
 assert.ok(excerpt.length <= 16030);
 assert.match(excerpt, /中段省略/);
 
-for (const workflowPath of [
-  ".github/workflows/notion-publication-health.yml",
-  ".github/workflows/sync.yml"
-]) {
-  const workflow = fs.readFileSync(workflowPath, "utf8");
-  const enrichIndex = workflow.indexOf("node scripts/enrich-notion-metadata.mjs");
-  const contractIndex = workflow.indexOf("node scripts/check-notion-publication-contract.mjs");
-  assert.ok(enrichIndex >= 0, `${workflowPath} must run metadata enrichment`);
-  assert.ok(contractIndex > enrichIndex, `${workflowPath} must enrich metadata before publication contract`);
-  assert.match(workflow, /METADATA_ENRICHMENT_APPLY: "1"/);
-  assert.match(workflow, /OPENAI_METADATA_MODEL: gpt-5\.6-luna/);
-}
+const enrichmentWorkflow = fs.readFileSync(".github/workflows/notion-metadata-enrichment.yml", "utf8");
+assert.match(enrichmentWorkflow, /name: "Notion publication metadata enrichment"/);
+assert.match(enrichmentWorkflow, /cron: "\*\/15 \* \* \* \*"/);
+assert.match(enrichmentWorkflow, /METADATA_ENRICHMENT_APPLY: "1"/);
+assert.match(enrichmentWorkflow, /OPENAI_METADATA_MODEL: gpt-5\.6-luna/);
+assert.match(enrichmentWorkflow, /node scripts\/enrich-notion-metadata\.mjs/);
+
+const syncWorkflow = fs.readFileSync(".github/workflows/sync.yml", "utf8");
+const enrichIndex = syncWorkflow.indexOf("node scripts/enrich-notion-metadata.mjs");
+const contractIndex = syncWorkflow.indexOf("node scripts/check-notion-publication-contract.mjs");
+assert.ok(enrichIndex >= 0, ".github/workflows/sync.yml must run metadata enrichment");
+assert.ok(contractIndex > enrichIndex, ".github/workflows/sync.yml must enrich metadata before publication contract");
+assert.match(syncWorkflow, /METADATA_ENRICHMENT_APPLY: "1"/);
+assert.match(syncWorkflow, /OPENAI_METADATA_MODEL: gpt-5\.6-luna/);
+
+const healthWorkflow = fs.readFileSync(".github/workflows/notion-publication-health.yml", "utf8");
+assert.ok(!healthWorkflow.includes("enrich-notion-metadata.mjs"), "publication health must remain read-only");
 
 const runtime = fs.readFileSync("scripts/enrich-notion-metadata.mjs", "utf8");
 assert.ok(!runtime.includes('properties.Visibility'));
