@@ -14,6 +14,11 @@ import {
   writableBlock
 } from "./translation-draft-contract.mjs";
 import {
+  DEFAULT_TRANSLATION_BATCH_MAX_SEGMENTS,
+  DEFAULT_TRANSLATION_BATCH_MAX_SOURCE_CHARS,
+  chunkTranslationSegments
+} from "./translation-batch-contract.mjs";
+import {
   TRANSMITH_RUNTIME_PROFILE,
   TRANSLATION_BRIEF_MAX_CHARS,
   buildTranslationRequestInput,
@@ -94,6 +99,24 @@ assert.match(
   /unsupported block type table/
 );
 
+const heading4 = {
+  id: "h4",
+  type: "heading_4",
+  heading_4: {
+    rich_text: [{ type: "text", plain_text: "Fourth level", text: { content: "Fourth level" } }],
+    color: "default"
+  }
+};
+assert.deepEqual(inspectBlockTree([heading4]).errors, []);
+const heading4Collected = collectTranslationSegments({ blocks: [heading4] });
+assert.deepEqual(heading4Collected.segments.map(item => item.text), ["Fourth level"]);
+const heading4Translated = applyTranslations(
+  { blocks: [heading4] },
+  { translations: [{ id: heading4Collected.segments[0].id, text: "第四級" }] }
+);
+assert.equal(heading4Translated.blocks[0].heading_4.rich_text[0].text.content, "第四級");
+assert.equal(writableBlock(heading4Translated.blocks[0]).type, "heading_4");
+
 const collected = collectTranslationSegments({ title: "標題", summary: "摘要", blocks });
 assert.deepEqual(
   collected.segments.map(item => item.text),
@@ -122,6 +145,34 @@ assert.throws(
   () => validateTranslationResponse(collected.segments, { translations: [...response.translations, { id: "extra", text: "x" }] }),
   /Unexpected translation id/
 );
+
+const longSegments = Array.from({ length: 674 }, (_value, index) => ({
+  id: `root.${index}.rich_text.0`,
+  text: `segment-${index}-${"x".repeat(320)}`
+}));
+const longBatches = chunkTranslationSegments(longSegments);
+assert.ok(longBatches.length > 1, "long articles must be split into multiple translation requests");
+assert.deepEqual(longBatches.flat().map(item => item.id), longSegments.map(item => item.id));
+for (const batch of longBatches) {
+  assert.ok(batch.length <= DEFAULT_TRANSLATION_BATCH_MAX_SEGMENTS);
+  const chars = batch.reduce((total, item) => total + item.text.length, 0);
+  assert.ok(chars <= DEFAULT_TRANSLATION_BATCH_MAX_SOURCE_CHARS);
+}
+const charBoundBatches = chunkTranslationSegments(
+  [
+    { id: "a", text: "a".repeat(70) },
+    { id: "b", text: "b".repeat(70) },
+    { id: "c", text: "c".repeat(10) }
+  ],
+  { maxSegments: 10, maxSourceChars: 100 }
+);
+assert.deepEqual(charBoundBatches.map(batch => batch.map(item => item.id)), [["a"], ["b", "c"]]);
+const oversizedBatches = chunkTranslationSegments(
+  [{ id: "oversized", text: "z".repeat(101) }, { id: "next", text: "ok" }],
+  { maxSegments: 10, maxSourceChars: 100 }
+);
+assert.deepEqual(oversizedBatches.map(batch => batch.map(item => item.id)), [["oversized"], ["next"]]);
+assert.throws(() => chunkTranslationSegments([{ id: "bad" }]), /requires string id\/text/);
 
 const source = {
   id: "source-page",
