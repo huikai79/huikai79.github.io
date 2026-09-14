@@ -7,37 +7,10 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from article_routing import routes
+from taxonomy_localization_contract import ZH_CN_LABELS, localized_label
 
 PUBLIC = Path(sys.argv[1] if len(sys.argv) > 1 else "public").resolve()
 ERRORS: list[str] = []
-
-# Notion keeps one editorial taxonomy vocabulary. Reader-facing Simplified
-# labels are localized at the Hugo term layer so stable taxonomy identities and
-# existing URLs do not fork merely because the glyph form changes.
-ZH_CN_LABELS: dict[str, dict[str, str]] = {
-    "categories": {
-        "科技": "科技",
-        "學習": "学习",
-        "創作": "创作",
-        "生活": "生活",
-    },
-    "formats": {
-        "文章": "文章",
-        "札記": "札记",
-        "紀錄": "纪录",
-    },
-    "tags": {
-        "AI": "AI",
-        "Hackathon": "Hackathon",
-        "創業": "创业",
-        "教育": "教育",
-        "寫作": "写作",
-        # Historical term identities remain valid aliases/entry points.
-        "创业": "创业",
-        "好文推荐": "好文推荐",
-        "技术学习": "技术学习",
-    },
-}
 SINGULAR_TO_PLURAL = {
     "category": "categories",
     "format": "formats",
@@ -63,14 +36,11 @@ def taxonomy_from_href(href: str) -> tuple[str, str] | None:
 
 
 def expected_label(taxonomy: str, identity: str) -> str:
-    labels = ZH_CN_LABELS[taxonomy]
-    if identity not in labels:
-        ERRORS.append(
-            f"Unknown zh-CN taxonomy identity requires an explicit localization decision: "
-            f"{taxonomy}/{identity}"
-        )
+    try:
+        return localized_label(taxonomy, identity, "zh-CN")
+    except ValueError as error:
+        ERRORS.append(str(error))
         return identity
-    return labels[identity]
 
 
 class ReaderParser(HTMLParser):
