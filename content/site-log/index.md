@@ -18,6 +18,20 @@ build:
 
 - 本頁分成三層：已完成事項按日期留下；需要等規模、資料或使用情境成熟後才值得處理的項目放在「待條件成熟再評估」；已有明確下一步但尚未完成的事項放在「下次可完善」。條件達成且實際完成後，再移入當天紀錄。一般小修補不逐項記錄。
 
+## 2026-09-14｜發布流程單一化、完整候選驗證與 taxonomy 修復
+
+### Main release orchestration 與 full-candidate gate
+
+- 審計 GitHub Actions 後確認，`main-code-release.yml` 與 `sync.yml` 曾形成兩條獨立的 main production release lane；實際 9 月 14 日 run 證明 code-only deployment 可先於最新 Notion materialized state 完成，造成「新程式已上線、最新 CMS 內容尚未 materialize」的中間狀態。現在移除第二條 release lane，由 `sync.yml` 單獨負責 main push 的 production orchestration；exact-SHA `deploy.yml` 仍保留為部署邊界。
+- `sync.yml` 新增 `preflight_only`、`candidate_ref` 與 `force_deploy`，並把 publication contract、Notion sync、媒體／多語資源處理、homepage runtime、Hugo build 與 rendered contracts 收斂成同一條 production-equivalent candidate pipeline。main push 必須先通過最新真實上游資料的完整候選驗證，再決定 commit 與 deployment；manual／health no-op 不再為了「最後一個綠燈」重複部署同一 state。
+- 這次 production run 實際讀取並驗證 25 筆正式內容，14 筆沿用、11 筆重建；full candidate 通過後由 creator run `34862294908` 建立 synchronized commit `08cc7cda61133b9c5b53e55a7793de694b12861a`，deployer run `34862517878` 精確建置並部署同一 SHA，deployment 與 production live-reader QA 全部成功。
+
+### zh-CN taxonomy producer 修復與回歸前移
+
+- full candidate gate 實際抓到新的 blocker：`formats/紀錄` 在 zh-CN 文章、Explore 與 term page 仍顯示繁體「紀錄」，但 reader label 應為「纪录」。既有 verifier 判斷正確，因此沒有放寬檢查，而是回到 producer 與共同 localization mapping 修復。
+- 將 zh-CN taxonomy presentation mapping 集中成共同 contract，文章 format chip 改用 Hugo term `LinkTitle`，canonical taxonomy identity／URL 仍維持 `紀錄`；同時補齊固定 Type vocabulary 的 `札記 → 札记`、`紀錄 → 纪录` term override。
+- 新增 source-level taxonomy localization regression：即使某個合法 Type 目前尚未被任何 production 文章啟用，也會檢查其 reader-facing localization 是否已完整定義。這使「PR snapshot 全綠，但新 CMS 值第一次 materialize 才爆炸」的失敗模式能更早被發現。
+
 ## 2026-09-13｜外部閱讀收件、翻譯自動化與發布鏈閉環
 
 ### 外部 URL 收件與文章發布
