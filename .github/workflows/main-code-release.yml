@@ -123,7 +123,10 @@ jobs:
 
           if [ "$current_main" != "$SOURCE_SHA" ]; then
             skip_deploy=true
-            gate_reason="superseded-by-synchronized-main"
+            gate_reason="superseded-by-synchronized-or-newer-main"
+          elif [ "$sync_conclusion" != "success" ]; then
+            echo "::error::Sibling Notion sync $sync_run_id concluded ${sync_conclusion:-unknown}; refusing to deploy code snapshot without a valid materialized candidate"
+            exit 1
           fi
 
           echo "skip_deploy=$skip_deploy" >> "$GITHUB_OUTPUT"
