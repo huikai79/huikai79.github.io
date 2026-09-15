@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
 import fs from "node:fs/promises";
-import { installNotionApiRetry } from "./notion-api-retry.mjs";
+import { createNotionClient } from "./notion-api-retry.mjs";
 import {
   buildNotionFilter,
   extractEditorialFields,
@@ -28,8 +27,7 @@ if (!new Set(["production", "preview"]).has(mode)) {
   throw new Error(`Publication contract mode must be production or preview; received ${mode}`);
 }
 
-await installNotionApiRetry();
-const notion = new Client({ auth: token });
+const notion = createNotionClient({ auth: token, transportLabel: "publication-contract" });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 const filter = buildNotionFilter(mode);
 const pages = [];
