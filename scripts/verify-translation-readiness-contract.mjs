@@ -7,6 +7,7 @@ import {
   deriveTranslationSummary,
   effectiveTranslationSummary,
   translationDraftProperties,
+  translationInheritedMetadataUpdates,
   translationReadinessIssues
 } from "./translation-readiness-contract.mjs";
 
@@ -155,6 +156,38 @@ assert.equal(inherited.Type.select.name, "文章");
 assert.equal(inherited.tags.multi_select[0].name, "寫作");
 assert.equal(inherited.Source.rich_text[0].text.content, "Example Author");
 assert.equal(inherited["Source URL"].url, "https://example.com/writing");
+
+const backfill = translationInheritedMetadataUpdates({
+  source: fullSource,
+  target: {
+    properties: {
+      Category: { select: null },
+      Type: { select: null },
+      Source: { rich_text: [] },
+      "Source URL": { url: null },
+      Summary: { rich_text: [{ plain_text: "本地化摘要" }] }
+    }
+  }
+});
+assert.deepEqual(Object.keys(backfill).sort(), ["Category", "Source", "Source URL", "Type"].sort());
+assert.equal(backfill.Category.select.name, "學習");
+assert.equal(backfill.Type.select.name, "文章");
+assert.equal(backfill.Source.rich_text[0].text.content, "Example Author");
+assert.equal(backfill["Source URL"].url, "https://example.com/writing");
+assert.ok(!("Summary" in backfill), "language-specific Summary must never be inherited blindly");
+
+const preserveTarget = translationInheritedMetadataUpdates({
+  source: fullSource,
+  target: {
+    properties: {
+      Category: { select: { name: "創作" } },
+      Type: { select: { name: "札記" } },
+      Source: { rich_text: [{ plain_text: "Target Label" }] },
+      "Source URL": { url: "https://target.example/source" }
+    }
+  }
+});
+assert.deepEqual(preserveTarget, {}, "existing target editorial choices must not be overwritten");
 
 assert.deepEqual(
   productionMetadataMissing({
