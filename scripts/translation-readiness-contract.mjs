@@ -59,6 +59,56 @@ function richTextPlainText(richText = []) {
     .join("");
 }
 
+function richTextProperty(value) {
+  return {
+    rich_text: value
+      ? [{ type: "text", text: { content: value } }]
+      : []
+  };
+}
+
+function propertyText(property) {
+  return richTextPlainText(property?.rich_text ?? []).trim();
+}
+
+/**
+ * Return only deterministic, language-neutral/provenance properties that are
+ * missing from an existing translation and already known on its canonical
+ * source. Never overwrite target editorial choices, and never copy Summary
+ * because Summary is language-specific.
+ */
+export function translationInheritedMetadataUpdates({ source, target } = {}) {
+  const sourceProperties = source?.properties ?? {};
+  const targetProperties = target?.properties ?? {};
+  const updates = {};
+
+  const sourceCategory = sourceProperties.Category?.select?.name?.trim() ?? "";
+  const targetCategory = targetProperties.Category?.select?.name?.trim() ?? "";
+  if (!targetCategory && sourceCategory) {
+    updates.Category = { select: { name: sourceCategory } };
+  }
+
+  const sourceType = sourceProperties.Type?.select?.name?.trim() ?? "";
+  const targetType = targetProperties.Type?.select?.name?.trim() ?? "";
+  if (!targetType && sourceType) {
+    updates.Type = { select: { name: sourceType } };
+  }
+
+  const sourceLabel = propertyText(sourceProperties.Source);
+  const targetLabel = propertyText(targetProperties.Source);
+  if (!targetLabel && sourceLabel) {
+    updates.Source = richTextProperty(sourceLabel);
+  }
+
+  const sourceUrl = String(sourceProperties["Source URL"]?.url || "").trim();
+  const targetUrl = String(targetProperties["Source URL"]?.url || "").trim();
+  if (!targetUrl && sourceUrl) {
+    updates["Source URL"] = { url: sourceUrl };
+  }
+
+  return updates;
+}
+
 function summaryTextFromBlock(block) {
   const type = block?.type;
   const data = type ? block?.[type] : null;
@@ -100,14 +150,6 @@ export function effectiveTranslationSummary(explicitSummary = "", blocks = []) {
   const derived = deriveTranslationSummary(blocks);
   if (derived) return { summary: derived, source: "derived" };
   return { summary: "", source: "empty" };
-}
-
-function richTextProperty(value) {
-  return {
-    rich_text: value
-      ? [{ type: "text", text: { content: value } }]
-      : []
-  };
 }
 
 export function translationDraftProperties({

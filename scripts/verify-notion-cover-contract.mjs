@@ -33,15 +33,13 @@ assert.equal(
 
 const explicit = resolveCoverReadiness({
   page: { cover: { type: "external", external: { url: "https://example.com/cover.jpg" } } },
-  markdown: "![ignored](body.jpg)",
+  markdown: "![body](body.jpg)",
   candidate: { title: "Title" }
 });
-assert.deepEqual(explicit, {
-  ready: true,
-  strategy: "notion-cover",
-  bodyImage: null,
-  semanticBrief: null
-});
+assert.equal(explicit.ready, true);
+assert.equal(explicit.strategy, "notion-cover");
+assert.equal(explicit.bodyImage, "body.jpg");
+assert.equal(explicit.semanticBrief, null);
 
 const body = resolveCoverReadiness({
   page: { cover: null },
@@ -49,10 +47,12 @@ const body = resolveCoverReadiness({
   candidate: { title: "Title" }
 });
 assert.equal(body.ready, true);
-assert.equal(body.strategy, "first-body-image");
+assert.equal(body.strategy, "no-hero");
 assert.equal(body.bodyImage, "prototype.png");
+assert.equal(body.semanticBrief.aspectRatio, COVER_ASPECT_RATIO);
+assert.match(body.semanticBrief.handoff, /may intentionally publish without a Hero image/);
 
-const semantic = resolveCoverReadiness({
+const noImage = resolveCoverReadiness({
   page: { cover: null },
   markdown: "Students learn by building their own projects.",
   candidate: {
@@ -62,11 +62,12 @@ const semantic = resolveCoverReadiness({
     entryType: "推薦／整理"
   }
 });
-assert.equal(semantic.ready, false);
-assert.equal(semantic.strategy, "semantic-cover-required");
-assert.equal(semantic.semanticBrief.aspectRatio, COVER_ASPECT_RATIO);
-assert.match(semantic.semanticBrief.visualDirection, /大學該如何培養創業者/);
-assert.match(semantic.semanticBrief.bodyExcerpt, /Students learn by building/);
+assert.equal(noImage.ready, true);
+assert.equal(noImage.strategy, "no-hero");
+assert.equal(noImage.bodyImage, null);
+assert.equal(noImage.semanticBrief.aspectRatio, COVER_ASPECT_RATIO);
+assert.match(noImage.semanticBrief.visualDirection, /大學該如何培養創業者/);
+assert.match(noImage.semanticBrief.bodyExcerpt, /Students learn by building/);
 
 const brief = semanticCoverBrief(
   { title: "A", summary: "B", category: "C", entryType: "D" },
@@ -74,6 +75,6 @@ const brief = semanticCoverBrief(
 );
 assert.equal(brief.aspectRatio, "16:9");
 assert.equal(brief.requirements.length, 5);
-assert.match(brief.handoff, /Notion page cover/);
+assert.match(brief.handoff, /Optional editorial visual brief/);
 
-console.log("Notion cover contract helpers: PASS");
+console.log("Notion optional-Hero contract helpers: PASS");

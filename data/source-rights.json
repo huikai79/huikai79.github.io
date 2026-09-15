@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "checkedAt": "2026-09-15",
+  "defaultPolicy": {
+    "id": "unknown-source",
+    "fullTranslation": "unknown",
+    "fullRepublication": "unknown",
+    "media": "separate-review",
+    "obligations": [],
+    "evidence": []
+  },
+  "profiles": [
+    {
+      "id": "giles-thomas-blogging-ai",
+      "match": {
+        "exactUrls": [
+          "https://www.gilesthomas.com/2025/02/blogging-in-the-age-of-ai"
+        ]
+      },
+      "fullTranslation": "licensed",
+      "fullRepublication": "licensed",
+      "media": "separate-review",
+      "license": "CC-BY-4.0",
+      "obligations": [
+        "attribution",
+        "source-link",
+        "license-link",
+        "indicate-translation-or-changes"
+      ],
+      "evidence": [
+        "https://www.gilesthomas.com/2025/02/blogging-in-the-age-of-ai",
+        "https://creativecommons.org/licenses/by/4.0/"
+      ]
+    },
+    {
+      "id": "paul-graham",
+      "match": {
+        "hosts": ["paulgraham.com"]
+      },
+      "fullTranslation": "allow-with-obligations",
+      "fullRepublication": "unknown",
+      "media": "separate-review",
+      "obligations": [
+        "original-url",
+        "notify-translation-url"
+      ],
+      "evidence": [
+        "https://www.paulgraham.com/gfaq.html"
+      ]
+    },
+    {
+      "id": "aeon",
+      "match": {
+        "hosts": ["aeon.co"]
+      },
+      "fullTranslation": "agreement-required",
+      "fullRepublication": "agreement-required",
+      "media": "excluded-from-standard-republication",
+      "obligations": [
+        "syndication-agreement"
+      ],
+      "evidence": [
+        "https://aeon.co/republish"
+      ]
+    },
+    {
+      "id": "the-creative-independent",
+      "match": {
+        "hosts": ["thecreativeindependent.com"]
+      },
+      "fullTranslation": "permission-required",
+      "fullRepublication": "permission-required",
+      "media": "permission-required",
+      "obligations": [
+        "rights-holder-permission"
+      ],
+      "evidence": [
+        "https://thecreativeindependent.com/terms/"
+      ]
+    },
+    {
+      "id": "note",
+      "match": {
+        "hosts": ["note.com"]
+      },
+      "fullTranslation": "creator-permission-required",
+      "fullRepublication": "creator-permission-required",
+      "media": "separate-review",
+      "obligations": [
+        "creator-permission"
+      ],
+      "evidence": [
+        "https://note.com/terms"
+      ]
+    }
+  ]
+}

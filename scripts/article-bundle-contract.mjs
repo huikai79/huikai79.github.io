@@ -4,6 +4,12 @@ export const LANGUAGE_BUNDLE_TOKENS = new Map([
   ["en", "en"]
 ]);
 
+const WEBSITE_LANGUAGE_PRIORITY = new Map([
+  ["zh-TW", 0],
+  ["zh-CN", 1],
+  ["en", 2]
+]);
+
 function value(record, key) {
   return String(record?.[key] ?? "").trim();
 }
@@ -13,6 +19,17 @@ function assertSafeBundlePath(bundlePath, label) {
   if (bundlePath === "." || bundlePath === ".." || bundlePath.includes("/") || bundlePath.includes("\\")) {
     throw new Error(`${label}: unsafe bundle path ${JSON.stringify(bundlePath)}`);
   }
+}
+
+function translatedFamilyOwner(members) {
+  if (!members.length || members.some(member => member.translationStatus !== "Approved")) {
+    return null;
+  }
+  return [...members].sort((a, b) => (
+    (WEBSITE_LANGUAGE_PRIORITY.get(a.language) ?? 99) - (WEBSITE_LANGUAGE_PRIORITY.get(b.language) ?? 99) ||
+    a.language.localeCompare(b.language) ||
+    a.pageId.localeCompare(b.pageId)
+  ))[0];
 }
 
 export function manifestBundlePath(entry = {}) {
@@ -85,17 +102,30 @@ export function assignArticleBundlePaths(records = []) {
     }
 
     const sources = members.filter(member => member.translationStatus === "Source");
-    if (sources.length !== 1) {
+    let owner;
+    if (sources.length === 1) {
+      owner = sources[0];
+    } else if (sources.length === 0) {
+      // A canonical Source may legitimately use a non-site language (for example English)
+      // and therefore be absent from the website synchronization candidate set. The
+      // publication-family contract resolves and validates that upstream Source. Here we
+      // only need a deterministic physical bundle owner for the approved site languages.
+      owner = translatedFamilyOwner(members);
+      if (!owner) {
+        throw new Error(
+          `Shared public slug ${slug} has no in-scope canonical Source and is not an Approved-only translated family`
+        );
+      }
+    } else {
       throw new Error(
-        `Shared public slug ${slug} requires exactly one canonical Source; found ${sources.length}`
+        `Shared public slug ${slug} requires at most one in-scope canonical Source; found ${sources.length}`
       );
     }
 
-    const source = sources[0];
-    claim(source.pageId, slug);
+    claim(owner.pageId, slug);
 
     for (const member of members
-      .filter(item => item.pageId !== source.pageId)
+      .filter(item => item.pageId !== owner.pageId)
       .sort((a, b) => a.language.localeCompare(b.language) || a.pageId.localeCompare(b.pageId))) {
       const token = LANGUAGE_BUNDLE_TOKENS.get(member.language);
       claim(member.pageId, `${slug}--${token}`);

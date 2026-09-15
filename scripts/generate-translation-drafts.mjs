@@ -22,6 +22,7 @@ import {
   buildTranslationCandidateFilter,
   effectiveTranslationSummary,
   translationDraftProperties,
+  translationInheritedMetadataUpdates,
   translationReadinessIssues
 } from "./translation-readiness-contract.mjs";
 import {
@@ -285,6 +286,7 @@ const report = {
   requestedTargetCount: 0,
   planned: [],
   generated: [],
+  metadataBackfilled: [],
   skipped: [],
   blocked: []
 };
@@ -337,6 +339,22 @@ for (const sourceStub of sources) {
     });
     const existing = await findExistingTarget(group, targetLanguage);
     if (existing.length) {
+      const metadataBackfills = [];
+      for (const page of existing) {
+        const updates = translationInheritedMetadataUpdates({ source, target: page });
+        if (!Object.keys(updates).length) continue;
+        metadataBackfills.push({ pageId: page.id, fields: Object.keys(updates) });
+        if (apply) {
+          await notion.pages.update({ page_id: page.id, properties: updates });
+          report.metadataBackfilled.push({
+            sourcePageId: source.id,
+            pageId: page.id,
+            targetLanguage,
+            fields: Object.keys(updates)
+          });
+        }
+      }
+
       const stale = existing.map(page => ({
         pageId: page.id,
         reasons: existingTargetStaleReasons(page, {
@@ -348,8 +366,9 @@ for (const sourceStub of sources) {
         sourcePageId: source.id,
         title,
         targetLanguage,
-        reason: "target language already exists in Translation Group; automatic overwrite is disabled",
+        reason: "target language already exists in Translation Group; automatic body overwrite is disabled",
         existingPageIds: existing.map(page => page.id),
+        metadataBackfills,
         stale: stale.some(item => item.reasons.length > 0),
         staleDetails: stale.filter(item => item.reasons.length > 0),
         translationProfile: TRANSMITH_RUNTIME_PROFILE,
@@ -472,6 +491,7 @@ console.log(
   `automatic=${automaticMode}, maxGenerated=${automaticMaxGenerated ?? "none"}, ` +
   `sources=${report.sourceCount}, requested=${report.requestedTargetCount}, ` +
   `planned=${report.planned.length}, generated=${report.generated.length}, ` +
+  `metadataBackfilled=${report.metadataBackfilled.length}, ` +
   `skipped=${report.skipped.length}, blocked=${report.blocked.length}, report=${reportPath})`
 );
 

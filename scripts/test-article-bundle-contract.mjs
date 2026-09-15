@@ -45,6 +45,27 @@ assert.deepEqual(Object.fromEntries(family), {
   en: "humility--en"
 });
 
+const externalSourceFamily = assignArticleBundlePaths([
+  {
+    pageId: "tw",
+    slug: "writing-advice",
+    language: "zh-TW",
+    translationGroup: "chadnauseam-writing-advice",
+    translationStatus: "Approved"
+  },
+  {
+    pageId: "cn",
+    slug: "writing-advice",
+    language: "zh-CN",
+    translationGroup: "chadnauseam-writing-advice",
+    translationStatus: "Approved"
+  }
+]);
+assert.deepEqual(Object.fromEntries(externalSourceFamily), {
+  tw: "writing-advice",
+  cn: "writing-advice--zh-cn"
+});
+
 assert.throws(
   () => assignArticleBundlePaths([
     { pageId: "a", slug: "same", language: "zh-TW", translationGroup: "a", translationStatus: "Source" },
@@ -66,7 +87,15 @@ assert.throws(
     { pageId: "a", slug: "same", language: "zh-TW", translationGroup: "same", translationStatus: "Source" },
     { pageId: "b", slug: "same", language: "zh-CN", translationGroup: "same", translationStatus: "Source" }
   ]),
-  /exactly one canonical Source/
+  /at most one in-scope canonical Source/
+);
+
+assert.throws(
+  () => assignArticleBundlePaths([
+    { pageId: "a", slug: "same", language: "zh-TW", translationGroup: "same", translationStatus: "Approved" },
+    { pageId: "b", slug: "same", language: "zh-CN", translationGroup: "same", translationStatus: "Draft" }
+  ]),
+  /not an Approved-only translated family/
 );
 
 assert.equal(manifestBundlePath({ slug: "legacy" }), "legacy");

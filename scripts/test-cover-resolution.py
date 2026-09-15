@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESOLVER = ROOT / "scripts" / "resolve-article-covers.py"
 SOURCE_VERIFIER = ROOT / "scripts" / "verify-source-contract.py"
-FALLBACK_FILENAME = "cover-fallback.png"
+LEGACY_FALLBACK_FILENAME = "cover-fallback.png"
 SOCIAL_FALLBACK_FILENAME = "social-preview.png"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
@@ -51,8 +51,9 @@ def write_fixture(root: Path) -> None:
     explicit = posts / "explicit"
     svg = posts / "svg-hero"
     first = posts / "first-bundle"
-    fallback = posts / "fallback"
-    for bundle in (explicit, svg, first, fallback):
+    no_image = posts / "no-image"
+    legacy = posts / "legacy-auto"
+    for bundle in (explicit, svg, first, no_image, legacy):
         bundle.mkdir(parents=True)
 
     (explicit / "index.md").write_text(
@@ -80,11 +81,19 @@ def write_fixture(root: Path) -> None:
     )
     (first / "image-01.jpg").write_bytes(b"localized")
 
-    (fallback / "index.md").write_text(
-        '---\ntitle: "Fallback article"\n---\n\nNo image here.\n',
+    (no_image / "index.md").write_text(
+        '---\ntitle: "No image article"\n---\n\nNo image here.\n',
         encoding="utf-8",
         newline="\n",
     )
+
+    (legacy / "index.md").write_text(
+        f'---\ntitle: "Legacy auto hero"\ncover: "image-01.jpg"\nimages: ["image-01.jpg"]\n---\n\n![](image-01.jpg)\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    (legacy / "image-01.jpg").write_bytes(b"legacy-body")
+    (legacy / LEGACY_FALLBACK_FILENAME).write_bytes(b"stale")
 
     manifest = {
         "pages": {
@@ -96,7 +105,8 @@ def write_fixture(root: Path) -> None:
                 "contentFile": "index.md",
                 "bundleHash": directory_hash(first),
             },
-            "page-fallback": {"slug": "fallback", "bundleHash": directory_hash(fallback)},
+            "page-no-image": {"slug": "no-image", "bundleHash": directory_hash(no_image)},
+            "page-legacy": {"slug": "legacy-auto", "bundleHash": directory_hash(legacy)},
         }
     }
     (root / ".notion-sync-manifest.json").write_text(
@@ -111,6 +121,22 @@ def write_fixture(root: Path) -> None:
     )
 
 
+def assert_social_preview(bundle: Path, index_path: Path) -> bytes:
+    text = index_path.read_text(encoding="utf-8")
+    if f'images: ["{SOCIAL_FALLBACK_FILENAME}"]' not in text:
+        raise AssertionError(f"{bundle.name}: social fallback front matter was not written")
+    png = bundle / SOCIAL_FALLBACK_FILENAME
+    if not png.is_file():
+        raise AssertionError(f"{bundle.name}: social preview PNG was not generated")
+    data = png.read_bytes()
+    if data[:8] != PNG_SIGNATURE:
+        raise AssertionError(f"{bundle.name}: social preview is not PNG")
+    width, height = struct.unpack(">II", data[16:24])
+    if (width, height) != (1200, 630):
+        raise AssertionError(f"{bundle.name}: unexpected social dimensions {width}x{height}")
+    return data
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="cover-resolution-") as tmp:
         site_root = Path(tmp)
@@ -120,137 +146,99 @@ def main() -> None:
         explicit_index = explicit_bundle / "index.md"
         svg_bundle = site_root / "content" / "posts" / "svg-hero"
         svg_index = svg_bundle / "index.md"
-        social_png = svg_bundle / SOCIAL_FALLBACK_FILENAME
         first_bundle = site_root / "content" / "posts" / "first-bundle"
         first_index = first_bundle / "index.md"
-        fallback_bundle = site_root / "content" / "posts" / "fallback"
-        fallback_index = fallback_bundle / "index.md"
-        fallback_png = fallback_bundle / FALLBACK_FILENAME
+        no_image_bundle = site_root / "content" / "posts" / "no-image"
+        no_image_index = no_image_bundle / "index.md"
+        legacy_bundle = site_root / "content" / "posts" / "legacy-auto"
+        legacy_index = legacy_bundle / "index.md"
 
         explicit_before = explicit_index.read_bytes()
         svg_cover_before = (svg_bundle / "cover.svg").read_bytes()
 
         first_run = run(RESOLVER, site_root)
         report_text = (site_root / ".notion-sync-report.json").read_text(encoding="utf-8")
-        if "deterministic-procedural-png" not in report_text:
-            raise AssertionError("cover report does not record procedural fallback strategy")
+        if "explicit-cover-or-none" not in report_text:
+            raise AssertionError("presentation report does not record optional Hero strategy")
         if "deterministic-social-preview-png" not in report_text:
-            raise AssertionError("cover report does not record SVG social preview fallback strategy")
+            raise AssertionError("presentation report does not record social fallback strategy")
         if '"bundlePath": "first-bundle"' not in report_text:
-            raise AssertionError("cover report does not preserve internal bundlePath provenance")
+            raise AssertionError("presentation report does not preserve bundlePath provenance")
 
         if explicit_index.read_bytes() != explicit_before:
             raise AssertionError("explicit raster cover article was modified")
 
         svg_text = svg_index.read_text(encoding="utf-8")
         if 'cover: "cover.svg"' not in svg_text:
-            raise AssertionError("SVG hero cover was not preserved")
-        if f'images: ["{SOCIAL_FALLBACK_FILENAME}"]' not in svg_text:
-            raise AssertionError("SVG hero did not receive independent raster social preview")
+            raise AssertionError("explicit SVG Hero was not preserved")
         if (svg_bundle / "cover.svg").read_bytes() != svg_cover_before:
-            raise AssertionError("SVG hero asset was modified")
-        if not social_png.is_file():
-            raise AssertionError("SVG hero social preview PNG was not generated")
-        social_data = social_png.read_bytes()
-        if social_data[:8] != PNG_SIGNATURE:
-            raise AssertionError("SVG hero social preview is not PNG")
-        social_width, social_height = struct.unpack(">II", social_data[16:24])
-        if (social_width, social_height) != (1200, 630):
-            raise AssertionError(f"unexpected social preview dimensions: {social_width}x{social_height}")
+            raise AssertionError("explicit SVG Hero asset was modified")
+        svg_social = assert_social_preview(svg_bundle, svg_index)
 
         first_text = first_index.read_text(encoding="utf-8")
-        if 'cover: "image-01.jpg"' not in first_text or 'images: ["image-01.jpg"]' not in first_text:
-            raise AssertionError("first localized image was not promoted to cover/images")
+        if "cover:" in first_text:
+            raise AssertionError("body image was incorrectly promoted to Hero")
+        if "![](image-01.jpg)" not in first_text:
+            raise AssertionError("body image was removed while resolving presentation")
+        first_social = assert_social_preview(first_bundle, first_index)
 
-        fallback_text = fallback_index.read_text(encoding="utf-8")
-        if f'cover: "{FALLBACK_FILENAME}"' not in fallback_text:
-            raise AssertionError("fallback cover front matter was not added")
-        if f'images: ["{FALLBACK_FILENAME}"]' not in fallback_text:
-            raise AssertionError("fallback images front matter was not added")
-        if not fallback_png.is_file():
-            raise AssertionError("fallback PNG was not generated")
+        no_image_text = no_image_index.read_text(encoding="utf-8")
+        if "cover:" in no_image_text:
+            raise AssertionError("no-image article received an artificial Hero")
+        no_image_social = assert_social_preview(no_image_bundle, no_image_index)
 
-        png_a = fallback_png.read_bytes()
-        if png_a[:8] != PNG_SIGNATURE:
-            raise AssertionError("fallback file is not PNG")
-        width, height = struct.unpack(">II", png_a[16:24])
-        if (width, height) != (1600, 900):
-            raise AssertionError(f"unexpected fallback dimensions: {width}x{height}")
+        legacy_text = legacy_index.read_text(encoding="utf-8")
+        if 'cover: "image-01.jpg"' in legacy_text:
+            raise AssertionError("legacy first-body-image Hero was not removed")
+        if not "![](image-01.jpg)" in legacy_text:
+            raise AssertionError("legacy body image was removed instead of only its Hero promotion")
+        if (legacy_bundle / LEGACY_FALLBACK_FILENAME).exists():
+            raise AssertionError("legacy procedural Hero fallback was not removed")
+        legacy_social = assert_social_preview(legacy_bundle, legacy_index)
 
         manifest = json.loads((site_root / ".notion-sync-manifest.json").read_text(encoding="utf-8"))
-        if manifest["pages"]["page-explicit"]["bundleHash"] != directory_hash(explicit_bundle):
-            raise AssertionError("explicit raster bundle hash drifted unexpectedly")
-        if manifest["pages"]["page-svg"]["bundleHash"] != directory_hash(svg_bundle):
-            raise AssertionError("SVG hero bundle hash was not refreshed")
-        if manifest["pages"]["page-first"]["bundleHash"] != directory_hash(first_bundle):
-            raise AssertionError("bundlePath-backed first-image hash was not refreshed")
-        if manifest["pages"]["page-fallback"]["bundleHash"] != directory_hash(fallback_bundle):
-            raise AssertionError("fallback bundle hash was not refreshed")
+        for page_id, bundle in {
+            "page-explicit": explicit_bundle,
+            "page-svg": svg_bundle,
+            "page-first": first_bundle,
+            "page-no-image": no_image_bundle,
+            "page-legacy": legacy_bundle,
+        }.items():
+            if manifest["pages"][page_id]["bundleHash"] != directory_hash(bundle):
+                raise AssertionError(f"bundle hash was not refreshed for {page_id}")
 
         snapshot = {
             "explicit": explicit_index.read_bytes(),
             "svg": svg_index.read_bytes(),
-            "social": social_png.read_bytes(),
+            "svg_social": svg_social,
             "first": first_index.read_bytes(),
-            "fallback": fallback_index.read_bytes(),
-            "png": png_a,
+            "first_social": first_social,
+            "no_image": no_image_index.read_bytes(),
+            "no_image_social": no_image_social,
+            "legacy": legacy_index.read_bytes(),
+            "legacy_social": legacy_social,
             "manifest": (site_root / ".notion-sync-manifest.json").read_bytes(),
         }
 
         second_run = run(RESOLVER, site_root)
         if explicit_index.read_bytes() != snapshot["explicit"]:
             raise AssertionError("second resolver run changed explicit raster article")
-        if svg_index.read_bytes() != snapshot["svg"]:
-            raise AssertionError("second resolver run changed SVG hero front matter")
-        if social_png.read_bytes() != snapshot["social"]:
-            raise AssertionError("SVG social preview is not byte-stable")
-        if first_index.read_bytes() != snapshot["first"]:
-            raise AssertionError("second resolver run changed first-image front matter")
-        if fallback_index.read_bytes() != snapshot["fallback"]:
-            raise AssertionError("second resolver run changed fallback front matter")
-        if fallback_png.read_bytes() != snapshot["png"]:
-            raise AssertionError("fallback PNG is not byte-stable")
+        if svg_index.read_bytes() != snapshot["svg"] or (svg_bundle / SOCIAL_FALLBACK_FILENAME).read_bytes() != snapshot["svg_social"]:
+            raise AssertionError("SVG presentation is not stable")
+        if first_index.read_bytes() != snapshot["first"] or (first_bundle / SOCIAL_FALLBACK_FILENAME).read_bytes() != snapshot["first_social"]:
+            raise AssertionError("no-Hero body-image presentation is not stable")
+        if no_image_index.read_bytes() != snapshot["no_image"] or (no_image_bundle / SOCIAL_FALLBACK_FILENAME).read_bytes() != snapshot["no_image_social"]:
+            raise AssertionError("no-image presentation is not stable")
+        if legacy_index.read_bytes() != snapshot["legacy"] or (legacy_bundle / SOCIAL_FALLBACK_FILENAME).read_bytes() != snapshot["legacy_social"]:
+            raise AssertionError("legacy cleanup is not stable")
         if (site_root / ".notion-sync-manifest.json").read_bytes() != snapshot["manifest"]:
             raise AssertionError("second resolver run changed manifest despite stable bundles")
 
         run(SOURCE_VERIFIER, site_root, strict=True)
 
-        svg_index.write_text(
-            svg_index.read_text(encoding="utf-8").replace(
-                f'images: ["{SOCIAL_FALLBACK_FILENAME}"]',
-                'images: ["manual.jpg"]',
-            ),
-            encoding="utf-8",
-            newline="\n",
-        )
-        (svg_bundle / "manual.jpg").write_bytes(b"manual")
-        run(RESOLVER, site_root)
-        if social_png.exists():
-            raise AssertionError("stale SVG social preview fallback was not removed after raster social image appeared")
-        if 'cover: "cover.svg"' not in svg_index.read_text(encoding="utf-8"):
-            raise AssertionError("SVG hero cover changed when raster social image appeared")
-
-        fallback_index.write_text(
-            fallback_index.read_text(encoding="utf-8")
-            .replace(f'cover: "{FALLBACK_FILENAME}"', 'cover: "manual.jpg"')
-            .replace(f'images: ["{FALLBACK_FILENAME}"]', 'images: ["manual.jpg"]'),
-            encoding="utf-8",
-            newline="\n",
-        )
-        (fallback_bundle / "manual.jpg").write_bytes(b"manual")
-        run(RESOLVER, site_root)
-        if fallback_png.exists():
-            raise AssertionError("stale procedural fallback was not removed after explicit cover appeared")
-
-        manifest = json.loads((site_root / ".notion-sync-manifest.json").read_text(encoding="utf-8"))
-        if manifest["pages"]["page-svg"]["bundleHash"] != directory_hash(svg_bundle):
-            raise AssertionError("SVG bundle hash was not refreshed after raster social image appeared")
-        if manifest["pages"]["page-fallback"]["bundleHash"] != directory_hash(fallback_bundle):
-            raise AssertionError("bundle hash was not refreshed after stale fallback cleanup")
-
         print(first_run.stdout.strip())
         print(second_run.stdout.strip())
-        print("Cover resolution fixture verification: PASS")
+        print("Article presentation fixture verification: PASS")
 
 
 if __name__ == "__main__":

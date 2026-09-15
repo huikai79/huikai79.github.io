@@ -55,34 +55,26 @@ export function semanticCoverBrief(candidate = {}, markdown = "") {
       "Avoid generic abstract patterns when a concrete semantic image is available.",
       "Do not imply people, brands, events, claims, or facts that the article does not support."
     ],
-    handoff: "Select or generate a suitable image, then set it as the Notion page cover before production publication."
+    handoff: "Optional editorial visual brief. A production article may intentionally publish without a Hero image."
   };
 }
 
 export function resolveCoverReadiness({ page, markdown = "", candidate = {} } = {}) {
+  const bodyImage = firstMarkdownImage(markdown);
+
   if (pageHasExplicitCover(page)) {
     return {
       ready: true,
       strategy: "notion-cover",
-      bodyImage: null,
-      semanticBrief: null
-    };
-  }
-
-  const bodyImage = firstMarkdownImage(markdown);
-  if (bodyImage) {
-    return {
-      ready: true,
-      strategy: "first-body-image",
       bodyImage,
       semanticBrief: null
     };
   }
 
   return {
-    ready: false,
-    strategy: "semantic-cover-required",
-    bodyImage: null,
+    ready: true,
+    strategy: "no-hero",
+    bodyImage,
     semanticBrief: semanticCoverBrief(candidate, markdown)
   };
 }
