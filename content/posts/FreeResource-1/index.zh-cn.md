@@ -18,7 +18,7 @@ icon: "📁"
 images: ["cover.zh-cn.jpg"]
 ---
 
-{{< youtube X5mMR9bmngM >}}
+https://youtu.be/X5mMR9bmngM
 
 
 免费资源自从大学时我就养成了收集资源的习惯，直到研究生，这八九年慢慢的也攒到不少好的计算机学习资源，现在把它们分享出来，造福后来者！

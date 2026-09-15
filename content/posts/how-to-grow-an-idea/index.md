@@ -231,7 +231,7 @@ Francisco Varela、Evan Thompson 與 Eleanor Rosch 在《具身心智》（_The 
 它們從彼此接觸的那一刻起，就在共同生成彼此。
 
 
----
+* * *
 
 
 ![](image-01.png)
@@ -240,7 +240,7 @@ Francisco Varela、Evan Thompson 與 Eleanor Rosch 在《具身心智》（_The 
 「The Telegarden 是一件藝術裝置，讓網路使用者可以觀看並與一座遠端的真實花園互動。參與者可以透過工業機械手臂輕柔的動作，播種、澆水，並觀察幼苗的生長情況。」
 
 
----
+* * *
 
 
 無論企業多麼希望把想法當成產品，**想法其實並不是產品。**
@@ -273,7 +273,7 @@ Francisco Varela、Evan Thompson 與 Eleanor Rosch 在《具身心智》（_The 
 如果我們能帶著謙遜與敬畏，接受這樣一種對心智的理解，也許最後，我們會對那裡究竟能長出什麼感到驚訝。
 
 
----
+* * *
 
 
 ![](image-02.png)
@@ -282,7 +282,7 @@ Francisco Varela、Evan Thompson 與 Eleanor Rosch 在《具身心智》（_The 
 呼吸。
 
 
----
+* * *
 
 
 為了配合這篇文章，我在 Are.na 上建立了一個名為 **「How to grow an idea」** 的頻道：

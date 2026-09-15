@@ -202,7 +202,7 @@ images: ["cover.zh-cn.jpg"]
 但它虽然不是充分条件，却是必要条件。
 
 
----
+* * *
 
 
 **注释**
@@ -223,7 +223,7 @@ images: ["cover.zh-cn.jpg"]
 但如果你正在谈的是自己正在写的东西，那么单纯的口头交谈，永远不会比写作本身更严格。
 
 
----
+* * *
 
 
 **感谢** Trevor Blackwell、Patrick Collison 与 Robert Morris 阅读本文草稿。
