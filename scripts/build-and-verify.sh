@@ -8,6 +8,9 @@ hugo version
 go version
 
 python3 -m py_compile scripts/optimize-managed-covers.py scripts/localize-multilingual-page-resources.py scripts/apply-editorial-metadata.py scripts/test-editorial-metadata.py scripts/taxonomy_localization_contract.py scripts/test-taxonomy-localization-contract.py
+node --check sync.mjs
+node --check scripts/notion-video-transformer.mjs
+node --check scripts/notion-markdown-contract.mjs
 node --check scripts/check-notion-publication-contract.mjs
 node --check scripts/notion-translation-family-contract.mjs
 node --check scripts/enrich-notion-metadata.mjs
@@ -25,6 +28,7 @@ node scripts/test-source-rights-registry.mjs
 python3 scripts/test-taxonomy-localization-contract.py
 python3 scripts/test-editorial-metadata.py
 node scripts/test-notion-video-transformer.mjs
+node scripts/test-notion-markdown-contract.mjs
 node scripts/test-notion-audio-transformer.mjs
 node workers/notion-media-gateway/test-paths.mjs
 node workers/notion-media-gateway/test-runtime.mjs
