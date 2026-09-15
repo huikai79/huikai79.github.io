@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { Client } from "@notionhq/client";
 import fs from "node:fs/promises";
+import { createNotionClient } from "./notion-api-retry.mjs";
 import {
   applyTranslations,
   collectTranslationSegments,
@@ -62,7 +62,7 @@ if (automaticMode && !apiKey) {
 }
 if (applyWarning) console.warn(`::warning::${applyWarning}`);
 
-const notion = new Client({ auth: token });
+const notion = createNotionClient({ auth: token, transportLabel: "translation-drafts" });
 
 function titleValue(properties = {}) {
   return properties.Title?.title?.map(item => item.plain_text).join("").trim() ?? "";
