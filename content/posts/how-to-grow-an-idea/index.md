@@ -1,7 +1,6 @@
 ---
 title: "如何讓一個想法生長"
 date: "2026-09-13"
-lastmod: "2026-09-13T01:36:00.000Z"
 slug: "how-to-grow-an-idea"
 description: "想法不是由孤立的自我硬生產出來，而是在環境、經驗、閱讀、散步與注意力的交會中逐漸生成。與其強迫創意出現，不如創造適合它生長的條件，並學會少一些控制、多一些觀察與合作。"
 tags: []
@@ -16,8 +15,7 @@ contentLanguage: "zh-TW"
 translationKey: "how-to-grow-an-idea"
 sourceLabel: "Jenny Odell / The Creative Independent"
 sourceURL: "https://thecreativeindependent.com/essays/jenny-odell-how-to-grow-an-idea"
-cover: "image-01.png"
-images: ["image-01.png"]
+images: ["social-preview.png"]
 ---
 
 1970 年代，一位日本農夫發現了一種把事情做得更好的方法——那就是，**不要去做它**。

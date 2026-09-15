@@ -1,7 +1,6 @@
 ---
 title: "免费资源"
 date: "2025-07-22"
-lastmod: "2026-09-14T11:34:00.000Z"
 slug: "FreeResource-1"
 description: "整理并分享计算机学习相关资源，涵盖电子书、LeetCode 题解、C++／Linux 课程、面试资料、技术学习路线与计算机基础资料，并补充部分付费专栏的实际使用体验。"
 tags: []

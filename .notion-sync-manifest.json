@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatorHash": "7ac68419001ecb5c95958d826d0aa1c821e760bf7ad4e6592cf46bd08c627f35",
+  "generatorHash": "a087171eb9ae5b2aec3e5572291d13d0a7bc623ba26f85ecaaeacfdd1afdcb16",
   "pages": {
     "2347a59e-0439-8034-933b-c7d224735498": {
       "slug": "FreeResource-1",
@@ -9,7 +9,7 @@
       "translationGroup": "FreeResource-1",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T11:34:00.000Z",
-      "bundleHash": "cccd8c55999020cffabf9198d0a0c9f7e223fb98345a142a7f99391919d2b70f",
+      "bundleHash": "51c07cd2e8653b75e3ce19470562b8a3505e8a24cca9bf8e085319556e65d7a1",
       "presentationFingerprint": "aa03b804fef189dc522657071d8bbbcc34429cc1b10ad4f4edbe9e0112e64655"
     },
     "2367a59e-0439-807a-8de1-c7050f44183e": {
@@ -19,7 +19,7 @@
       "translationGroup": "be-alife",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T11:33:00.000Z",
-      "bundleHash": "5a7fb80c836c9091a168b6ac892c3aa9e2c0b789119d99c193922cd25de57558",
+      "bundleHash": "fa7eeb2d9518877bcf85674f2ee864466f0003ec159a0028d73d3d4b6976e19c",
       "presentationFingerprint": "4a3f0e444c1b240def225fbac5ab5f607970d71d3ff53f57ead2eba129fe3b7d"
     },
     "23b7a59e-0439-80a6-9852-c373b03994f5": {
@@ -29,7 +29,7 @@
       "translationGroup": "How-you-know",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T11:31:00.000Z",
-      "bundleHash": "cfbc05b50eb409a9973d29f38631adacd66c0f1a7065039a660b25e9ec59ff08",
+      "bundleHash": "cf761eba739031fec20f6c63652c5c02a823bdc759104f24b9d252fba5cb09c8",
       "presentationFingerprint": "33737300e2c9d15454ca752d28bee5119bb13331e8cd58e8bf4880fc445b2c3a"
     },
     "23b7a59e-0439-80b4-a5d8-e495f79d0ec7": {
@@ -39,7 +39,7 @@
       "translationGroup": "Writing-and-speaking",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-09T01:53:00.000Z",
-      "bundleHash": "39127367ccc51d60c22fa2e45b5ac15611477fbe5d002ca54616cd3ef6050b72",
+      "bundleHash": "6c54797de711accf63492d72068dab37d60bea3b80db4ed6c6409f5108ed0f21",
       "presentationFingerprint": "fa5d69b688de04244026be7ce8d750478cc2ad79dca5c80dd06ceab48fd7ffa1"
     },
     "23b7a59e-0439-81d2-b926-cb11c044d7e9": {
@@ -49,7 +49,7 @@
       "translationGroup": "how-to-make-wealth",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-09T01:52:00.000Z",
-      "bundleHash": "fac919562738c12500adfd43ae11cbb4529547a835aaacb72e2f3f7eb699724c",
+      "bundleHash": "f1808f9e9efef7e32339429e370ab2f170842764e92d8a8294bba5ee13030647",
       "presentationFingerprint": "d1b702e85b3c37d205110df08fcf6bef4a7e54c78790c71802a2c8e818203116"
     },
     "23c7a59e-0439-8054-a78d-c8e89090963e": {
@@ -59,7 +59,7 @@
       "translationGroup": "Writes-and-Write-Nots",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-09T01:53:00.000Z",
-      "bundleHash": "2e4de18f00628ef9db6afe4f0989179a901a19a7888ce1658cffa2abbdb04a64",
+      "bundleHash": "c0b0f5520e0eb30dbe46d2c7eec694707682ed35627f69be3eefcec37259b8f2",
       "presentationFingerprint": "48bc466de7cab159311eb82176b0ccabd5b188132ff01eaa0eb698469c80e53a"
     },
     "3d07a59e-0439-8048-ae89-da587d3ba5d0": {
@@ -69,7 +69,7 @@
       "translationGroup": "nutrient-hackathon-after",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-08T16:16:00.000Z",
-      "bundleHash": "06cc82a3e501c5c1aa3c15e5b3b24cb70f48942fbb28aeb7b9c1f382cfa51095",
+      "bundleHash": "852f2278c524d8a28d586387fd8450b61a4250c2e348a49e9f1f7f60671b7491",
       "presentationFingerprint": "6538cc93a05ff67f52e92a704997f2204f6e09865dd0065676276a0c9cf11ee6"
     },
     "3d37a59e-0439-80d0-86d7-fc494a529fca": {
@@ -79,7 +79,7 @@
       "translationGroup": "daxuepeiyangchuangyezhe",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T11:35:00.000Z",
-      "bundleHash": "f526a839a51e11ecad5424d9b4198f075dd32b79ad553da781893a5ba0c0f631",
+      "bundleHash": "c0188fab31ccd443b6f620e9a7929e4690e1beaa9a2e3699ab4be5ddcc8083a8",
       "presentationFingerprint": "76b7f6714c4c3a3640eb1ad4aa7f866603f6436e562d3fdef448d33054a62267"
     },
     "3d67a59e-0439-80ca-8ca8-d41b61708ad2": {
@@ -89,7 +89,7 @@
       "translationGroup": "How-you-know",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T10:10:00.000Z",
-      "bundleHash": "b1dd398de569575ffc8d5ef33e7a688de55f72426f2c7040771fb037fb1ef7d9",
+      "bundleHash": "5fdb522020d3f5ea9b500ee53bf2e4bb00216573ec529d8951110e7867992863",
       "presentationFingerprint": "33737300e2c9d15454ca752d28bee5119bb13331e8cd58e8bf4880fc445b2c3a"
     },
     "3d97a59e-0439-8060-94e2-c70d8239ad88": {
@@ -99,7 +99,7 @@
       "translationGroup": "small-b-blogging",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-13T15:09:00.000Z",
-      "bundleHash": "02b186514489c707c81ca38a682daacf29688763b3eb53edd21ed843895c19f6",
+      "bundleHash": "c6f92c7d97ad97a4325cbbdbc6a7dd79bd23f820329f05aecf799344af3294a9",
       "presentationFingerprint": "9afa3dd21755f3aabf3f3c40fa196ee53fb0d613abef834bb92bbe2b8d18a9e9"
     },
     "3d97a59e-0439-80b3-8567-e3e3c96aefdd": {
@@ -109,7 +109,7 @@
       "translationGroup": "my-website-is-a-shifting-house",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-13T15:18:00.000Z",
-      "bundleHash": "5d92c0791d1636db826915a8c8ea9ddd317e1e27448e0f477db2540b724e041e",
+      "bundleHash": "124f113d17853de17b89e955feddef8e9bfa7771f4e412a52477b547b9a20940",
       "presentationFingerprint": "581a235e441b8c3a3245d435454f1a45f06813e9ff07c3b7099e5031bc9f3cb8"
     },
     "3d97a59e-0439-80ef-a7bb-e7e0898adb62": {
@@ -119,7 +119,7 @@
       "translationGroup": "how-to-grow-an-idea",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-13T01:36:00.000Z",
-      "bundleHash": "df517115200fd4d9db1a56df7e0b1885da782a6df9131de6f9d816031419b36b",
+      "bundleHash": "f53d555b10a5fc3d336961acdbd155e8ecdc2930b8df3af5d747f15d649f1f59",
       "presentationFingerprint": "f6ea9c18c712cb8c14c1859bad7beb8c544f0c8ff10e25f1de00012e68af208c"
     },
     "3da7a59e-0439-8009-b009-dd5dadeb2e88": {
@@ -129,7 +129,7 @@
       "translationGroup": "paulgraham-words",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T03:27:00.000Z",
-      "bundleHash": "e6a4d2afcb88d6b565badfb1b8a9c11061cf11204cfa0161ab5111fb7f3dd5be",
+      "bundleHash": "7ec3b42f7b1ad079897f3544c0a28322aae0e3a810f2643ea051faf6e7690aa9",
       "presentationFingerprint": "b42a3dcaa043be1a226cf32d3f3d130992490b1dbe63f7410aab26c4420455ac"
     },
     "3da7a59e-0439-803e-97f1-e0b139dcfbda": {
@@ -139,7 +139,7 @@
       "translationGroup": "record-everything",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T00:22:00.000Z",
-      "bundleHash": "6578806edbfc8a16951094e4e124d58abf5aba462b00899b21fb3d91f1e0a67f",
+      "bundleHash": "147943afb819fefc3ea5956921904ebd758eb9db0a259c728fbb9bc4e2184964",
       "presentationFingerprint": "60f9cbf83cb78927211af11808a0f67677026e375d9ec008b5a25893aab04ee7"
     },
     "3da7a59e-0439-808b-aa01-e27fd36934d0": {
@@ -149,7 +149,7 @@
       "translationGroup": "the-forever-project",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T11:30:00.000Z",
-      "bundleHash": "1ba72b81c4fa55952016e1ebae16288d236d2f8cc85f9938fcc7f443222d04a7",
+      "bundleHash": "e99a12b2cdc05f6d44a33889ef3ef46b687db3b57f6975d366d6f432a6916cc3",
       "presentationFingerprint": "533ee2ebec42358b336103b90ad68fbf328bdeb2df08ebf8bffa05177e523e05"
     },
     "3da7a59e-0439-80f8-a843-d980205a55f0": {
@@ -159,7 +159,7 @@
       "translationGroup": "mitosora-nd3615cc5426a",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T06:44:00.000Z",
-      "bundleHash": "4c7fdca57bb1927c48a3cf08e851d8cf6ce36ea398f21b205fc6b63ef6a14b0a",
+      "bundleHash": "f7a78d468098df274de26321d1b64f732de08d4ea1a3159edc75f3f96fc63a10",
       "presentationFingerprint": "8f39e1b78f04d6a5ad6f1f54612d7b75341da3f7495f1f57b608e3f85ec96aaa"
     },
     "3da7a59e-0439-811d-8ea6-e9205e59ba1f": {
@@ -169,7 +169,7 @@
       "translationGroup": "my-website-is-a-shifting-house",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-13T15:10:00.000Z",
-      "bundleHash": "e936109f5077bf5a6782be3c0b3f2a7b2caa478f1a56c6ce643fabf439f3d56b",
+      "bundleHash": "ee62276cc56a31797b4d4518a59099d556befe0010b504ed2ea2362e5672e27b",
       "presentationFingerprint": "62303b66b7a769bac1a1c1e23721f9bb44f90a63d47cac3b0e28d9be88306fcd"
     },
     "3da7a59e-0439-8137-b5e1-c3dfb60ede03": {
@@ -179,7 +179,7 @@
       "translationGroup": "small-b-blogging",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-13T15:21:00.000Z",
-      "bundleHash": "5b5211ce38e1ea42aa103565ca8877953570e80c8901b32d13eb9e0bc9247950",
+      "bundleHash": "f2d231602eb8018c1d9a21d5a38620d7d6a667d89abc5e29f374e7409f88ec3a",
       "presentationFingerprint": "5df95d4ac4373ba315156a69a6aad30774c6c14c6d5ddef7be12531f4650faf5"
     },
     "3da7a59e-0439-81ae-8031-fa1868fe6df3": {
@@ -189,7 +189,7 @@
       "translationGroup": "be-alife",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T00:22:00.000Z",
-      "bundleHash": "c54d31c7f2136593b8d3649af0a16d8494a53cd222770a4b3af7eb51a97a0796",
+      "bundleHash": "e9440b69755660a566e3f4f6512a3685568262f29fc967628807cc1e36a8ada9",
       "presentationFingerprint": "4a3f0e444c1b240def225fbac5ab5f607970d71d3ff53f57ead2eba129fe3b7d"
     },
     "3da7a59e-0439-81d9-906d-cd22ae9c9b8e": {
@@ -199,7 +199,7 @@
       "translationGroup": "record-everything",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T11:31:00.000Z",
-      "bundleHash": "09e3072a1ded08f649b53539f9aaae9b18d88102a5cb690cae2222cc0c24a962",
+      "bundleHash": "63cd7c5b06ffc8798272b7eab57d1b85c074d91d71c6221ac9f284527ad35344",
       "presentationFingerprint": "60f9cbf83cb78927211af11808a0f67677026e375d9ec008b5a25893aab04ee7"
     },
     "3da7a59e-0439-81ee-af5a-e8f869c985c3": {
@@ -209,7 +209,7 @@
       "translationGroup": "paulgraham-words",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T11:33:00.000Z",
-      "bundleHash": "62c01f5034a71d423a93c6571ff2451550f9270ce9f22230513d5c268ed0bbe5",
+      "bundleHash": "8728c4eb5e1867e186fc9db9e0ec7534d7eaafdfbc808d71d97664fb024f7602",
       "presentationFingerprint": "b42a3dcaa043be1a226cf32d3f3d130992490b1dbe63f7410aab26c4420455ac"
     },
     "3db7a59e-0439-806d-a877-ea315b4ed58e": {
@@ -219,7 +219,7 @@
       "translationGroup": "menulis-dalam-masyarakat-rencam",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T11:33:00.000Z",
-      "bundleHash": "9e5a0772af02c28908c30a07e75d3555de422fe11d1fadd9a1282a06421192b4",
+      "bundleHash": "9e7e263071acf29a3c922dd2569cd9c75e32b7a2c52bbab665e6625e16386256",
       "presentationFingerprint": "8db602323ae41897848994310c7edfb3f617b2f1a5e774677c82b405b39b44b7"
     },
     "3db7a59e-0439-813e-ad5e-c810bdf15a18": {
@@ -229,8 +229,18 @@
       "translationGroup": "chadnauseam-writing-advice",
       "contentFile": "index.md",
       "lastEditedTime": "2026-09-14T14:50:00.000Z",
-      "bundleHash": "6b15878e7ca0f24555ae3586e9d74ba315efaf20a83a3f185ec391b553cec12b",
+      "bundleHash": "51d337773d7e9f4902c5e58f018e9c22ee44684a1f0400fce0773f1d9b114294",
       "presentationFingerprint": "33a9b697a048e13ec9b527aac647fb2103ef9e280a7b7d56c9b7c1f13663a32f"
+    },
+    "3db7a59e-0439-81bb-8e06-d3c561cc4c6e": {
+      "slug": "writing-advice",
+      "bundlePath": "writing-advice--zh-cn",
+      "language": "zh-CN",
+      "translationGroup": "chadnauseam-writing-advice",
+      "contentFile": "index.zh-cn.md",
+      "lastEditedTime": "2026-09-15T11:35:00.000Z",
+      "bundleHash": "a9df3dacbc9fbc5dd14f927a14e94f619889bc364e21540d8e75df508ad5e575",
+      "presentationFingerprint": "f6ea9c18c712cb8c14c1859bad7beb8c544f0c8ff10e25f1de00012e68af208c"
     },
     "3db7a59e-0439-81f2-ade7-c0a11916a5b3": {
       "slug": "website-must-diy",
@@ -239,7 +249,7 @@
       "translationGroup": "mitosora-nd3615cc5426a",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T11:36:00.000Z",
-      "bundleHash": "fde819b01a8cf44bea58e77c8ac44feddd8430c82732cec976295b836c6ef80a",
+      "bundleHash": "014fcbfacb7baa3762a47c7b2d62d5ccc6f67aa6a3c45e5310ee76b59533ae70",
       "presentationFingerprint": "8f39e1b78f04d6a5ad6f1f54612d7b75341da3f7495f1f57b608e3f85ec96aaa"
     },
     "3db7a59e-0439-81fc-b1a2-f1ccf45920bd": {
@@ -249,8 +259,18 @@
       "translationGroup": "the-forever-project",
       "contentFile": "index.zh-cn.md",
       "lastEditedTime": "2026-09-14T15:00:00.000Z",
-      "bundleHash": "8095e36d9d4dc7fb19d8606772796ae7a1f94a95c88ef8eb6206832ebe98b3c0",
+      "bundleHash": "1f6e1d473f86dfcdfc51772fd5f95cca58046554b69f57a1c5c93dbda69ec480",
       "presentationFingerprint": "533ee2ebec42358b336103b90ad68fbf328bdeb2df08ebf8bffa05177e523e05"
+    },
+    "3dc7a59e-0439-80d0-9f35-dc69b0565f92": {
+      "slug": "blogging-in-the-age-of-ai",
+      "bundlePath": "blogging-in-the-age-of-ai",
+      "language": "zh-TW",
+      "translationGroup": "blogging-in-the-age-of-ai",
+      "contentFile": "index.md",
+      "lastEditedTime": "2026-09-15T11:35:00.000Z",
+      "bundleHash": "80c2775587726a6bdd204db933825090cf02547f1bdeb759a17862cdbc69af30",
+      "presentationFingerprint": "b78eb8f5e1bde85cd2989d036c76ed35df0e8896dc164e88d714bb0bd156b2c2"
     }
   }
 }

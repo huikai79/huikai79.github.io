@@ -7,7 +7,7 @@ selectedLimit = 3
 recentLimit = 5
 pinnedSize = 3
 rotationSlots = 0
-poolSize = 10
+poolSize = 11
 poolOffset = 0
 
 [[selected]]
