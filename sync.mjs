@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
@@ -8,7 +7,7 @@ import fetch from "node-fetch";
 import pLimit from "p-limit";
 import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
 import { notionAudioMarkdown } from "./scripts/notion-audio-transformer.mjs";
-import { installNotionApiRetry } from "./scripts/notion-api-retry.mjs";
+import { createNotionClient } from "./scripts/notion-api-retry.mjs";
 import {
   buildNotionFilter,
   contentFilename,
@@ -23,8 +22,7 @@ import {
 } from "./scripts/article-bundle-contract.mjs";
 
 /* ---------- 基本設定 ---------- */
-await installNotionApiRetry();
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
+const notion = createNotionClient({ auth: process.env.NOTION_TOKEN, transportLabel: "sync" });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 n2m.setCustomTransformer("video", notionVideoMarkdown);
 n2m.setCustomTransformer("audio", notionAudioMarkdown);
