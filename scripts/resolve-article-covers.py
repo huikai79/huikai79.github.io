@@ -16,9 +16,7 @@ REPORT_PATH = ROOT / ".notion-sync-report.json"
 MANIFEST_PATH = ROOT / ".notion-sync-manifest.json"
 IMAGE_EXTENSIONS = {".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"}
 MARKDOWN_IMAGE_RE = re.compile(r'!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
-FALLBACK_FILENAME = "cover-fallback.png"
-FALLBACK_WIDTH = 1600
-FALLBACK_HEIGHT = 900
+LEGACY_FALLBACK_FILENAME = "cover-fallback.png"
 SOCIAL_FALLBACK_FILENAME = "social-preview.png"
 SOCIAL_FALLBACK_WIDTH = 1200
 SOCIAL_FALLBACK_HEIGHT = 630
@@ -34,30 +32,23 @@ PALETTES = (
 
 def directory_hash(directory: Path) -> str:
     digest = hashlib.sha256()
-
-    def walk(current: Path, relative_base: Path = Path()) -> None:
-        for entry in sorted(current.iterdir(), key=lambda item: item.name):
-            relative = relative_base / entry.name
-            if entry.is_dir():
-                walk(entry, relative)
-            elif entry.is_file():
-                digest.update(relative.as_posix().encode("utf-8"))
-                digest.update(b"\0")
-                digest.update(entry.read_bytes())
-                digest.update(b"\0")
-
-    walk(directory)
+    for entry in sorted(directory.rglob("*"), key=lambda item: item.relative_to(directory).as_posix()):
+        if not entry.is_file():
+            continue
+        relative = entry.relative_to(directory).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(entry.read_bytes())
+        digest.update(b"\0")
     return digest.hexdigest()
 
 
 def front_matter_bounds(lines: list[str], path: Path) -> tuple[int, int]:
     if not lines or lines[0] != "---":
         raise RuntimeError(f"{path.relative_to(ROOT)}: missing opening front matter delimiter")
-
     closing = next((index for index, line in enumerate(lines[1:], start=1) if line == "---"), None)
     if closing is None:
         raise RuntimeError(f"{path.relative_to(ROOT)}: missing closing front matter delimiter")
-
     return 0, closing
 
 
@@ -93,6 +84,15 @@ def front_matter_list(front_lines: list[str], key: str) -> list[str] | None:
     return None
 
 
+def remove_front_matter_key(lines: list[str], closing: int, key: str) -> tuple[int, bool]:
+    prefix = f"{key}:"
+    for index in range(1, closing):
+        if lines[index].startswith(prefix):
+            lines.pop(index)
+            return closing - 1, True
+    return closing, False
+
+
 def set_front_matter_list(lines: list[str], closing: int, key: str, values: list[str]) -> tuple[int, bool]:
     prefix = f"{key}:"
     replacement = f"{key}: {json.dumps(values, ensure_ascii=False)}"
@@ -103,7 +103,6 @@ def set_front_matter_list(lines: list[str], closing: int, key: str, values: list
             return closing, False
         lines[index] = replacement
         return closing, True
-
     lines.insert(closing, replacement)
     return closing + 1, True
 
@@ -111,18 +110,14 @@ def set_front_matter_list(lines: list[str], closing: int, key: str, values: list
 def local_raster_reference(reference: str | None, bundle: Path) -> str | None:
     if not reference or "://" in reference or reference.startswith(("/", "#", "data:")):
         return None
-
     relative = Path(reference)
     if relative.suffix.lower() not in IMAGE_EXTENSIONS or ".." in relative.parts:
         return None
-
-    bundle_root = bundle.resolve()
     candidate = (bundle / relative).resolve()
     try:
-        candidate.relative_to(bundle_root)
+        candidate.relative_to(bundle.resolve())
     except ValueError:
         return None
-
     return relative.as_posix() if candidate.is_file() else None
 
 
@@ -134,6 +129,12 @@ def first_local_markdown_image(body: str, bundle: Path) -> str | None:
     return None
 
 
+def is_legacy_promoted_body_cover(cover: str | None, first_body_image: str | None) -> bool:
+    if not cover or not first_body_image or cover != first_body_image:
+        return False
+    return bool(re.fullmatch(r"image-\d+\.[A-Za-z0-9]+", Path(cover).name))
+
+
 def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
     payload = chunk_type + data
     return (
@@ -143,43 +144,9 @@ def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
     )
 
 
-def procedural_cover_png(page_id: str, slug: str, title: str) -> bytes:
-    seed = hashlib.sha256(f"{page_id}\0{slug}\0{title}".encode("utf-8")).digest()
-    background, accent, highlight = PALETTES[seed[0] % len(PALETTES)]
-
-    band_gap = 420 + seed[2] % 240
-    band_width = 90 + seed[1] % 150
-    slope = 1 + seed[3] % 3
-    offset = seed[4] % (FALLBACK_WIDTH + band_gap)
-    horizon = 520 + seed[5] % 180
-
-    raw = bytearray()
-    for y in range(FALLBACK_HEIGHT):
-        raw.append(0)
-        row = bytearray()
-        for x in range(FALLBACK_WIDTH):
-            color = background
-            diagonal = (x + slope * y + offset) % band_gap
-            if diagonal < band_width:
-                color = accent
-            if y > horizon and ((x // 160) + (y // 90) + seed[6]) % 5 == 0:
-                color = highlight
-            row.extend(color)
-        raw.extend(row)
-
-    ihdr = struct.pack(">IIBBBBB", FALLBACK_WIDTH, FALLBACK_HEIGHT, 8, 2, 0, 0, 0)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + png_chunk(b"IHDR", ihdr)
-        + png_chunk(b"IDAT", zlib.compress(bytes(raw), level=9))
-        + png_chunk(b"IEND", b"")
-    )
-
-
 def procedural_social_png(page_id: str, slug: str, title: str) -> bytes:
     seed = hashlib.sha256(f"social-preview\0{page_id}\0{slug}\0{title}".encode("utf-8")).digest()
     background, accent, highlight = PALETTES[seed[0] % len(PALETTES)]
-
     band_gap = 330 + seed[2] % 190
     band_width = 70 + seed[1] % 120
     slope = 1 + seed[3] % 3
@@ -223,12 +190,12 @@ def manifest_source(page_id: str, entry: dict) -> tuple[str, str, Path, Path]:
 
 def main() -> None:
     if not REPORT_PATH.is_file():
-        print("Cover resolution: SKIP (no fresh Notion sync report)")
+        print("Article presentation resolution: SKIP (no fresh Notion sync report)")
         return
 
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     if report.get("status") != "complete":
-        raise RuntimeError("Notion sync report is not complete; refusing cover resolution")
+        raise RuntimeError("Notion sync report is not complete; refusing presentation resolution")
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     manifest_pages = manifest.get("pages")
@@ -255,128 +222,86 @@ def main() -> None:
         text = index_path.read_text(encoding="utf-8", errors="strict").replace("\r\n", "\n")
         lines = text.split("\n")
         _, closing = front_matter_bounds(lines, index_path)
+        body = "\n".join(lines[closing + 1:])
+        first_body_image = first_local_markdown_image(body, bundle)
         front_lines = lines[1:closing]
         cover = front_matter_value(front_lines, "cover")
-        fallback_path = bundle / FALLBACK_FILENAME
+        changed = False
+
+        if cover == LEGACY_FALLBACK_FILENAME or is_legacy_promoted_body_cover(cover, first_body_image):
+            old_cover = cover
+            closing, removed = remove_front_matter_key(lines, closing, "cover")
+            changed = changed or removed
+            cover = None
+            print(f"🧹 移除舊自動 Hero {slug} [{bundle_path}]: {old_cover}")
+
+        legacy_fallback_path = bundle / LEGACY_FALLBACK_FILENAME
+        if legacy_fallback_path.is_file():
+            legacy_fallback_path.unlink()
+            changed = True
+            print(f"🧹 移除舊程序化 Hero {slug} [{bundle_path}]: {LEGACY_FALLBACK_FILENAME}")
+
+        front_lines = lines[1:closing]
+        images = front_matter_list(front_lines, "images") or []
         social_fallback_path = bundle / SOCIAL_FALLBACK_FILENAME
-        body = "\n".join(lines[closing + 1:])
+        explicit_social = next(
+            (
+                reference
+                for image in images
+                if (reference := local_raster_reference(image, bundle))
+                and reference not in {LEGACY_FALLBACK_FILENAME, first_body_image}
+            ),
+            None,
+        )
 
-        if cover and cover != FALLBACK_FILENAME:
-            images = front_matter_list(front_lines, "images") or []
-            existing_social = next(
-                (reference for image in images if (reference := local_raster_reference(image, bundle))),
-                None,
-            )
-
-            if existing_social:
-                if social_fallback_path.is_file() and existing_social != SOCIAL_FALLBACK_FILENAME:
-                    social_fallback_path.unlink()
-                    touched.add(page_id)
-                    print(f"🧹 移除舊 Social Preview fallback {slug} [{bundle_path}]: {SOCIAL_FALLBACK_FILENAME}")
-                if fallback_path.is_file():
-                    fallback_path.unlink()
-                    touched.add(page_id)
-                    print(f"🧹 移除舊 fallback 封面 {slug} [{bundle_path}]: {FALLBACK_FILENAME}")
-                continue
-
-            social_image = local_raster_reference(cover, bundle)
-            social_strategy = "explicit-raster-cover"
-            if not social_image:
-                social_image = first_local_markdown_image(body, bundle)
-                social_strategy = "first-localized-markdown-image"
-
-            if not social_image:
-                title = front_matter_value(front_lines, "title") or slug
-                expected = procedural_social_png(page_id, slug, title)
-                if not social_fallback_path.is_file() or social_fallback_path.read_bytes() != expected:
-                    social_fallback_path.write_bytes(expected)
-                    touched.add(page_id)
-                social_image = SOCIAL_FALLBACK_FILENAME
-                social_strategy = "deterministic-social-preview-png"
-            elif social_fallback_path.is_file() and social_image != SOCIAL_FALLBACK_FILENAME:
+        raster_cover = local_raster_reference(cover, bundle)
+        if explicit_social:
+            social_image = explicit_social
+            social_strategy = "explicit-raster-images"
+            if social_fallback_path.is_file() and social_image != SOCIAL_FALLBACK_FILENAME:
                 social_fallback_path.unlink()
-                touched.add(page_id)
+                changed = True
+        elif raster_cover:
+            social_image = raster_cover
+            social_strategy = "explicit-raster-cover"
+            if social_fallback_path.is_file() and social_image != SOCIAL_FALLBACK_FILENAME:
+                social_fallback_path.unlink()
+                changed = True
+        else:
+            title = front_matter_value(lines[1:closing], "title") or slug
+            expected = procedural_social_png(page_id, slug, title)
+            if not social_fallback_path.is_file() or social_fallback_path.read_bytes() != expected:
+                social_fallback_path.write_bytes(expected)
+                changed = True
+            social_image = SOCIAL_FALLBACK_FILENAME
+            social_strategy = "deterministic-social-preview-png"
 
-            closing, images_changed = set_front_matter_list(lines, closing, "images", [social_image])
-            if images_changed:
-                index_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-                touched.add(page_id)
+        closing, images_changed = set_front_matter_list(lines, closing, "images", [social_image])
+        changed = changed or images_changed
 
-            if fallback_path.is_file():
-                fallback_path.unlink()
-                touched.add(page_id)
-                print(f"🧹 移除舊 fallback 封面 {slug} [{bundle_path}]: {FALLBACK_FILENAME}")
-
-            resolved.append({
-                "pageId": page_id,
-                "slug": slug,
-                "bundlePath": bundle_path,
-                "cover": cover,
-                "socialImage": social_image,
-                "strategy": social_strategy,
-            })
-            print(f"🌐 Social Preview {slug} [{bundle_path}]: {social_image} ({social_strategy})")
-            continue
-
-        if social_fallback_path.is_file():
-            social_fallback_path.unlink()
-            touched.add(page_id)
-            print(f"🧹 移除舊 Social Preview fallback {slug} [{bundle_path}]: {SOCIAL_FALLBACK_FILENAME}")
-
-        image = first_local_markdown_image(body, bundle)
-
-        if not cover and image:
-            additions = [f"cover: {json.dumps(image, ensure_ascii=False)}"]
-            if front_matter_value(front_lines, "images") is None:
-                additions.append(f"images: [{json.dumps(image, ensure_ascii=False)}]")
-            lines[closing:closing] = additions
+        if changed:
             index_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-            if fallback_path.is_file():
-                fallback_path.unlink()
             touched.add(page_id)
-            resolved.append({
-                "pageId": page_id,
-                "slug": slug,
-                "bundlePath": bundle_path,
-                "cover": image,
-                "strategy": "first-localized-markdown-image",
-            })
-            print(f"🖼️  自動封面（內文首圖） {slug} [{bundle_path}]: {image}")
-            continue
 
-        if not cover or cover == FALLBACK_FILENAME:
-            title = front_matter_value(front_lines, "title") or slug
-            expected = procedural_cover_png(page_id, slug, title)
-            if not fallback_path.is_file() or fallback_path.read_bytes() != expected:
-                fallback_path.write_bytes(expected)
-                touched.add(page_id)
-
-            additions: list[str] = []
-            if not cover:
-                additions.append(f"cover: {json.dumps(FALLBACK_FILENAME)}")
-            if front_matter_value(front_lines, "images") is None:
-                additions.append(f"images: [{json.dumps(FALLBACK_FILENAME)}]")
-
-            if additions:
-                lines[closing:closing] = additions
-                index_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-                touched.add(page_id)
-
-            resolved.append({
-                "pageId": page_id,
-                "slug": slug,
-                "bundlePath": bundle_path,
-                "cover": FALLBACK_FILENAME,
-                "strategy": "deterministic-procedural-png",
-            })
-            print(f"🎨 自動封面（程序化 fallback） {slug} [{bundle_path}]: {FALLBACK_FILENAME}")
+        resolved.append({
+            "pageId": page_id,
+            "slug": slug,
+            "bundlePath": bundle_path,
+            "hero": cover or "",
+            "heroStrategy": "explicit-cover" if cover else "no-hero",
+            "socialImage": social_image,
+            "socialStrategy": social_strategy,
+        })
+        print(
+            f"🧭 Article presentation {slug} [{bundle_path}]: "
+            f"hero={cover or 'none'}, social={social_image} ({social_strategy})"
+        )
 
     if touched:
         for page_id in sorted(touched):
             entry = manifest_pages[page_id]
             _, _, bundle, _ = manifest_source(page_id, entry)
             entry["bundleHash"] = directory_hash(bundle)
-
         MANIFEST_PATH.write_text(
             f"{json.dumps(manifest, ensure_ascii=False, indent=2)}\n",
             encoding="utf-8",
@@ -386,8 +311,8 @@ def main() -> None:
     report["coverResolution"] = {
         "status": "complete",
         "strategy": (
-            "hero: explicit-cover > first-localized-markdown-image > deterministic-procedural-png; "
-            "social: existing-raster-images > raster-cover > first-localized-markdown-image > deterministic-social-preview-png"
+            "hero: explicit-cover-or-none; "
+            "social: explicit-raster-images > explicit-raster-cover > deterministic-social-preview-png"
         ),
         "resolved": resolved,
     }
@@ -397,7 +322,7 @@ def main() -> None:
         newline="\n",
     )
 
-    print(f"Cover resolution: PASS ({len(resolved)} article(s) resolved/verified)")
+    print(f"Article presentation resolution: PASS ({len(resolved)} article(s) resolved/verified)")
 
 
 if __name__ == "__main__":
