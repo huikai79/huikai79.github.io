@@ -20,10 +20,38 @@ assert.equal(
   "uploaded MP4 must become a gateway shortcode containing only its Notion block ID"
 );
 
+for (const url of [
+  "https://www.youtube.com/watch?v=-6HOdHEeosc",
+  "https://youtu.be/-6HOdHEeosc?t=90",
+  "https://www.youtube.com/embed/-6HOdHEeosc",
+  "https://www.youtube.com/shorts/-6HOdHEeosc",
+  "https://www.youtube.com/live/-6HOdHEeosc?feature=share"
+]) {
+  assert.equal(
+    notionVideoMarkdown({ id: blockId, type: "video", video: { type: "external", external: { url } } }),
+    "{{< youtube -6HOdHEeosc >}}",
+    `external YouTube video block must become a YouTube shortcode: ${url}`
+  );
+}
+
 assert.equal(
-  notionVideoMarkdown({ id: blockId, type: "video", video: { type: "external", external: { url: "https://example.com/video.mp4" } } }),
+  notionVideoMarkdown({
+    id: blockId,
+    type: "video",
+    video: { type: "external", external: { url: "https://example.com/video.mp4" } }
+  }),
   false,
-  "external videos must retain notion-to-md default handling"
+  "non-YouTube external videos must retain notion-to-md default handling"
+);
+
+assert.equal(
+  notionVideoMarkdown({
+    id: blockId,
+    type: "video",
+    video: { type: "external", external: { url: "https://youtube.com.evil.example/watch?v=-6HOdHEeosc" } }
+  }),
+  false,
+  "lookalike YouTube hosts must not be accepted"
 );
 
 assert.throws(
