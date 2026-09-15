@@ -3,16 +3,14 @@ from __future__ import annotations
 
 import json
 import os
-import struct
+import re
 from pathlib import Path
 
 ROOT = Path(os.environ.get("SITE_ROOT", Path(__file__).resolve().parents[1])).resolve()
 STRICT = os.environ.get("STRICT_CONTENT") == "1"
 REPORT_PATH = ROOT / ".notion-sync-report.json"
-FALLBACK_FILENAME = "cover-fallback.png"
-FALLBACK_WIDTH = 1600
-FALLBACK_HEIGHT = 900
-PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+LEGACY_FALLBACK_FILENAME = "cover-fallback.png"
+MARKDOWN_IMAGE_RE = re.compile(r'!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
 errors: list[str] = []
 warnings: list[str] = []
 
@@ -49,7 +47,7 @@ def front_matter_list(front_lines: list[str], key: str) -> list[str] | None:
     return None
 
 
-def completed_cover_resolution() -> bool:
+def completed_presentation_resolution() -> bool:
     if not REPORT_PATH.is_file():
         return False
     try:
@@ -68,7 +66,12 @@ def article_sources() -> list[Path]:
     return sorted((ROOT / "content" / "posts").glob("*/index*.md"))
 
 
-require_cover = completed_cover_resolution()
+def first_body_image(body: str) -> str | None:
+    match = MARKDOWN_IMAGE_RE.search(body)
+    return match.group(1) if match else None
+
+
+presentation_resolved = completed_presentation_resolution()
 sources = article_sources()
 
 for path in sources:
@@ -93,8 +96,6 @@ for path in sources:
         problems.append(
             f"formats taxonomy must mirror entryType exactly: entryType={entry_type!r}, formats={formats!r}"
         )
-    if require_cover and not cover:
-        problems.append("cover is missing after completed cover resolution")
 
     if cover:
         cover_path = Path(cover)
@@ -103,23 +104,24 @@ for path in sources:
             problems.append("cover must reference a local file inside the article bundle")
         elif not resolved_cover.is_file():
             problems.append(f"cover resource is missing: {cover}")
-        elif cover == FALLBACK_FILENAME:
-            data = resolved_cover.read_bytes()
-            if len(data) < 24 or data[:8] != PNG_SIGNATURE:
-                problems.append("deterministic fallback cover is not a valid PNG")
-            else:
-                width, height = struct.unpack(">II", data[16:24])
-                if (width, height) != (FALLBACK_WIDTH, FALLBACK_HEIGHT):
-                    problems.append(
-                        "deterministic fallback cover has invalid dimensions: "
-                        f"{width}x{height}"
-                    )
+        if presentation_resolved and cover == LEGACY_FALLBACK_FILENAME:
+            problems.append("legacy procedural Hero fallback remains after presentation resolution")
 
-    body = lines[(closing + 1) if closing is not None else 1:]
-    first_content = next((line for line in body if line.strip()), "")
+    body_lines = lines[(closing + 1) if closing is not None else 1:]
+    body = "\n".join(body_lines)
+    first_image = first_body_image(body)
+    if (
+        presentation_resolved
+        and cover
+        and first_image == cover
+        and re.fullmatch(r"image-\d+\.[A-Za-z0-9]+", Path(cover).name)
+    ):
+        problems.append("first body image remains auto-promoted as Hero after presentation resolution")
+
+    first_content = next((line for line in body_lines if line.strip()), "")
     if first_content.startswith("# "):
         problems.append("body starts with H1; article template owns the document H1")
-    if any(line.strip() == "undefined" for line in body):
+    if any(line.strip() == "undefined" for line in body_lines):
         problems.append("standalone converter sentinel 'undefined' remains in source")
 
     if problems:
@@ -139,6 +141,6 @@ if errors:
 
 print(
     "Source contract verification: PASS "
-    f"({len(sources)} articles checked"
-    f", cover requirement={'on' if require_cover else 'off'})"
+    f"({len(sources)} articles checked, Hero=optional"
+    f", presentation={'resolved' if presentation_resolved else 'unresolved'})"
 )
