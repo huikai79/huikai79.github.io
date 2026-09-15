@@ -6,9 +6,7 @@ on:
       - main
     paths:
       - "sync.mjs"
-      - "sync-impl.mjs"
       - "scripts/check-notion-publication-contract.mjs"
-      - "scripts/check-notion-publication-contract-impl.mjs"
       - "scripts/notion-api-retry.mjs"
       - "scripts/test-notion-api-retry.mjs"
       - ".github/workflows/notion-retry-validation.yml"
@@ -42,9 +40,7 @@ jobs:
           node scripts/test-notion-api-retry.mjs
           node --check scripts/notion-api-retry.mjs
           node --check sync.mjs
-          node --check sync-impl.mjs
           node --check scripts/check-notion-publication-contract.mjs
-          node --check scripts/check-notion-publication-contract-impl.mjs
           node --input-type=module <<'NODE'
           import { Client } from "@notionhq/client";
           import { installNotionApiRetry } from "./scripts/notion-api-retry.mjs";
