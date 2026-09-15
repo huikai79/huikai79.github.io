@@ -9,6 +9,10 @@ import pLimit from "p-limit";
 import { notionVideoMarkdown } from "./scripts/notion-video-transformer.mjs";
 import { notionAudioMarkdown } from "./scripts/notion-audio-transformer.mjs";
 import {
+  assertMarkdownBodySafe,
+  notionDividerMarkdown
+} from "./scripts/notion-markdown-contract.mjs";
+import {
   buildNotionFilter,
   contentFilename,
   editorialFrontMatter,
@@ -26,6 +30,7 @@ const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 n2m.setCustomTransformer("video", notionVideoMarkdown);
 n2m.setCustomTransformer("audio", notionAudioMarkdown);
+n2m.setCustomTransformer("divider", notionDividerMarkdown);
 
 const DB_ID = process.env.NOTION_DATABASE_ID;
 const OUT_DIR = "content/posts";
@@ -87,6 +92,7 @@ async function generatorHash() {
     new URL(import.meta.url),
     new URL("./scripts/notion-video-transformer.mjs", import.meta.url),
     new URL("./scripts/notion-audio-transformer.mjs", import.meta.url),
+    new URL("./scripts/notion-markdown-contract.mjs", import.meta.url),
     new URL("./scripts/notion-content-contract.mjs", import.meta.url),
     new URL("./scripts/article-bundle-contract.mjs", import.meta.url)
   ]) {
@@ -394,12 +400,10 @@ async function buildArticle(candidate) {
   }
 
   const mdBlocks = await n2m.pageToMarkdown(page.id);
-  let mdBody = n2m.toMarkdownString(mdBlocks).parent.replace(
-    /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})\S*/g,
-    (_m, id) => `{{< youtube ${id} >}}`
-  );
+  let mdBody = n2m.toMarkdownString(mdBlocks).parent;
   mdBody = normalizeMarkdownBody(mdBody);
   mdBody = await localizeMarkdownImages(mdBody, bundle);
+  assertMarkdownBodySafe(mdBody, `${candidateLanguage(candidate)}/posts/${slug}`);
 
   const productionFields = SYNC_MODE === "production"
     ? editorialFrontMatter({ title, slug, date, ...candidate.editorial })
