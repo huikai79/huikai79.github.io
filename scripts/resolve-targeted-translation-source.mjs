@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { appendFile } from "node:fs/promises";
-import { Client } from "@notionhq/client";
+import { createNotionClient } from "./notion-api-retry.mjs";
 import { extractEditorialFields } from "./notion-content-contract.mjs";
 import { buildTranslationCandidateFilter, translationReadinessIssues } from "./translation-readiness-contract.mjs";
 import { approvedTranslationSourceSelection, normalizeTranslationSourcePageId } from "./translation-source-selection-contract.mjs";
@@ -19,7 +19,7 @@ if (!selectedSourcePageId) {
   process.exit(0);
 }
 
-const notion = new Client({ auth: token });
+const notion = createNotionClient({ auth: token, transportLabel: "translation-source-resolution" });
 const page = await notion.pages.retrieve({ page_id: selectedSourcePageId });
 const properties = page.properties ?? {};
 const title = properties.Title?.title?.map(item => item.plain_text).join("").trim() ?? "";

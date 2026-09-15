@@ -1,0 +1,73 @@
+name: "Notion API transport validation"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "sync.mjs"
+      - "scripts/check-notion-publication-contract.mjs"
+      - "scripts/check-notion-staged-page.mjs"
+      - "scripts/enrich-notion-metadata.mjs"
+      - "scripts/generate-translation-drafts.mjs"
+      - "scripts/resolve-targeted-translation-source.mjs"
+      - "scripts/external-source-ingest.mjs"
+      - "scripts/notion-api-retry.mjs"
+      - "scripts/test-notion-api-retry.mjs"
+      - ".github/workflows/notion-retry-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notion-api-transport-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Install locked Notion dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify pacing, retry policy and pinned SDK integration
+        run: |
+          node scripts/test-notion-api-retry.mjs
+          node --check scripts/notion-api-retry.mjs
+          node --check sync.mjs
+          node --check scripts/check-notion-publication-contract.mjs
+          node --check scripts/check-notion-staged-page.mjs
+          node --check scripts/enrich-notion-metadata.mjs
+          node --check scripts/generate-translation-drafts.mjs
+          node --check scripts/resolve-targeted-translation-source.mjs
+          node --check scripts/external-source-ingest.mjs
+
+      - name: Verify Node Notion API consumers own the shared transport
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          transport_owner = Path("scripts/notion-api-retry.mjs")
+          consumers = []
+          for path in [Path("sync.mjs"), *Path("scripts").glob("*.mjs")]:
+              if path == transport_owner:
+                  continue
+              text = path.read_text(encoding="utf-8")
+              if 'from "@notionhq/client"' in text or "from '@notionhq/client'" in text:
+                  consumers.append(str(path))
+          if consumers:
+              raise SystemExit(
+                  "Direct @notionhq/client imports bypass the shared transport: " + ", ".join(sorted(consumers))
+              )
+          print("Node Notion transport ownership: PASS")
+          PY

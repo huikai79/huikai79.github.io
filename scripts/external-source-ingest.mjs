@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { Client } from "@notionhq/client";
 import dns from "node:dns/promises";
 import http from "node:http";
 import https from "node:https";
 import fs from "node:fs/promises";
+import { createNotionClient } from "./notion-api-retry.mjs";
 import {
   INGESTION_STATUS,
   MAX_HTML_BYTES,
@@ -24,7 +24,7 @@ const timeoutMs = Number(process.env.INGESTION_TIMEOUT_MS || 15000);
 if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
 
-const notion = new Client({ auth: token });
+const notion = createNotionClient({ auth: token, transportLabel: "external-source-ingest" });
 
 function titleValue(properties = {}) {
   return properties.Title?.title?.map(item => item.plain_text).join("").trim() ?? "";

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
 import fs from "node:fs/promises";
+import { createNotionClient } from "./notion-api-retry.mjs";
 import {
   editorialFrontMatter,
   extractEditorialFields,
@@ -17,7 +17,7 @@ const reportPath = process.argv[3] || "/tmp/notion-staged-page-contract.json";
 if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!pageId) throw new Error("Staged Notion page ID 未設定");
 
-const notion = new Client({ auth: token });
+const notion = createNotionClient({ auth: token, transportLabel: "staged-page-contract" });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 const page = await notion.pages.retrieve({ page_id: pageId });
 const props = page.properties ?? {};
