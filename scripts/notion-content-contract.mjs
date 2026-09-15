@@ -79,10 +79,6 @@ function urlValue(property) {
   return String(property?.url || "").trim();
 }
 
-function dateValue(property) {
-  return String(property?.date?.start || "").trim();
-}
-
 export function extractEditorialFields(properties = {}) {
   const translationSourceIds = relationIds(properties["Translation Source"]);
   const explicitTranslationStatus = selectValue(properties["Translation Status"]);
@@ -98,8 +94,6 @@ export function extractEditorialFields(properties = {}) {
     language: selectValue(properties.Language),
     source: richTextValue(properties.Source),
     sourceUrl: urlValue(properties["Source URL"]),
-    sourcePublishedAt: dateValue(properties["Source Published At"]),
-    rightsStatus: selectValue(properties["Rights Status"]),
     translationGroup: explicitTranslationGroup || slug,
     translateTo: multiSelectValues(properties["Translate To"]),
     translationStatus: explicitTranslationStatus || (translationSourceIds.length === 0 ? "Source" : ""),
@@ -217,8 +211,7 @@ export function editorialFrontMatter(candidate = {}) {
     contentLanguage: candidate.language,
     translationKey: candidate.translationGroup,
     sourceLabel: candidate.source || "",
-    sourceURL: candidate.sourceUrl || "",
-    sourcePublishedAt: candidate.sourcePublishedAt || ""
+    sourceURL: candidate.sourceUrl || ""
   };
 }
 
