@@ -17,7 +17,7 @@ export function firstMarkdownImage(markdown = "") {
   return null;
 }
 
-function plainBodyExcerpt(markdown = "", maxLength = 420) {
+export function plainBodyExcerpt(markdown = "", maxLength = 420) {
   const plain = String(markdown)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
