@@ -57,8 +57,11 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
+          transport_owner = Path("scripts/notion-api-retry.mjs")
           consumers = []
           for path in [Path("sync.mjs"), *Path("scripts").glob("*.mjs")]:
+              if path == transport_owner:
+                  continue
               text = path.read_text(encoding="utf-8")
               if 'from "@notionhq/client"' in text or "from '@notionhq/client'" in text:
                   consumers.append(str(path))
