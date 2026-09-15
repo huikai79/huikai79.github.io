@@ -11,7 +11,7 @@ spec = importlib.util.spec_from_file_location("apply_editorial_metadata", MODULE
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-add_or_replace_lastmod = module.add_or_replace_lastmod
+remove_lastmod = module.remove_lastmod
 apply = module.apply
 
 SAMPLE = """---
@@ -23,10 +23,25 @@ slug: \"sample\"
 Body.
 """
 
-rewritten, changed = add_or_replace_lastmod(SAMPLE, "2026-09-10T01:02:03.000Z")
+SAMPLE_WITH_LASTMOD = """---
+title: \"Sample\"
+date: \"2026-09-01\"
+lastmod: \"2026-09-10T01:02:03.000Z\"
+slug: \"sample\"
+---
+
+Body.
+"""
+
+unchanged, changed = remove_lastmod(SAMPLE)
+assert not changed
+assert unchanged == SAMPLE
+
+rewritten, changed = remove_lastmod(SAMPLE_WITH_LASTMOD)
 assert changed
-assert 'date: "2026-09-01"\nlastmod: "2026-09-10T01:02:03.000Z"' in rewritten
-rewritten_again, changed_again = add_or_replace_lastmod(rewritten, "2026-09-10T01:02:03.000Z")
+assert "lastmod:" not in rewritten
+assert 'date: "2026-09-01"\nslug: "sample"' in rewritten
+rewritten_again, changed_again = remove_lastmod(rewritten)
 assert not changed_again
 assert rewritten_again == rewritten
 
@@ -36,7 +51,7 @@ with tempfile.TemporaryDirectory() as raw:
     bundle = posts / "sample"
     bundle.mkdir(parents=True)
     source = bundle / "index.md"
-    source.write_text(SAMPLE, encoding="utf-8")
+    source.write_text(SAMPLE_WITH_LASTMOD, encoding="utf-8")
     manifest = root / "manifest.json"
     manifest.write_text(json.dumps({
         "version": 2,
@@ -53,9 +68,11 @@ with tempfile.TemporaryDirectory() as raw:
 
     changed_count, total = apply(manifest, posts)
     assert (changed_count, total) == (1, 1)
+    assert "lastmod:" not in source.read_text(encoding="utf-8")
     state = json.loads(manifest.read_text(encoding="utf-8"))
+    assert state["pages"]["11111111-1111-4111-8111-111111111111"]["lastEditedTime"] == "2026-09-10T01:02:03.000Z"
     assert state["pages"]["11111111-1111-4111-8111-111111111111"]["bundleHash"] != "old"
     changed_count, total = apply(manifest, posts)
     assert (changed_count, total) == (0, 1)
 
-print("Editorial metadata projection tests: PASS")
+print("Editorial metadata normalization tests: PASS")
