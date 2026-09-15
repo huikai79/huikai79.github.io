@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { Client } from "@notionhq/client";
 import { NotionToMarkdown } from "notion-to-md";
 import fs from "node:fs/promises";
+import { createNotionClient } from "./notion-api-retry.mjs";
 import { extractOpenAIOutputText } from "./translation-draft-contract.mjs";
 import {
   aiMetadataMissing,
@@ -24,7 +24,7 @@ const maxPages = Math.max(1, Number.parseInt(process.env.METADATA_ENRICHMENT_MAX
 if (!token) throw new Error("NOTION_TOKEN 未設定");
 if (!databaseId) throw new Error("NOTION_DATABASE_ID 未設定");
 
-const notion = new Client({ auth: token });
+const notion = createNotionClient({ auth: token, transportLabel: "metadata-enrichment" });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 
 function titleValue(properties = {}) {
