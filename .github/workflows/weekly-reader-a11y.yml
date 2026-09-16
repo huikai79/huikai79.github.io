@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
+      - "scripts/verify-post-preview-geometry.mjs"
       - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-comments-admin.mjs"
       - "scripts/verify-toc-behavior.mjs"
@@ -49,6 +50,7 @@ on:
     paths:
       - ".github/workflows/weekly-reader-a11y.yml"
       - "scripts/weekly-reader-a11y-qa.mjs"
+      - "scripts/verify-post-preview-geometry.mjs"
       - "scripts/verify-comments-integration.mjs"
       - "scripts/verify-comments-admin.mjs"
       - "scripts/verify-toc-behavior.mjs"
@@ -231,6 +233,9 @@ jobs:
 
       - name: Run cross-browser accessibility QA
         run: node scripts/weekly-reader-a11y-qa.mjs
+
+      - name: Verify post preview geometry and related-reading rhythm
+        run: node scripts/verify-post-preview-geometry.mjs
 
       - name: Verify TOC responsive and sticky behavior
         run: node scripts/verify-toc-behavior.mjs
