@@ -38,6 +38,13 @@ build:
 - PR #160 合并后建立正式 main commit `c30ada37427c94dbe2ee885db7c8d056e09e167a`；validator run `35048246718` 重新以最新 Notion production state 验证同一 SHA，没有建立第二个同步 commit；deployer run `35048353655` 随后精确构建并部署 `c30ada…` 到 GitHub Pages。
 - 正式 deployment 后的 live-reader QA 再次通过文章阅读、TOC、CJK 长文、回到顶部与首页入口等行为。Cloudflare purge 目前未配置，因此该步骤未执行；但 Pages deployment 与 live production 验证均成功。
 
+### Changed-route live QA 与 publication rights advisory
+
+- PR #161 补上 exact-commit changed-route production QA：由实际部署 commit diff 推导受影响的 zh-TW／zh-CN 文章路由，桌面与手机分别检查 HTTP、route、H1、正文、overflow 与 broken image；删除路由也会验证不得残留 2xx。
+- 把两个曾实际出现的内容语义错误升级为 live regression：`/posts/menulis-dalam-masyarakat-rencam/` 必须保留正常段落／divider、不得产生误判 H2／TOC；`/posts/writing-advice/` 的普通 YouTube URL 必须保持 hyperlink，不得转成对应 iframe。
+- Notion 新增独立 `Source Use` select（`Original / Reference`、`Excerpt`、`Translation`、`Republication`、`Adaptation`），publication contract 会和 `Rights Status`、source-rights registry 一起产生可追溯 evidence。迁移阶段 rights 缺口维持 non-blocking advisory；首次 production contract 显示 27 笔正式内容中 25 笔仍缺 `Source Use`、需要后续整理，这是 metadata completeness 问题，不代表已完成权利判定。
+- PR #161 merge commit `ae05e95ed300c51c23abf49ac9607ca1375c11d6` 后，sync run `35049908935` 以最新 Notion production state 重建并验证 27／27 bundles；最终 material site change 为 false，但 generator contract 更新建立新的同步 state `737647709f32379453a40c2122cc30241a27b568`。deployment run `35050135863` 精确构建并部署 `737647…`，同一 run 的 changed-route QA、content-semantics regression、一般 live-reader、TOC、CJK 长文、回到顶部与首页入口验证全部通过。
+
 ## 2026-09-15｜文章图片契约、Notion 语义边界与 API 韧性补强
 
 ### Hero、Social Preview 与来源权利观测
