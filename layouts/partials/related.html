@@ -1,0 +1,37 @@
+{{/* HUIKAI related-reading override.
+     Related content is a continuation-of-reading surface, not a visual card
+     gallery. Keep every 0/1/2/3-result state complete with text alone. */}}
+{{ if .Params.showRelatedContent | default (.Site.Params.article.showRelatedContent | default false) }}
+  {{ $related := .Site.RegularPages.Related . | first .Site.Params.article.relatedContentLimit }}
+  {{ with $related }}
+    <h2 class="mb-4 mt-10 text-2xl font-extrabold">{{ i18n "article.related_articles" | emojify }}</h2>
+    <section class="related-reading-list divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-700 dark:border-neutral-700">
+      {{ range . }}
+        <article class="related-reading-item py-5">
+          <header>
+            <a
+              {{ with .Params.externalUrl }}
+                href="{{ . }}" target="_blank" rel="external noopener noreferrer"
+              {{ else }}
+                href="{{ .RelPermalink }}"
+              {{ end }}
+              class="not-prose inline-flex min-h-11 items-center text-lg font-bold text-neutral-800 decoration-primary-500 hover:underline hover:underline-offset-4 dark:text-neutral">
+              {{ .Title | emojify }}
+              {{ if .Params.externalUrl }}
+                <span class="align-top text-xs text-neutral-400 dark:text-neutral-500" aria-hidden="true">&#8599;</span>
+              {{ end }}
+            </a>
+          </header>
+          <div class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            {{ partial "article-meta/basic.html" . }}
+          </div>
+          {{ with .Description }}
+            <p class="related-reading-summary mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
+              {{ . | plainify }}
+            </p>
+          {{ end }}
+        </article>
+      {{ end }}
+    </section>
+  {{ end }}
+{{ end }}
