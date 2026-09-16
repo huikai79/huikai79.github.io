@@ -94,6 +94,8 @@ export function extractEditorialFields(properties = {}) {
     language: selectValue(properties.Language),
     source: richTextValue(properties.Source),
     sourceUrl: urlValue(properties["Source URL"]),
+    sourceUse: selectValue(properties["Source Use"]),
+    rightsStatus: selectValue(properties["Rights Status"]),
     translationGroup: explicitTranslationGroup || slug,
     translateTo: multiSelectValues(properties["Translate To"]),
     translationStatus: explicitTranslationStatus || (translationSourceIds.length === 0 ? "Source" : ""),
