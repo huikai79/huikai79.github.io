@@ -122,8 +122,7 @@
       {{ partial "article-meta/basic.html" . }}
     </div>
     {{ if $isPost }}
-      {{ $summary := .Description | default (.Summary | plainify) }}
-      {{ with $summary }}
+      {{ with .Description }}
         <div class="article-link__summary prose dark:prose-invert mt-1 max-w-none text-sm">
           {{ . | plainify }}
         </div>
