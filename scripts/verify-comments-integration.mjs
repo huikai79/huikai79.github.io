@@ -85,10 +85,31 @@ async function installHuikaiMocks(page, { submissions = [], comments = DEFAULT_C
 async function waitForHuikai(page) {
   const root=page.locator('.huikai-comments');
   await root.waitFor({ state:"visible", timeout:5000 });
-  await page.locator('.qa-turnstile').waitFor({ state:"attached", timeout:5000 });
   await page.waitForFunction(() => !document.querySelector('[data-comments-list]')?.hasAttribute('aria-busy'), { timeout:5000 });
-  await page.waitForFunction(() => Array.isArray(window.__qaTurnstileOptions) && window.__qaTurnstileOptions.length > 0, { timeout:5000 });
   return root;
+}
+
+async function readProgressiveState(page) {
+  return page.evaluate(() => {
+    const toggle=document.querySelector('[data-comments-compose-toggle]');
+    const composer=document.querySelector('[data-comments-composer]');
+    return {
+      expanded:toggle?.getAttribute('aria-expanded')||"",
+      composerHidden:composer?.hidden ?? false,
+      turnstileCount:document.querySelectorAll('.qa-turnstile').length,
+      optionCount:Array.isArray(window.__qaTurnstileOptions) ? window.__qaTurnstileOptions.length : 0,
+    };
+  });
+}
+
+function assertInitiallyCollapsed(state, name) {
+  if (state.expanded !== "false" || !state.composerHidden || state.turnstileCount !== 0 || state.optionCount !== 0) throw new Error(`HUIKAI progressive composer ${name} initial contract failed: ${JSON.stringify(state)}`);
+}
+
+async function waitForComposer(page) {
+  await page.locator('[data-comments-composer]').waitFor({ state:"visible", timeout:5000 });
+  await page.locator('.qa-turnstile').waitFor({ state:"attached", timeout:5000 });
+  await page.waitForFunction(() => Array.isArray(window.__qaTurnstileOptions) && window.__qaTurnstileOptions.length > 0, { timeout:5000 });
 }
 
 async function readHuikaiContract(page) {
@@ -157,12 +178,18 @@ async function verifyHuikaiPopulated(browser) {
       const actualDark=await ensureTheme(page,colorScheme,name);
       const root=await waitForHuikai(page);
       await page.locator('.huikai-comment').first().waitFor({ state:"visible", timeout:5000 });
-      const initial=await readHuikaiContract(page);
-      assertHuikaiBase(initial,name,"flexible");
+      const collapsed=await readProgressiveState(page);
+      assertInitiallyCollapsed(collapsed,name);
       const screenshot=path.join(OUTPUT_DIR,`comments-huikai-initial-${name}.png`);
       await root.screenshot({path:screenshot});
 
       await page.locator('.huikai-comment-group').first().locator('button').first().click();
+      await waitForComposer(page);
+      const initial=await readHuikaiContract(page);
+      assertHuikaiBase(initial,name,"flexible");
+      const expanded=await readProgressiveState(page);
+      if (expanded.expanded !== "true" || expanded.composerHidden || expanded.turnstileCount !== 1 || expanded.optionCount !== 1) throw new Error(`HUIKAI progressive composer ${name} expanded contract failed: ${JSON.stringify(expanded)}`);
+
       await page.locator('[data-comments-name]').fill('測試讀者');
       await page.locator('[data-comments-body]').fill('候選版測試回應');
       await page.locator('[data-comments-submit]').click();
@@ -177,7 +204,7 @@ async function verifyHuikaiPopulated(browser) {
       if (submissions.length !== 1 || submissions[0].articleKey !== initial.key || submissions[0].pagePath !== ARTICLE_PATH || submissions[0].parentId !== "11111111-1111-4111-8111-111111111111" || submissions[0].turnstileToken !== "qa-token" || "email" in submissions[0] || "ip" in submissions[0]) throw new Error(`HUIKAI submission contract failed: ${JSON.stringify(submissions)}`);
       if (afterSubmit.kind !== "success" || afterSubmit.source !== "submit" || !afterSubmit.text || afterSubmit.counter !== "0 / 4,000") throw new Error(`HUIKAI submit/reset status contract failed: ${JSON.stringify(afterSubmit)}`);
       const measured=await geometry(page,'.huikai-comments'); assertAligned(measured);
-      results.push({name,colorScheme,actualDark,initial,afterSubmit,measured,screenshot});
+      results.push({name,colorScheme,actualDark,collapsed,initial,expanded,afterSubmit,measured,screenshot});
     } finally { await context.close(); }
   }
   return results;
@@ -191,6 +218,8 @@ async function verifyHuikaiEmpty(browser) {
     const response=await page.goto(`${BASE_URL}${ARTICLE_PATH}`, { waitUntil:"domcontentloaded", timeout:45_000 });
     if (!response?.ok()) throw new Error(`HUIKAI empty-state navigation failed: ${response?.status()}`);
     await waitForHuikai(page);
+    const collapsed=await readProgressiveState(page);
+    assertInitiallyCollapsed(collapsed,"empty");
     const state=await page.evaluate(() => ({
       emptyHidden:document.querySelector('[data-comments-empty-summary]')?.hidden ?? true,
       listChildren:document.querySelector('[data-comments-list]')?.children.length ?? -1,
@@ -198,7 +227,7 @@ async function verifyHuikaiEmpty(browser) {
       kind:document.querySelector('[data-comments-status]')?.dataset.kind||"",
     }));
     if (state.emptyHidden || state.listChildren !== 0 || state.status || state.kind) throw new Error(`HUIKAI empty-state contract failed: ${JSON.stringify(state)}`);
-    return state;
+    return {...state,collapsed};
   } finally { await context.close(); }
 }
 
@@ -210,6 +239,8 @@ async function verifyHuikaiLoadFailure(browser) {
     const response=await page.goto(`${BASE_URL}${ARTICLE_PATH}`, { waitUntil:"domcontentloaded", timeout:45_000 });
     if (!response?.ok()) throw new Error(`HUIKAI load-error navigation failed: ${response?.status()}`);
     await waitForHuikai(page);
+    const collapsed=await readProgressiveState(page);
+    assertInitiallyCollapsed(collapsed,"load-error");
     await page.waitForTimeout(25);
     const state=await page.evaluate(() => {
       const root=document.querySelector('.huikai-comments');
@@ -224,7 +255,7 @@ async function verifyHuikaiLoadFailure(browser) {
       };
     });
     if (!state.emptyHidden || state.listChildren !== 0 || state.status !== state.expected || state.kind !== "error" || state.source !== "load") throw new Error(`HUIKAI load-error contract failed: ${JSON.stringify(state)}`);
-    return state;
+    return {...state,collapsed};
   } finally { await context.close(); }
 }
 
@@ -236,6 +267,10 @@ async function verifyHuikaiCompactTurnstile(browser) {
     const response=await page.goto(`${BASE_URL}${ARTICLE_PATH}`, { waitUntil:"domcontentloaded", timeout:45_000 });
     if (!response?.ok()) throw new Error(`HUIKAI compact navigation failed: ${response?.status()}`);
     await waitForHuikai(page);
+    const collapsed=await readProgressiveState(page);
+    assertInitiallyCollapsed(collapsed,"compact");
+    await page.locator('[data-comments-compose-toggle]').click();
+    await waitForComposer(page);
     const state=await page.evaluate(() => {
       const target=document.querySelector('[data-comments-turnstile]');
       return {
@@ -245,7 +280,7 @@ async function verifyHuikaiCompactTurnstile(browser) {
       };
     });
     if (!(state.width > 0 && state.width < 300) || state.option?.size !== "compact" || state.option?.appearance !== "interaction-only" || state.option?.action !== "comment-submit" || state.overflow > 1) throw new Error(`HUIKAI compact Turnstile contract failed: ${JSON.stringify(state)}`);
-    return state;
+    return {...state,collapsed};
   } finally { await context.close(); }
 }
 

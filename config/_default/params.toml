@@ -79,7 +79,10 @@ forgejoDefaultServer = "https://v8.next.forgejo.org"
   editAppendPath = true
   seriesOpened = false
   showHeadingAnchors = true
-  showPagination = true
+  # Ordinary HUIKAI articles use semantic related reading instead of
+  # chronological previous/next navigation. A future sequence control should
+  # be driven by an explicit series contract rather than publication order.
+  showPagination = false
   invertPagination = false
   showReadingTime = true
   showTableOfContents = true

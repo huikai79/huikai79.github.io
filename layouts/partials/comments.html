@@ -79,7 +79,9 @@
              data-verification-required="{{ i18n "huikai.comments_verification_required" }}"
              data-submit-success="{{ i18n "huikai.comments_submit_success" }}"
              data-submit-error="{{ i18n "huikai.comments_submit_error" }}"
-             data-rate-limit-error="{{ i18n "huikai.comments_rate_limit_error" }}">
+             data-rate-limit-error="{{ i18n "huikai.comments_rate_limit_error" }}"
+             data-compose-open-label="{{ i18n "huikai.comments_write" }}"
+             data-compose-close-label="{{ i18n "huikai.comments_close_form" }}">
       <header class="huikai-comments__header">
         <h2 id="reader-responses-title">{{ i18n "huikai.comments_title" }}</h2>
         <p class="huikai-comments__intro">
@@ -89,27 +91,40 @@
       </header>
       <div class="huikai-comments__status" data-comments-status role="status" aria-live="polite"></div>
       <div class="huikai-comments__list" data-comments-list aria-live="polite"></div>
-      <form class="huikai-comments__form" data-comments-form>
-        <div class="huikai-comments__reply-state" data-comments-reply-state hidden>
-          <span>{{ i18n "huikai.comments_replying_to" }} <strong data-comments-reply-name></strong></span>
-          <button type="button" class="huikai-comments__text-button" data-comments-cancel-reply>{{ i18n "huikai.comments_cancel_reply" }}</button>
-        </div>
-        <input type="hidden" data-comments-reply-to value="">
-        <div class="huikai-comments__field">
-          <label for="huikai-comments-name"><span>{{ i18n "huikai.comments_name" }}</span></label>
-          <input id="huikai-comments-name" type="text" name="displayName" data-comments-name maxlength="40" autocomplete="nickname" required>
-        </div>
-        <div class="huikai-comments__field">
-          <label for="huikai-comments-body"><span>{{ i18n "huikai.comments_body" }} <small class="huikai-comments__field-note">{{ i18n "huikai.comments_body_limit" }}</small></span></label>
-          <textarea id="huikai-comments-body" name="body" data-comments-body maxlength="4000" rows="4" aria-describedby="huikai-comments-count" required></textarea>
-          <small id="huikai-comments-count" class="huikai-comments__count" data-comments-count>0 / 4,000</small>
-        </div>
-        <div class="huikai-comments__turnstile" data-comments-turnstile></div>
-        <p class="huikai-comments__privacy">{{ i18n "huikai.comments_privacy" }}</p>
-        <div class="huikai-comments__submit-row">
-          <button type="submit" class="huikai-comments__submit" data-comments-submit>{{ i18n "huikai.comments_submit" }}</button>
-        </div>
-      </form>
+
+      <div class="huikai-comments__compose-row">
+        <button type="button"
+                class="huikai-comments__compose-toggle"
+                data-comments-compose-toggle
+                aria-expanded="false"
+                aria-controls="huikai-comments-composer">
+          {{ i18n "huikai.comments_write" }}
+        </button>
+      </div>
+
+      <div id="huikai-comments-composer" class="huikai-comments__composer" data-comments-composer hidden>
+        <form class="huikai-comments__form" data-comments-form>
+          <div class="huikai-comments__reply-state" data-comments-reply-state hidden>
+            <span>{{ i18n "huikai.comments_replying_to" }} <strong data-comments-reply-name></strong></span>
+            <button type="button" class="huikai-comments__text-button" data-comments-cancel-reply>{{ i18n "huikai.comments_cancel_reply" }}</button>
+          </div>
+          <input type="hidden" data-comments-reply-to value="">
+          <div class="huikai-comments__field huikai-comments__field--name">
+            <label for="huikai-comments-name"><span>{{ i18n "huikai.comments_name_required" }}</span></label>
+            <input id="huikai-comments-name" type="text" name="displayName" data-comments-name maxlength="40" autocomplete="nickname" required>
+          </div>
+          <div class="huikai-comments__field">
+            <label for="huikai-comments-body"><span>{{ i18n "huikai.comments_body" }}</span></label>
+            <textarea id="huikai-comments-body" name="body" data-comments-body maxlength="4000" rows="4" aria-describedby="huikai-comments-count" required></textarea>
+            <small id="huikai-comments-count" class="huikai-comments__count" data-comments-count>0 / 4,000</small>
+          </div>
+          <div class="huikai-comments__turnstile" data-comments-turnstile></div>
+          <p class="huikai-comments__privacy">{{ i18n "huikai.comments_privacy" }}</p>
+          <div class="huikai-comments__submit-row">
+            <button type="submit" class="huikai-comments__submit" data-comments-submit>{{ i18n "huikai.comments_submit" }}</button>
+          </div>
+        </form>
+      </div>
     </section>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
     {{- $commentsJS := resources.Get "js/huikai-comments.js" | minify | fingerprint site.Params.fingerprintAlgorithm -}}

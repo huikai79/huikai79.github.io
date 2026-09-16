@@ -30,6 +30,21 @@
   }
   function api(root) { return root.dataset.apiBase.replace(/\/$/, ""); }
 
+  function setComposer(root, open, focusTarget = "") {
+    const composer = q(root, "[data-comments-composer]");
+    const toggle = q(root, "[data-comments-compose-toggle]");
+    if (!composer || !toggle) return;
+    composer.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.textContent = open
+      ? label(root, "composeCloseLabel", "收起表單")
+      : label(root, "composeOpenLabel", "寫下回應");
+    if (open) {
+      root.dispatchEvent(new CustomEvent("huikai:comments-compose-open"));
+      if (focusTarget) requestAnimationFrame(() => q(root, focusTarget)?.focus());
+    }
+  }
+
   async function json(url, options = {}) {
     const response = await fetch(url, {
       credentials: "same-origin",
@@ -70,7 +85,7 @@
     root.dataset.legacyReplyTarget = Object.prototype.hasOwnProperty.call(comment, "replyToId") ? "" : comment.id;
     q(root, "[data-comments-reply-name]").textContent = comment.displayName || tombstoneLabel(root, comment);
     q(root, "[data-comments-reply-state]").hidden = false;
-    q(root, "[data-comments-body]").focus();
+    setComposer(root, true, "[data-comments-body]");
   }
 
   async function withdraw(root, commentId, button) {
@@ -187,7 +202,7 @@
     for (let i = 0; i < 80 && !window.turnstile?.render; i += 1) await new Promise(resolve => setTimeout(resolve, 50));
     if (!window.turnstile?.render) {
       status(root, label(root, "verificationRequired", "人機驗證暫時無法載入。"), "error", "verification");
-      return;
+      return false;
     }
     const target = q(root, "[data-comments-turnstile]");
     const targetWidth = target.getBoundingClientRect().width;
@@ -204,6 +219,15 @@
         status(root, label(root, "verificationRequired", "請重新完成人機驗證。"), "error", "verification");
       },
     });
+    return true;
+  }
+
+  async function ensureTurnstile(root, state) {
+    if (state.widgetId !== null) return true;
+    if (!state.turnstilePromise) {
+      state.turnstilePromise = turnstile(root, state).finally(() => { state.turnstilePromise = null; });
+    }
+    return state.turnstilePromise;
   }
 
   function form(root, state) {
@@ -222,6 +246,7 @@
       if (!form.reportValidity()) return;
       if (!state.token) {
         status(root, label(root, "verificationRequired", "請先完成人機驗證。"), "error", "verification");
+        await ensureTurnstile(root, state);
         return;
       }
       const submit = q(root, "[data-comments-submit]");
@@ -259,9 +284,19 @@
   async function init(root) {
     if (root.dataset.initialized) return;
     root.dataset.initialized = "true";
-    const state = { token: "", widgetId: null };
+    const state = { token: "", widgetId: null, turnstilePromise: null };
     form(root, state);
-    await Promise.all([load(root), turnstile(root, state)]);
+
+    const toggle = q(root, "[data-comments-compose-toggle]");
+    toggle?.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") !== "true";
+      setComposer(root, open, open ? "[data-comments-name]" : "");
+    });
+    root.addEventListener("huikai:comments-compose-open", () => {
+      ensureTurnstile(root, state).catch(() => status(root, label(root, "verificationRequired", "人機驗證暫時無法載入。"), "error", "verification"));
+    });
+
+    await load(root);
   }
 
   const start = () => document.querySelectorAll(".huikai-comments").forEach(root => init(root).catch(() => status(root, label(root, "loadError", "留言功能暫時無法使用。"), "error", "load")));
