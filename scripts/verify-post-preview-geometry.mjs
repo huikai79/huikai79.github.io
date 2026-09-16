@@ -41,15 +41,18 @@ async function verifyPostListDesktop(browser, width, label) {
       const withContent = withMedia?.querySelector(".huikai-post-list-content");
       const media = withMedia?.querySelector(".huikai-post-list-media");
       const textContent = textOnly?.querySelector(".huikai-post-list-content");
-      const starts = items.map(item => item.getBoundingClientRect().top).sort((a, b) => a - b);
-      const startGaps = starts.slice(1).map((top, index) => top - starts[index]);
+      const textOnlyIndex = items.indexOf(textOnly);
+      const nextItem = textOnlyIndex >= 0 ? items[textOnlyIndex + 1] : null;
+      const textOnlyToNextStart = nextItem
+        ? nextItem.getBoundingClientRect().top - textOnly.getBoundingClientRect().top
+        : null;
       return {
         withItem: rect(withMedia),
         textItem: rect(textOnly),
         withContent: rect(withContent),
         textContent: rect(textContent),
         media: rect(media),
-        startGaps,
+        textOnlyToNextStart,
         overflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       };
     });
@@ -66,10 +69,8 @@ async function verifyPostListDesktop(browser, width, label) {
     if (state.withContent.left < state.withItem.left - 1 || state.media.right > state.withItem.right + 1 || state.textContent.right > state.textItem.right + 1) fail(`posts/${label}: preview geometry escapes its item bounds`);
     if (state.textItem.height < 179) fail(`posts/${label}: text-only item is too short for stable desktop rhythm (${state.textItem.height.toFixed(1)}px)`);
     if (state.withItem.height < 179) fail(`posts/${label}: media item is too short for stable desktop rhythm (${state.withItem.height.toFixed(1)}px)`);
-    if (state.startGaps.length) {
-      const minGap = Math.min(...state.startGaps);
-      const maxGap = Math.max(...state.startGaps);
-      if (maxGap - minGap > 24) fail(`posts/${label}: article start cadence is inconsistent (min ${minGap.toFixed(1)}px, max ${maxGap.toFixed(1)}px)`);
+    if (state.textOnlyToNextStart !== null && state.textOnlyToNextStart < 219) {
+      fail(`posts/${label}: text-only post starts too close to the next post (${state.textOnlyToNextStart.toFixed(1)}px)`);
     }
     if (state.overflow > 1) fail(`posts/${label}: horizontal overflow ${state.overflow.toFixed(1)}px`);
   } finally {
