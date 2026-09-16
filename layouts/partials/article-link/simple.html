@@ -23,7 +23,7 @@
   {{ $cardClasses = printf "%s max-w-prose" $cardClasses }}
 {{ end }}
 {{ if $isPost }}
-  {{ $cardClasses = printf "%s w-full md:min-h-[180px]" $cardClasses }}
+  {{ $cardClasses = printf "%s w-full" $cardClasses }}
   {{ $cardContentClasses = printf "%s min-w-0 flex-1 huikai-post-list-content" $cardContentClasses }}
 {{ end }}
 
