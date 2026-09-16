@@ -201,11 +201,13 @@ jobs:
       LIVE_SITE_URL: https://huikai.com.kg
       EXPECTED_SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
       LIVE_QA_OUTPUT: live-reader-qa
+      LIVE_CHANGED_ROUTE_PLAN: live-reader-qa/changed-routes.json
     steps:
       - name: Checkout exact QA script source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.guard.outputs.source_sha }}
+          fetch-depth: 2
           persist-credentials: false
 
       - name: Setup Node.js
@@ -236,6 +238,15 @@ jobs:
           done
           echo "::error::Production edge did not expose expected source SHA $SOURCE_SHA"
           exit 1
+
+      - name: Plan changed article routes from exact source commit
+        run: node scripts/changed-article-route-plan.mjs "$LIVE_CHANGED_ROUTE_PLAN"
+
+      - name: Run live QA against changed article routes
+        run: node scripts/live-changed-route-qa.mjs
+
+      - name: Verify known content-semantic regressions on live pages
+        run: node scripts/live-content-semantics-qa.mjs
 
       - name: Run live reader QA against production
         run: node scripts/live-reader-qa.mjs
