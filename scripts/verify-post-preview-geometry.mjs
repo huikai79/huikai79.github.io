@@ -30,8 +30,9 @@ async function verifyPostListDesktop(browser, width, label) {
   try {
     await open(page, "/posts/", `posts/${label}`);
     const state = await page.evaluate(() => {
-      const withMedia = document.querySelector(".huikai-post-list-item--with-media");
-      const textOnly = document.querySelector(".huikai-post-list-item--text-only");
+      const items = [...document.querySelectorAll(".huikai-post-list-item")];
+      const withMedia = items.find(item => item.classList.contains("huikai-post-list-item--with-media"));
+      const textOnly = items.find(item => item.classList.contains("huikai-post-list-item--text-only"));
       const rect = element => {
         if (!element) return null;
         const value = element.getBoundingClientRect();
@@ -40,12 +41,18 @@ async function verifyPostListDesktop(browser, width, label) {
       const withContent = withMedia?.querySelector(".huikai-post-list-content");
       const media = withMedia?.querySelector(".huikai-post-list-media");
       const textContent = textOnly?.querySelector(".huikai-post-list-content");
+      const textOnlyIndex = items.indexOf(textOnly);
+      const nextItem = textOnlyIndex >= 0 ? items[textOnlyIndex + 1] : null;
+      const textOnlyToNextStart = nextItem
+        ? nextItem.getBoundingClientRect().top - textOnly.getBoundingClientRect().top
+        : null;
       return {
         withItem: rect(withMedia),
         textItem: rect(textOnly),
         withContent: rect(withContent),
         textContent: rect(textContent),
         media: rect(media),
+        textOnlyToNextStart,
         overflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       };
     });
@@ -60,6 +67,11 @@ async function verifyPostListDesktop(browser, width, label) {
     if (!near(state.media.width, 300, 2)) fail(`posts/${label}: media width drifted (${state.media.width.toFixed(1)}px)`);
     if (state.withContent.right > state.media.left - 20) fail(`posts/${label}: text/media gap collapsed (${(state.media.left - state.withContent.right).toFixed(1)}px)`);
     if (state.withContent.left < state.withItem.left - 1 || state.media.right > state.withItem.right + 1 || state.textContent.right > state.textItem.right + 1) fail(`posts/${label}: preview geometry escapes its item bounds`);
+    if (state.textItem.height < 179) fail(`posts/${label}: text-only item is too short for stable desktop rhythm (${state.textItem.height.toFixed(1)}px)`);
+    if (state.withItem.height < 179) fail(`posts/${label}: media item is too short for stable desktop rhythm (${state.withItem.height.toFixed(1)}px)`);
+    if (state.textOnlyToNextStart !== null && state.textOnlyToNextStart < 219) {
+      fail(`posts/${label}: text-only post starts too close to the next post (${state.textOnlyToNextStart.toFixed(1)}px)`);
+    }
     if (state.overflow > 1) fail(`posts/${label}: horizontal overflow ${state.overflow.toFixed(1)}px`);
   } finally {
     await context.close();
@@ -97,6 +109,7 @@ async function verifyPostListMobile(browser) {
     if (!near(state.textContent.width, state.textItem.width, 4)) fail(`posts/mobile: text-only post does not use full width (${state.textContent.width.toFixed(1)} vs ${state.textItem.width.toFixed(1)}px)`);
     if (!near(state.media.width, state.withItem.width, 4)) fail(`posts/mobile: media is not full-width (${state.media.width.toFixed(1)} vs ${state.withItem.width.toFixed(1)}px)`);
     if (state.withContent.top < state.media.bottom - 1) fail("posts/mobile: media and text overlap instead of stacking");
+    if (state.textItem.height >= 179) fail(`posts/mobile: text-only item incorrectly keeps desktop minimum height (${state.textItem.height.toFixed(1)}px)`);
     if (state.overflow > 1) fail(`posts/mobile: horizontal overflow ${state.overflow.toFixed(1)}px`);
   } finally {
     await context.close();
@@ -158,7 +171,7 @@ async function main() {
     console.error(`Post preview geometry verification: FAIL (${failures.length} issue(s))`);
     process.exit(1);
   }
-  console.log("Post preview geometry verification: PASS (stable desktop text measure + optional media + mobile reclaim + related-reading rhythm)");
+  console.log("Post preview geometry verification: PASS (stable desktop text measure + vertical rhythm + optional media + mobile reclaim + related-reading rhythm)");
 }
 
 main().catch(error => {

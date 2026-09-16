@@ -88,6 +88,16 @@
     }
   }
 
+  /* At the archive geometry breakpoint, reserve the same minimum vertical
+     reading unit whether optional Hero media exists or not. This keeps the
+     start of the next post from crowding a text-only preview without adding a
+     placeholder image. Mobile remains natural-height. */
+  @media (min-width: 853px) {
+    .huikai-post-list-item {
+      min-height: 180px;
+    }
+  }
+
   @media (max-width: 767.98px) {
     .article-main > h2 {
       margin-top: 2.5rem;
