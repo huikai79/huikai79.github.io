@@ -15,6 +15,8 @@ huikai:
   article_maturity_article: "目前整理到这里"
   article_maturity_record: "实际做过的记录"
   source: "来源"
+  about_me: "关于我"
+  share_article: "分享本文"
   back_to_top: "回到顶部"
   home_selected: "精选"
   home_recent: "最近"
