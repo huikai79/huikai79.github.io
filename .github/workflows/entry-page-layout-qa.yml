@@ -7,11 +7,13 @@ on:
     paths:
       - ".github/workflows/entry-page-layout-qa.yml"
       - "scripts/verify-entry-page-layout.mjs"
+      - "scripts/verify-entry-media-readiness.mjs"
       - "layouts/partials/page-shell-style.html"
       - "layouts/partials/extend-head-uncached.html"
       - "layouts/shortcodes/page-lead.html"
       - "layouts/shortcodes/author-links.html"
       - "layouts/shortcodes/explore-topics.html"
+      - "content/posts/**"
       - "content/projects/**"
       - "content/explore/**"
       - "content/about/**"
@@ -21,11 +23,13 @@ on:
     paths:
       - ".github/workflows/entry-page-layout-qa.yml"
       - "scripts/verify-entry-page-layout.mjs"
+      - "scripts/verify-entry-media-readiness.mjs"
       - "layouts/partials/page-shell-style.html"
       - "layouts/partials/extend-head-uncached.html"
       - "layouts/shortcodes/page-lead.html"
       - "layouts/shortcodes/author-links.html"
       - "layouts/shortcodes/explore-topics.html"
+      - "content/posts/**"
       - "content/projects/**"
       - "content/explore/**"
       - "content/about/**"
@@ -51,9 +55,10 @@ jobs:
   candidate:
     if: github.event_name != 'workflow_dispatch' || inputs.target == 'candidate'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       ENTRY_PAGE_QA_OUTPUT: entry-page-layout-qa
+      ENTRY_MEDIA_QA_OUTPUT: entry-media-readiness-qa
       PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
     steps:
       - name: Checkout candidate without persisted credentials
@@ -78,8 +83,10 @@ jobs:
           hugo-version: 0.165.0
           extended: true
 
-      - name: Syntax-check entry page verifier
-        run: node --check scripts/verify-entry-page-layout.mjs
+      - name: Syntax-check entry page verifiers
+        run: |
+          node --check scripts/verify-entry-page-layout.mjs
+          node --check scripts/verify-entry-media-readiness.mjs
 
       - name: Build and verify candidate snapshot
         run: bash scripts/build-and-verify.sh public
@@ -107,24 +114,31 @@ jobs:
 
       - name: Verify entry page geometry, readability and responsive behavior
         env:
-          WEEKLY_QA_OUTPUT: entry-page-layout-qa
+          WEEKLY_QA_OUTPUT: ${{ env.ENTRY_PAGE_QA_OUTPUT }}
         run: node scripts/verify-entry-page-layout.mjs
+
+      - name: Verify entry media readiness before screenshots
+        run: node scripts/verify-entry-media-readiness.mjs
 
       - name: Upload rendered entry page evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: entry-page-layout-${{ github.sha }}
-          path: entry-page-layout-qa/
+          path: |
+            entry-page-layout-qa/
+            entry-media-readiness-qa/
           retention-days: 30
           if-no-files-found: error
 
   production:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       LIVE_SITE_URL: https://huikai.com.kg
+      ENTRY_PAGE_QA_OUTPUT: entry-page-layout-qa
+      ENTRY_MEDIA_QA_OUTPUT: entry-media-readiness-qa
       PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
     steps:
       - name: Checkout verifier source without persisted credentials
@@ -137,8 +151,10 @@ jobs:
         with:
           node-version: 24
 
-      - name: Syntax-check entry page verifier
-        run: node --check scripts/verify-entry-page-layout.mjs
+      - name: Syntax-check entry page verifiers
+        run: |
+          node --check scripts/verify-entry-page-layout.mjs
+          node --check scripts/verify-entry-media-readiness.mjs
 
       - name: Install pinned Chromium runtime
         run: |
@@ -147,14 +163,19 @@ jobs:
 
       - name: Verify production entry page geometry, readability and responsive behavior
         env:
-          LIVE_QA_OUTPUT: entry-page-layout-qa
+          WEEKLY_QA_OUTPUT: ${{ env.ENTRY_PAGE_QA_OUTPUT }}
         run: node scripts/verify-entry-page-layout.mjs
+
+      - name: Verify production entry media readiness before screenshots
+        run: node scripts/verify-entry-media-readiness.mjs
 
       - name: Upload production entry page evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: entry-page-layout-production-${{ github.sha }}
-          path: entry-page-layout-qa/
+          path: |
+            entry-page-layout-qa/
+            entry-media-readiness-qa/
           retention-days: 14
           if-no-files-found: error
