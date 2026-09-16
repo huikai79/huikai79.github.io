@@ -4,10 +4,10 @@
 {{ if .Params.showRelatedContent | default (.Site.Params.article.showRelatedContent | default false) }}
   {{ $related := .Site.RegularPages.Related . | first .Site.Params.article.relatedContentLimit }}
   {{ with $related }}
-    <h2 class="mb-5 mt-10 text-2xl font-extrabold">{{ i18n "huikai.continue_reading" }}</h2>
+    <h2 class="mb-6 mt-10 text-2xl font-extrabold">{{ i18n "huikai.continue_reading" }}</h2>
     <section class="related-reading-list divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-700 dark:border-neutral-700">
       {{ range . }}
-        <article class="related-reading-item py-5">
+        <article class="related-reading-item py-6">
           <header>
             <a
               {{ with .Params.externalUrl }}
@@ -26,7 +26,7 @@
             {{ partial "article-meta/basic.html" . }}
           </div>
           {{ with .Description }}
-            <p class="related-reading-summary mt-2 text-base leading-[1.65] text-neutral-600 dark:text-neutral-300">
+            <p class="related-reading-summary mt-2 line-clamp-2 text-base leading-[1.65] text-neutral-600 dark:text-neutral-300">
               {{ . | plainify }}
             </p>
           {{ end }}
