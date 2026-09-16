@@ -13,7 +13,7 @@
   {{ $imgWrapperClasses = "" }}
   {{ $cardContentClasses = printf "%s p-4" $cardContentClasses }}
 {{ else }}
-  {{ $imgWrapperClasses = "thumbnail-shadow md:order-last md:ml-7" }}
+  {{ $imgWrapperClasses = "thumbnail-shadow" }}
   {{ $cardContentClasses = printf "%s mt-3 md:mt-0" $cardContentClasses }}
 {{ end }}
 
@@ -74,7 +74,7 @@
   {{ end }}
 {{ end }}
 
-<article class="article-link--simple group {{ $cardClasses }}">
+<article class="article-link--simple group {{ if eq $page.Section "posts" }}huikai-post-list-item {{ end }}{{ $cardClasses }}">
   {{ with $featuredURL }}
     <div class="flex-none relative overflow-hidden {{ $imgWrapperClasses }} thumbnail">
       <img
