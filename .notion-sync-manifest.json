@@ -18,7 +18,7 @@
       "language": "zh-CN",
       "translationGroup": "be-alife",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-14T11:33:00.000Z",
+      "lastEditedTime": "2026-09-16T07:05:00.000Z",
       "bundleHash": "fa7eeb2d9518877bcf85674f2ee864466f0003ec159a0028d73d3d4b6976e19c",
       "presentationFingerprint": "4a3f0e444c1b240def225fbac5ab5f607970d71d3ff53f57ead2eba129fe3b7d"
     },
@@ -28,7 +28,7 @@
       "language": "zh-CN",
       "translationGroup": "How-you-know",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-14T11:31:00.000Z",
+      "lastEditedTime": "2026-09-16T07:05:00.000Z",
       "bundleHash": "cf761eba739031fec20f6c63652c5c02a823bdc759104f24b9d252fba5cb09c8",
       "presentationFingerprint": "33737300e2c9d15454ca752d28bee5119bb13331e8cd58e8bf4880fc445b2c3a"
     },
@@ -38,7 +38,7 @@
       "language": "zh-TW",
       "translationGroup": "Writing-and-speaking",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-09T01:53:00.000Z",
+      "lastEditedTime": "2026-09-16T07:06:00.000Z",
       "bundleHash": "6c54797de711accf63492d72068dab37d60bea3b80db4ed6c6409f5108ed0f21",
       "presentationFingerprint": "fa5d69b688de04244026be7ce8d750478cc2ad79dca5c80dd06ceab48fd7ffa1"
     },
@@ -48,7 +48,7 @@
       "language": "zh-TW",
       "translationGroup": "how-to-make-wealth",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-09T01:52:00.000Z",
+      "lastEditedTime": "2026-09-16T07:06:00.000Z",
       "bundleHash": "e1b74c3b8337d33aa789f77d43502a1db471880b63425e9449d328ffb977f19f",
       "presentationFingerprint": "d1b702e85b3c37d205110df08fcf6bef4a7e54c78790c71802a2c8e818203116"
     },
@@ -58,7 +58,7 @@
       "language": "zh-TW",
       "translationGroup": "Writes-and-Write-Nots",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-09T01:53:00.000Z",
+      "lastEditedTime": "2026-09-16T07:06:00.000Z",
       "bundleHash": "c0b0f5520e0eb30dbe46d2c7eec694707682ed35627f69be3eefcec37259b8f2",
       "presentationFingerprint": "48bc466de7cab159311eb82176b0ccabd5b188132ff01eaa0eb698469c80e53a"
     },
@@ -78,7 +78,7 @@
       "language": "zh-TW",
       "translationGroup": "daxuepeiyangchuangyezhe",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-14T11:35:00.000Z",
+      "lastEditedTime": "2026-09-16T07:06:00.000Z",
       "bundleHash": "3c857f83fc9d8f5c7129935543ef7bffbb32741bf5f4e1fcb22be80e162726e8",
       "presentationFingerprint": "76b7f6714c4c3a3640eb1ad4aa7f866603f6436e562d3fdef448d33054a62267"
     },
@@ -88,7 +88,7 @@
       "language": "zh-TW",
       "translationGroup": "How-you-know",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-14T10:10:00.000Z",
+      "lastEditedTime": "2026-09-16T07:05:00.000Z",
       "bundleHash": "5fdb522020d3f5ea9b500ee53bf2e4bb00216573ec529d8951110e7867992863",
       "presentationFingerprint": "33737300e2c9d15454ca752d28bee5119bb13331e8cd58e8bf4880fc445b2c3a"
     },
@@ -98,7 +98,7 @@
       "language": "zh-TW",
       "translationGroup": "small-b-blogging",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-13T15:09:00.000Z",
+      "lastEditedTime": "2026-09-16T07:07:00.000Z",
       "bundleHash": "c6f92c7d97ad97a4325cbbdbc6a7dd79bd23f820329f05aecf799344af3294a9",
       "presentationFingerprint": "9afa3dd21755f3aabf3f3c40fa196ee53fb0d613abef834bb92bbe2b8d18a9e9"
     },
@@ -108,7 +108,7 @@
       "language": "zh-TW",
       "translationGroup": "my-website-is-a-shifting-house",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-13T15:18:00.000Z",
+      "lastEditedTime": "2026-09-16T07:05:00.000Z",
       "bundleHash": "a3ce7c8e8a0e272bdf4d7f3794525cd7e1189a64963cae49a7e1727fb749cf20",
       "presentationFingerprint": "581a235e441b8c3a3245d435454f1a45f06813e9ff07c3b7099e5031bc9f3cb8"
     },
@@ -118,7 +118,7 @@
       "language": "zh-TW",
       "translationGroup": "how-to-grow-an-idea",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-13T01:36:00.000Z",
+      "lastEditedTime": "2026-09-16T06:47:00.000Z",
       "bundleHash": "c86c38176d3b2fd9bd72058961f05abd9f60918dc04146b57ac65055a521e33c",
       "presentationFingerprint": "f6ea9c18c712cb8c14c1859bad7beb8c544f0c8ff10e25f1de00012e68af208c"
     },
@@ -138,7 +138,7 @@
       "language": "zh-TW",
       "translationGroup": "record-everything",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-14T00:22:00.000Z",
+      "lastEditedTime": "2026-09-16T07:07:00.000Z",
       "bundleHash": "4b6675eb4ed5382b36a63cc2a8a2d7bff9929ac96b5c54a432bc0d19cc6d3012",
       "presentationFingerprint": "60f9cbf83cb78927211af11808a0f67677026e375d9ec008b5a25893aab04ee7"
     },
@@ -148,7 +148,7 @@
       "language": "zh-TW",
       "translationGroup": "the-forever-project",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-14T11:30:00.000Z",
+      "lastEditedTime": "2026-09-16T07:07:00.000Z",
       "bundleHash": "79ed21babcec47cde067f57984cdf18ea1a7bed2591ff359210d2debf15f5c34",
       "presentationFingerprint": "533ee2ebec42358b336103b90ad68fbf328bdeb2df08ebf8bffa05177e523e05"
     },
@@ -158,7 +158,7 @@
       "language": "zh-TW",
       "translationGroup": "mitosora-nd3615cc5426a",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-14T06:44:00.000Z",
+      "lastEditedTime": "2026-09-16T07:05:00.000Z",
       "bundleHash": "f7a78d468098df274de26321d1b64f732de08d4ea1a3159edc75f3f96fc63a10",
       "presentationFingerprint": "8f39e1b78f04d6a5ad6f1f54612d7b75341da3f7495f1f57b608e3f85ec96aaa"
     },
@@ -168,7 +168,7 @@
       "language": "zh-CN",
       "translationGroup": "my-website-is-a-shifting-house",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-13T15:10:00.000Z",
+      "lastEditedTime": "2026-09-16T07:04:00.000Z",
       "bundleHash": "864331875c2eb69d8cf17fb651582db705c2d3830f86aff2d3e983edc3b8c531",
       "presentationFingerprint": "62303b66b7a769bac1a1c1e23721f9bb44f90a63d47cac3b0e28d9be88306fcd"
     },
@@ -178,7 +178,7 @@
       "language": "zh-CN",
       "translationGroup": "small-b-blogging",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-13T15:21:00.000Z",
+      "lastEditedTime": "2026-09-16T07:07:00.000Z",
       "bundleHash": "f2d231602eb8018c1d9a21d5a38620d7d6a667d89abc5e29f374e7409f88ec3a",
       "presentationFingerprint": "5df95d4ac4373ba315156a69a6aad30774c6c14c6d5ddef7be12531f4650faf5"
     },
@@ -188,7 +188,7 @@
       "language": "zh-TW",
       "translationGroup": "be-alife",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-14T00:22:00.000Z",
+      "lastEditedTime": "2026-09-16T07:06:00.000Z",
       "bundleHash": "e9440b69755660a566e3f4f6512a3685568262f29fc967628807cc1e36a8ada9",
       "presentationFingerprint": "4a3f0e444c1b240def225fbac5ab5f607970d71d3ff53f57ead2eba129fe3b7d"
     },
@@ -198,7 +198,7 @@
       "language": "zh-CN",
       "translationGroup": "record-everything",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-14T11:31:00.000Z",
+      "lastEditedTime": "2026-09-16T07:07:00.000Z",
       "bundleHash": "cd086d1af36575b8842477397b5b69a9bf407b1e653d5dc79fa578d58ebf42ab",
       "presentationFingerprint": "60f9cbf83cb78927211af11808a0f67677026e375d9ec008b5a25893aab04ee7"
     },
@@ -248,7 +248,7 @@
       "language": "zh-CN",
       "translationGroup": "mitosora-nd3615cc5426a",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-14T11:36:00.000Z",
+      "lastEditedTime": "2026-09-16T07:05:00.000Z",
       "bundleHash": "014fcbfacb7baa3762a47c7b2d62d5ccc6f67aa6a3c45e5310ee76b59533ae70",
       "presentationFingerprint": "8f39e1b78f04d6a5ad6f1f54612d7b75341da3f7495f1f57b608e3f85ec96aaa"
     },
@@ -258,7 +258,7 @@
       "language": "zh-CN",
       "translationGroup": "the-forever-project",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-14T15:00:00.000Z",
+      "lastEditedTime": "2026-09-16T07:06:00.000Z",
       "bundleHash": "f6647d426d2c13de45e470b9ab752f61b11acdd0ca23224d4f927b41fa85c118",
       "presentationFingerprint": "533ee2ebec42358b336103b90ad68fbf328bdeb2df08ebf8bffa05177e523e05"
     },
