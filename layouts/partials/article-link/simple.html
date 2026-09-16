@@ -82,15 +82,17 @@
 {{ $postVariantClass := "" }}
 {{ if $isPost }}
   {{ if $featuredURL }}
-    {{ $postVariantClass = "huikai-post-list-item huikai-post-list-item--with-media" }}
+    {{ $postVariantClass = "huikai-post-list-item huikai-post-list-item--with-media md:grid md:grid-cols-[minmax(0,1fr)_300px] md:gap-x-7 md:items-start" }}
+    {{ $cardContentClasses = printf "%s md:col-start-1 md:row-start-1" $cardContentClasses }}
   {{ else }}
     {{ $postVariantClass = "huikai-post-list-item huikai-post-list-item--text-only" }}
+    {{ $cardContentClasses = printf "%s md:w-[calc(100%%-328px)] md:max-w-[calc(100%%-328px)]" $cardContentClasses }}
   {{ end }}
 {{ end }}
 
 <article class="article-link--simple group {{ $postVariantClass }} {{ $cardClasses }}">
   {{ with $featuredURL }}
-    <div class="flex-none relative overflow-hidden {{ if $isPost }}huikai-post-list-media {{ end }}{{ $imgWrapperClasses }} thumbnail">
+    <div class="flex-none relative overflow-hidden {{ if $isPost }}huikai-post-list-media md:col-start-2 md:row-start-1 md:w-[300px] {{ end }}{{ $imgWrapperClasses }} thumbnail">
       <img
         src="{{ . }}"
         alt="{{ $page.Title }}"
