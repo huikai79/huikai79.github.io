@@ -251,6 +251,9 @@ jobs:
       - name: Run live reader QA against production
         run: node scripts/live-reader-qa.mjs
 
+      - name: Verify live post preview geometry and related-reading rhythm
+        run: node scripts/verify-post-preview-geometry.mjs
+
       - name: Verify live TOC responsive and sticky behavior
         run: node scripts/verify-toc-behavior.mjs
 
