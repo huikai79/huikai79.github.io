@@ -16,6 +16,11 @@
         {{ with .Site.Params.Author.bio }}
           <div class="author-bio">{{ . }}</div>
         {{ end }}
+        <a
+          class="mt-2 inline-flex text-sm font-medium text-primary-600 hover:underline hover:underline-offset-4 dark:text-primary-400"
+          href="{{ "about/" | relLangURL }}">
+          {{ i18n "huikai.about_more" }}
+        </a>
       </div>
     </div>
   </section>
