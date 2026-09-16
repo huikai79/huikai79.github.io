@@ -12,10 +12,14 @@ node --check sync.mjs
 node --check scripts/notion-video-transformer.mjs
 node --check scripts/notion-markdown-contract.mjs
 node --check scripts/check-notion-publication-contract.mjs
+node --check scripts/notion-rights-audit.mjs
 node --check scripts/notion-translation-family-contract.mjs
 node --check scripts/enrich-notion-metadata.mjs
 node --check scripts/notion-metadata-enrichment-contract.mjs
 node --check scripts/live-reader-qa.mjs
+node --check scripts/live-changed-route-qa.mjs
+node --check scripts/live-content-semantics-qa.mjs
+node --check scripts/changed-article-route-plan.mjs
 node --check scripts/verify-comments-integration.mjs
 node --check scripts/notion-sync-drift.mjs
 node --check scripts/source-rights-registry.mjs
@@ -25,6 +29,8 @@ node scripts/verify-notion-metadata-enrichment.mjs
 node scripts/test-notion-sync-drift.mjs
 node scripts/test-notion-translation-family-contract.mjs
 node scripts/test-source-rights-registry.mjs
+node scripts/test-notion-rights-audit.mjs
+node scripts/test-changed-article-route-plan.mjs
 python3 scripts/test-taxonomy-localization-contract.py
 python3 scripts/test-editorial-metadata.py
 node scripts/test-notion-video-transformer.mjs
