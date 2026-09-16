@@ -5,9 +5,9 @@
   {{ $related := .Site.RegularPages.Related . | first .Site.Params.article.relatedContentLimit }}
   {{ with $related }}
     <h2 class="mb-4 mt-10 text-2xl font-extrabold">{{ i18n "article.related_articles" | emojify }}</h2>
-    <section class="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-700 dark:border-neutral-700">
+    <section class="related-reading-list divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-700 dark:border-neutral-700">
       {{ range . }}
-        <article class="py-5">
+        <article class="related-reading-item py-5">
           <header>
             <a
               {{ with .Params.externalUrl }}
