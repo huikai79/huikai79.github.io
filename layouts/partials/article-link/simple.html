@@ -24,7 +24,7 @@
 {{ end }}
 {{ if $isPost }}
   {{ $cardClasses = printf "%s w-full" $cardClasses }}
-  {{ $cardContentClasses = printf "%s min-w-0 flex-1" $cardContentClasses }}
+  {{ $cardContentClasses = printf "%s min-w-0 flex-1 huikai-post-list-content" $cardContentClasses }}
 {{ end }}
 
 {{ $featured := "" }}
@@ -79,9 +79,18 @@
   {{ end }}
 {{ end }}
 
-<article class="article-link--simple group {{ if $isPost }}huikai-post-list-item {{ end }}{{ $cardClasses }}">
+{{ $postVariantClass := "" }}
+{{ if $isPost }}
+  {{ if $featuredURL }}
+    {{ $postVariantClass = "huikai-post-list-item huikai-post-list-item--with-media" }}
+  {{ else }}
+    {{ $postVariantClass = "huikai-post-list-item huikai-post-list-item--text-only" }}
+  {{ end }}
+{{ end }}
+
+<article class="article-link--simple group {{ $postVariantClass }} {{ $cardClasses }}">
   {{ with $featuredURL }}
-    <div class="flex-none relative overflow-hidden {{ $imgWrapperClasses }} thumbnail">
+    <div class="flex-none relative overflow-hidden {{ if $isPost }}huikai-post-list-media {{ end }}{{ $imgWrapperClasses }} thumbnail">
       <img
         src="{{ . }}"
         alt="{{ $page.Title }}"
@@ -129,5 +138,7 @@
       {{ end }}
     {{ end }}
   </div>
-  <div class="px-6 pt-4 pb-2"></div>
+  {{ if not $isPost }}
+    <div class="px-6 pt-4 pb-2"></div>
+  {{ end }}
 </article>
