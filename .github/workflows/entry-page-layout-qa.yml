@@ -1,0 +1,160 @@
+name: "Entry page layout QA"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/entry-page-layout-qa.yml"
+      - "scripts/verify-entry-page-layout.mjs"
+      - "layouts/partials/page-shell-style.html"
+      - "layouts/partials/extend-head-uncached.html"
+      - "layouts/shortcodes/page-lead.html"
+      - "layouts/shortcodes/author-links.html"
+      - "layouts/shortcodes/explore-topics.html"
+      - "content/projects/**"
+      - "content/explore/**"
+      - "content/about/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/entry-page-layout-qa.yml"
+      - "scripts/verify-entry-page-layout.mjs"
+      - "layouts/partials/page-shell-style.html"
+      - "layouts/partials/extend-head-uncached.html"
+      - "layouts/shortcodes/page-lead.html"
+      - "layouts/shortcodes/author-links.html"
+      - "layouts/shortcodes/explore-topics.html"
+      - "content/projects/**"
+      - "content/explore/**"
+      - "content/about/**"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Run against the checked-out candidate or current production"
+        required: true
+        default: "candidate"
+        type: choice
+        options:
+          - candidate
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: entry-page-layout-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'candidate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ENTRY_PAGE_QA_OUTPUT: entry-page-layout-qa
+      PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: 0.165.0
+          extended: true
+
+      - name: Syntax-check entry page verifier
+        run: node --check scripts/verify-entry-page-layout.mjs
+
+      - name: Build and verify candidate snapshot
+        run: bash scripts/build-and-verify.sh public
+
+      - name: Serve candidate snapshot locally
+        run: |
+          python3 -m http.server 4173 --directory public >/tmp/entry-page-layout-http.log 2>&1 &
+          echo $! >/tmp/entry-page-layout-http.pid
+          for _ in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null; then
+              echo "LIVE_SITE_URL=http://127.0.0.1:4173" >> "$GITHUB_ENV"
+              echo "Candidate entry pages ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/entry-page-layout-http.log || true
+          echo "::error::Candidate entry pages did not become ready"
+          exit 1
+
+      - name: Install pinned Chromium runtime
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify entry page geometry, readability and responsive behavior
+        env:
+          WEEKLY_QA_OUTPUT: entry-page-layout-qa
+        run: node scripts/verify-entry-page-layout.mjs
+
+      - name: Upload rendered entry page evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: entry-page-layout-${{ github.sha }}
+          path: entry-page-layout-qa/
+          retention-days: 30
+          if-no-files-found: error
+
+  production:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LIVE_SITE_URL: https://huikai.com.kg
+      PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+    steps:
+      - name: Checkout verifier source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Syntax-check entry page verifier
+        run: node --check scripts/verify-entry-page-layout.mjs
+
+      - name: Install pinned Chromium runtime
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify production entry page geometry, readability and responsive behavior
+        env:
+          LIVE_QA_OUTPUT: entry-page-layout-qa
+        run: node scripts/verify-entry-page-layout.mjs
+
+      - name: Upload production entry page evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: entry-page-layout-production-${{ github.sha }}
+          path: entry-page-layout-qa/
+          retention-days: 14
+          if-no-files-found: error
