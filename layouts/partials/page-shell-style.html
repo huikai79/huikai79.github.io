@@ -1,7 +1,12 @@
 <style>
-  /* Shared HUIKAI entry header for the four editorial entry pages that opt in
-     via the page-lead shortcode. Preserve each page's native body role while
-     making the first viewport visibly part of one editorial system. */
+  /* Shared HUIKAI entry-page geometry. Pages opt in with page-lead while each
+     surface keeps its native role: scan-heavy hubs can use the full shell,
+     long-form prose stays on a readable measure, and list pages must not let
+     Blowfish's default max-w-prose silently narrow the shared lead. */
+  #main-content:has(.huikai-page-lead) {
+    --huikai-entry-reading-measure: 44rem;
+  }
+
   #main-content:has(.huikai-page-lead) > header h1,
   #main-content:has(.huikai-page-lead) > article > header h1 {
     margin-top: 2rem;
@@ -16,8 +21,25 @@
     margin-top: 1rem;
   }
 
+  /* Blowfish list pages wrap markdown content in max-w-prose while simple
+     pages do not. Remove that template-specific constraint only for entry
+     pages using page-lead, then re-apply the shared reading measure to prose
+     blocks. This keeps /projects/ on the same shell as /explore/ and /about/
+     without stretching its two cards or changing the global list template. */
+  #main-content:has(.huikai-page-lead) > section.prose > div:has(> .huikai-page-lead) {
+    width: 100%;
+    max-width: none;
+  }
+
+  #main-content:has(.huikai-page-lead)
+    > section.prose
+    > div:has(> .huikai-page-lead)
+    > :is(p, ul, ol, blockquote) {
+    max-width: var(--huikai-entry-reading-measure);
+  }
+
   .huikai-page-lead {
-    max-width: 44rem;
+    max-width: var(--huikai-entry-reading-measure);
     margin-top: 0;
     color: rgb(var(--color-neutral-600, 82 82 82));
   }
@@ -54,6 +76,35 @@
 
   .dark .huikai-page-lead::after {
     border-color: rgb(var(--color-neutral-700, 64 64 64));
+  }
+
+  /* /about/ begins as an orientation page and becomes long-form reading after
+     its first section divider. Keep that first viewport on the full shell, then
+     cap every following block to the same CJK-friendly reading measure. */
+  #main-content:has(.about-author-links)
+    > article
+    > section.prose
+    > hr:first-of-type
+    ~ * {
+    max-width: var(--huikai-entry-reading-measure);
+  }
+
+  /* The canonical author-links partial intentionally uses subdued neutral
+     colors. On /about/ raise the base contrast one step so the links read as
+     available controls rather than disabled decoration, while keeping theme
+     hover colors intact. */
+  .about-author-links > div {
+    color: rgb(var(--color-neutral-500, 115 115 115));
+  }
+
+  .dark .about-author-links > div {
+    color: rgb(var(--color-neutral-300, 212 212 212));
+  }
+
+  .about-author-links a:focus-visible {
+    border-radius: 0.25rem;
+    outline: 2px solid rgb(var(--color-primary-500, 59 130 246));
+    outline-offset: 4px;
   }
 
   @media (max-width: 639.98px) {
