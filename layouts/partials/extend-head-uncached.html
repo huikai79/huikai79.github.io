@@ -63,28 +63,26 @@
     margin-bottom: 0.9rem;
   }
 
-  /* Article discovery: summaries are intentionally compact; the full text
-     belongs on the article page, not in archive/related scanning surfaces. */
+  /* Discovery summaries stay intentionally compact. */
   .huikai-post-list-item .article-link__summary,
-  .article-link--related .article-link__summary {
+  .related-reading-summary {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-
-  .huikai-post-list-item .article-link__summary {
     -webkit-line-clamp: 2;
   }
 
-  .article-link--related .article-link__summary {
-    -webkit-line-clamp: 3;
+  /* Article archive: text owns the stable scan axis. Images are optional
+     secondary media, so no-image rows remain complete without placeholders. */
+  .huikai-post-list-item > .thumbnail {
+    width: 100%;
+    aspect-ratio: 3 / 2;
   }
 
-  /* Article archive: keep a stable left-hand text axis on desktop while
-     preserving Blowfish's native image-first stack on smaller screens. */
   @media (min-width: 768px) {
     .huikai-post-list-item > .thumbnail {
       order: 2;
+      width: clamp(11rem, 28%, 15rem);
       margin-inline-start: 1.75rem;
       margin-inline-end: 0;
     }
