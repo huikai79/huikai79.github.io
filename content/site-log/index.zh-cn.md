@@ -18,6 +18,54 @@ build:
 
 - 本页分成三层：已完成事项按日期留下；需要等规模、资料或使用情境成熟后才值得处理的项目放在“待条件成熟再评估”；已有明确下一步但尚未完成的事项放在“下次可完善”。条件达成且实际完成后，再移入当天记录。一般小修补不逐项记录。
 
+## 2026-09-16｜文章列表、读后导航与作者／分享语义重新整理
+
+### Archive、Related 与无图文章
+
+- `/posts/` 文章 Archive 改以稳定文字信息作为骨架：标题、日期／阅读时间与 Notion `Summary → description` 摘要固定存在，桌面只在有图时于右侧补上 optional thumbnail；手机维持图片在上、文字在下。没有 Hero 的文章不再补 placeholder，也不再为了版面完整度强制产生图片。
+- Related Articles 从固定 3 栏图片卡改为完整宽度的纯文字阅读列表，使用标题、meta 与 editorial description；0／1／2／3 篇都能维持完整构图，也不再因单篇推荐只占三分之一栏而留下大面积空白。
+- 摘要行为收敛在文章探索 surface，本次没有打开全站 `list.showSummary`，也没有新增 Notion 字段；既有 `description` 继续是 Archive／Related 的单一 editorial summary 来源。
+
+### 作者身份与分享入口
+
+- 文章底部的“作者”改为“关于我”，保留头像、名称与简介并连回 About；Facebook／GitHub／Spotify 不再与文章分享按钮并列，而是移到 About 的“其他地方”，且直接重用既有 author links 设置，不建立第二份 URL 数据。
+- 五个分享平台收进原生 `<details>/<summary>` 的“分享本文”入口，并加入平台中立的“复制链接”与成功／失败反馈；整体不引入新的 UI framework。
+- 这次调整把 Homepage、Archive、Related 的工作分开：首页负责遇见内容，Archive 负责时间轴扫描与回找，Related 只负责读完后的下一步，不再要求三个 surface 使用同一种卡片视觉。
+
+### 最新真实数据、部署与 live 验证
+
+- PR #160 在 merge 前通过 Hugo validation、Chromium／Firefox／WebKit 跨浏览器 QA，以及 latest production Notion materialized preflight；preflight 读取 27 笔正式内容，27 笔全数沿用、0 rebuilt、0 deleted，完整 `build-and-verify` 通过且没有产生额外 material change。
+- PR #160 合并后建立正式 main commit `c30ada37427c94dbe2ee885db7c8d056e09e167a`；validator run `35048246718` 重新以最新 Notion production state 验证同一 SHA，没有建立第二个同步 commit；deployer run `35048353655` 随后精确构建并部署 `c30ada…` 到 GitHub Pages。
+- 正式 deployment 后的 live-reader QA 再次通过文章阅读、TOC、CJK 长文、回到顶部与首页入口等行为。Cloudflare purge 目前未配置，因此该步骤未执行；但 Pages deployment 与 live production 验证均成功。
+
+### Changed-route live QA 与 publication rights advisory
+
+- PR #161 补上 exact-commit changed-route production QA：由实际部署 commit diff 推导受影响的 zh-TW／zh-CN 文章路由，桌面与手机分别检查 HTTP、route、H1、正文、overflow 与 broken image；删除路由也会验证不得残留 2xx。
+- 把两个曾实际出现的内容语义错误升级为 live regression：`/posts/menulis-dalam-masyarakat-rencam/` 必须保留正常段落／divider、不得产生误判 H2／TOC；`/posts/writing-advice/` 的普通 YouTube URL 必须保持 hyperlink，不得转成对应 iframe。
+- Notion 新增独立 `Source Use` select（`Original / Reference`、`Excerpt`、`Translation`、`Republication`、`Adaptation`），publication contract 会和 `Rights Status`、source-rights registry 一起产生可追溯 evidence。迁移阶段 rights 缺口维持 non-blocking advisory；首次 production contract 显示 27 笔正式内容中 25 笔仍缺 `Source Use`、需要后续整理，这是 metadata completeness 问题，不代表已完成权利判定。
+- PR #161 merge commit `ae05e95ed300c51c23abf49ac9607ca1375c11d6` 后，sync run `35049908935` 以最新 Notion production state 重建并验证 27／27 bundles；最终 material site change 为 false，但 generator contract 更新建立新的同步 state `737647709f32379453a40c2122cc30241a27b568`。deployment run `35050135863` 精确构建并部署 `737647…`，同一 run 的 changed-route QA、content-semantics regression、一般 live-reader、TOC、CJK 长文、回到顶部与首页入口验证全部通过。
+
+## 2026-09-15｜文章图片契约、Notion 语义边界与 API 韧性补强
+
+### Hero、Social Preview 与来源权利观测
+
+- 将“没有 Hero”正式视为合法文章状态：同步／生成器不再把正文第一张图片或程序化 fallback 自动升格为 Hero；Social Preview 保持独立解析与 deterministic fallback，因此“无主图”不等于“无社群预览”。
+- 撤回 9 月 10 日把 Notion `last_edited_time` 直接当成读者可见 Hugo `lastmod` 的做法；Notion 编辑时间仍可供 manifest／同步失效判断，但不再被当成有编辑语义的“文章更新日期”。Hero 在缺少独立 alt 契约时默认视为 decorative。
+- 建立 reusable source-rights registry／resolver，让 source date 与 rights metadata 可以进入 publication contract 与测试；目前采用 observability-first，不因新增权利资料就突然阻挡既有内容。外部 canonical source 的翻译 bundle 也补上正确 routing，既有 translation target 可由 canonical source deterministic backfill 缺少的来源 metadata。
+- 正式内容同步新增《AI 时代，写博客依然值得》繁体版本与《写作建议》简体版本；9 月 15 日末 production 内容总数收敛为 27 篇／语言版本。
+
+### Notion → Markdown 语义契约
+
+- 修正普通 YouTube hyperlink 被全局 regex 误转成播放器 shortcode 的问题；现在只有真正的 Notion external YouTube video block 才会转成 Hugo YouTube player，uploaded MP4 仍走既有 `notion-video` gateway。
+- Notion divider 改输出 `* * *`，避免裸 `---` 紧贴前一个非空白 block 时被 Markdown 误解成 Setext heading、污染正文与 TOC。
+- 新增 Markdown semantic contract 并接入 `build-and-verify.sh`：拒绝 shortcode 落入 Markdown link destination，也检查 `---`／`===` 的 Setext ambiguity，让 converter 的语义错误在进入公开页面前失败。
+
+### Notion API transport 与 rate-limit 韧性
+
+- 将 Notion 存取收敛到共享 transport，涵盖 publication contract、正式 sync、staged page checks、metadata enrichment、targeted／automatic translation 与 external URL ingestion；CI 也检查这些 consumer 不再各自绕过共同 transport。
+- 对 HTTP 429／529 优先遵守 `Retry-After`，否则使用有上限的 exponential backoff + jitter；一般 5xx 只对可安全重试的 read／idempotent 请求重试，不重送有副作用的 unsafe write。
+- 这轮修改在 9 月 15 日完成 production materialization 后，由 main sync state `4003dac818c80098f13a49721dfbbf4e4180d842` 收敛；后续 9 月 16 日 exact-main production deployment 已包含上述全部变更并通过 live reader QA。
+
 ## 2026-09-14｜发布流程单一化、完整候选验证与 taxonomy 修复
 
 ### Main release orchestration 与 full-candidate gate
