@@ -170,22 +170,26 @@ def all_json_strings(value: object) -> list[str]:
     return []
 
 
-# Native Blowfish/Hugo discovery controls must stay enabled; the project should
-# extend these capabilities rather than replace them with a parallel search or
-# pagination implementation.
+# Native Blowfish/Hugo search and semantic related-reading controls stay
+# enabled. Chronological previous/next pagination is intentionally disabled for
+# ordinary HUIKAI articles; any future sequence navigation must be backed by an
+# explicit series contract rather than publication order.
 params_text = (ROOT / "config" / "_default" / "params.toml").read_text(encoding="utf-8")
 hugo_text = (ROOT / "config" / "_default" / "hugo.toml").read_text(encoding="utf-8")
 single_text = (ROOT / "layouts" / "_default" / "single.html").read_text(encoding="utf-8")
-for token in ('enableSearch = true', 'showPagination = true', 'showRelatedContent = true'):
+for token in ('enableSearch = true', 'showRelatedContent = true'):
     if token not in params_text:
         fail(f"Native reader discovery control is disabled or missing: {token}")
+if 'showPagination = false' not in params_text:
+    fail("Ordinary article chronological pagination must remain disabled")
 if 'home = ["HTML", "RSS", "JSON"]' not in hugo_text:
     fail("Native search JSON output is not enabled for the language home pages")
 if 'format = "formats"' not in hugo_text:
     fail("Reader-facing format taxonomy is not configured")
-for token in ('partial "article-pagination.html"', 'partial "related.html"'):
-    if token not in single_text:
-        fail(f"Article discovery partial is missing: {token}")
+if 'partial "article-pagination.html"' in single_text:
+    fail("Ordinary article template must not render chronological previous/next pagination")
+if 'partial "related.html"' not in single_text:
+    fail('Article discovery partial is missing: partial "related.html"')
 
 home = parse_page(PUBLIC / "index.html", "homepage")
 if home:
