@@ -118,12 +118,12 @@
         {{ partial "extend-article-link.html" . }}
       {{ end }}
     </header>
-    <div class="text-sm text-neutral-500 dark:text-neutral-400">
+    <div class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
       {{ partial "article-meta/basic.html" . }}
     </div>
     {{ if $isPost }}
       {{ with .Description }}
-        <div class="article-link__summary prose dark:prose-invert mt-1 max-w-none text-sm">
+        <div class="article-link__summary prose dark:prose-invert mt-2 max-w-none text-base leading-[1.65]">
           {{ . | plainify }}
         </div>
       {{ end }}
