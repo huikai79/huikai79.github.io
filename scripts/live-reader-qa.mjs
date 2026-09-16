@@ -323,6 +323,38 @@ async function verifyComments(browser) {
       fail("public article does not expose the HUIKAI comments surface");
       return;
     }
+
+    const composeToggle = page.locator("[data-comments-compose-toggle]");
+    const composer = page.locator("[data-comments-composer]");
+    if (!(await composeToggle.count()) || !(await composer.count())) {
+      fail("HUIKAI comments progressive composer controls are missing");
+      return;
+    }
+
+    const initialComposer = await page.evaluate(() => {
+      const toggle = document.querySelector("[data-comments-compose-toggle]");
+      const composerNode = document.querySelector("[data-comments-composer]");
+      return {
+        composerHidden: Boolean(composerNode?.hidden),
+        expanded: toggle?.getAttribute("aria-expanded") || "",
+        toggleHeight: toggle?.getBoundingClientRect().height || 0,
+      };
+    });
+    if (!initialComposer.composerHidden || initialComposer.expanded !== "false") {
+      fail("HUIKAI comments composer is not collapsed by default");
+    }
+    if (initialComposer.toggleHeight < 44) {
+      fail(`HUIKAI comments compose toggle is too small (${initialComposer.toggleHeight.toFixed(1)}px)`);
+    }
+
+    await composeToggle.click();
+    try {
+      await composer.waitFor({ state: "visible", timeout: 5_000 });
+    } catch {
+      fail("HUIKAI comments composer did not open after reader intent");
+      return;
+    }
+
     const state = await page.evaluate(() => {
       const comments = document.querySelector(".huikai-comments");
       const commentsOuter = comments?.closest(".article-footer");
@@ -331,12 +363,15 @@ async function verifyComments(browser) {
         .filter(element => element !== commentsOuter)
         .at(-1);
       const commentsInsideReading = Boolean(document.querySelector(".article-reading-layout .huikai-comments"));
+      const toggle = document.querySelector("[data-comments-compose-toggle]");
+      const composerNode = document.querySelector("[data-comments-composer]");
       const rect = element => {
         if (!element) return null;
         const value = element.getBoundingClientRect();
         return { left: value.left, right: value.right, width: value.width };
       };
       const controls = [
+        toggle,
         document.querySelector("[data-comments-name]"),
         document.querySelector("[data-comments-body]"),
         document.querySelector("[data-comments-submit]"),
@@ -350,11 +385,13 @@ async function verifyComments(browser) {
         reference: rect(reference),
         reading: rect(reading),
         commentsInsideReading,
+        composerHidden: Boolean(composerNode?.hidden),
+        expanded: toggle?.getAttribute("aria-expanded") || "",
         minControlHeight: Math.min(...controls),
         overflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
       };
     });
-    report.interactions.comments = { provider: "huikai", ...state };
+    report.interactions.comments = { provider: "huikai", initialComposer, ...state };
     if (!state.key.startsWith("notion:")) fail(`HUIKAI comments key is invalid: ${state.key || "EMPTY"}`);
     if (state.api !== "/api/comments/v1") fail(`HUIKAI comments API contract drifted: ${state.api || "EMPTY"}`);
     if (state.giscusScripts !== 0 || state.giscusFrames !== 0) fail("production article unexpectedly loads Giscus alongside HUIKAI comments");
@@ -369,6 +406,7 @@ async function verifyComments(browser) {
     }
     if (!state.reading) fail("comments layout: article reading content anchor is missing");
     if (state.commentsInsideReading) fail("comments layout: HUIKAI comments remain inside the TOC reading grid");
+    if (state.composerHidden || state.expanded !== "true") fail("HUIKAI comments composer state did not reflect the open interaction");
     if (state.minControlHeight < 44) fail(`HUIKAI comments interactive target is too small (${state.minControlHeight.toFixed(1)}px)`);
     if (state.overflowX > 1) fail(`HUIKAI comments introduce horizontal overflow (${state.overflowX.toFixed(1)}px)`);
   } finally {
