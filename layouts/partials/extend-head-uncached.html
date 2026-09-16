@@ -63,6 +63,16 @@
     margin-bottom: 0.9rem;
   }
 
+  /* Article archive: keep a stable left-hand text axis on desktop while
+     preserving Blowfish's native image-first stack on smaller screens. */
+  @media (min-width: 768px) {
+    .huikai-post-list-item > .thumbnail {
+      order: 2;
+      margin-inline-start: 1.75rem;
+      margin-inline-end: 0;
+    }
+  }
+
   @media (max-width: 767.98px) {
     .article-main > h2 {
       margin-top: 2.5rem;
