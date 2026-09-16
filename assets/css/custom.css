@@ -129,6 +129,54 @@ body {
   }
 }
 
+/* ----------------- Post archive preview geometry ----------------- */
+.huikai-post-list-item {
+  --huikai-preview-media-width: 300px;
+  --huikai-preview-gap: 1.75rem;
+}
+
+@media (min-width: 853px) {
+  .huikai-post-list-item--with-media {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--huikai-preview-media-width);
+    column-gap: var(--huikai-preview-gap);
+    align-items: start;
+  }
+
+  .huikai-post-list-item--with-media .huikai-post-list-content {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    max-width: none;
+  }
+
+  .huikai-post-list-item--with-media .huikai-post-list-media {
+    grid-column: 2;
+    grid-row: 1;
+    width: var(--huikai-preview-media-width);
+    min-width: var(--huikai-preview-media-width);
+  }
+
+  .huikai-post-list-item--text-only .huikai-post-list-content {
+    width: calc(100% - var(--huikai-preview-media-width) - var(--huikai-preview-gap));
+    max-width: calc(100% - var(--huikai-preview-media-width) - var(--huikai-preview-gap));
+    flex: none;
+  }
+}
+
+@media (max-width: 852.98px) {
+  .huikai-post-list-item--with-media .huikai-post-list-content,
+  .huikai-post-list-item--text-only .huikai-post-list-content {
+    width: 100%;
+    max-width: none;
+  }
+
+  .huikai-post-list-item--with-media .huikai-post-list-media {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 /* ----------------- Scroll-to-top ----------------- */
 .scroll-to-top {
   --scroll-to-top-inline-end: 1.25rem;
