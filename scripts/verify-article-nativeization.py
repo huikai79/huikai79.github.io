@@ -19,18 +19,21 @@ def fail(message: str) -> None:
 def source_contract() -> None:
     template = (ROOT / "layouts" / "_default" / "single.html").read_text(encoding="utf-8")
     required = [
-        'partial "article-pagination.html" .',
         'partial "related.html" .',
         'partial "article/author.html" .',
         'partial "article-comments.html" .',
-        'partial "sharing-links.html" .',
     ]
     for token in required:
         if token not in template:
             fail(f"Article template is missing required native/preserved partial: {token}")
-    for token in ['partial "article/pagination.html" .', 'partial "article/related.html" .']:
+    for token in [
+        'partial "article-pagination.html" .',
+        'partial "article/pagination.html" .',
+        'partial "article/related.html" .',
+        'partial "sharing-links.html" .',
+    ]:
         if token in template:
-            fail(f"Legacy article partial is still active in single.html: {token}")
+            fail(f"Article template contains an obsolete standalone footer partial: {token}")
     if "post-hero" not in template or "article-main" not in template:
         fail("Gate 6 phase 1 must preserve the custom article hero/body boundary")
     if "replaceRE `<h1([^>]*)>`" not in template:
@@ -38,6 +41,14 @@ def source_contract() -> None:
     for token in [".Params.categories", ".Params.entryType", ".Description", "article-context", "article-summary"]:
         if token not in template:
             fail(f"Article reader context contract is missing: {token}")
+
+    author = (ROOT / "layouts" / "partials" / "article" / "author.html").read_text(encoding="utf-8")
+    if 'partial "sharing-links.html" .' not in author:
+        fail("Article endcap must keep sharing available alongside author context")
+
+    params = (ROOT / "config" / "_default" / "params.toml").read_text(encoding="utf-8")
+    if 'showPagination = false' not in params:
+        fail("Ordinary article chronological pagination must remain disabled")
 
     related = (ROOT / "layouts" / "partials" / "related.html").read_text(encoding="utf-8")
     for token in [".Site.RegularPages.Related", "related-reading-list", "related-reading-item", ".Description"]:
@@ -125,12 +136,6 @@ def rendered_contract() -> int:
 
     if len(rendered_paths) > 1:
         existing = [p for p in rendered_paths if p.is_file()]
-        if existing and not any(
-            "border-dotted" in p.read_text(encoding="utf-8", errors="replace")
-            and "leading-6" in p.read_text(encoding="utf-8", errors="replace")
-            for p in existing
-        ):
-            fail("Blowfish native article pagination markup was not found in rendered articles")
         if existing and related_lists_found == 0:
             fail("HUIKAI related-reading list was not found in rendered articles")
 
