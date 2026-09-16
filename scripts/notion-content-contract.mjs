@@ -85,7 +85,7 @@ export function extractEditorialFields(properties = {}) {
   const explicitTranslationGroup = richTextValue(properties["Translation Group"]);
   const slug = richTextValue(properties.slug);
 
-  return {
+  const fields = {
     visibility: selectValue(properties.Visibility),
     category: selectValue(properties.Category),
     entryType: selectValue(properties.Type),
@@ -101,6 +101,18 @@ export function extractEditorialFields(properties = {}) {
     translationSourceRevision: richTextValue(properties["Translation Source Revision"]),
     translationEngine: richTextValue(properties["Translation Engine"])
   };
+
+  // Rights fields are a backwards-compatible schema extension. Tests and old
+  // snapshots that predate the Notion properties keep their existing shape,
+  // while current database rows expose the fields to the publication audit.
+  if (Object.hasOwn(properties, "Source Use")) {
+    fields.sourceUse = selectValue(properties["Source Use"]);
+  }
+  if (Object.hasOwn(properties, "Rights Status")) {
+    fields.rightsStatus = selectValue(properties["Rights Status"]);
+  }
+
+  return fields;
 }
 
 export function provenanceIssues(candidate = {}) {

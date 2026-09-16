@@ -14,6 +14,12 @@ import {
 } from "./notion-cover-contract.mjs";
 import { notionPresentationFingerprint } from "./notion-presentation-fingerprint.mjs";
 import { translationFamilyContractIssues } from "./notion-translation-family-contract.mjs";
+import {
+  loadSourceRightsRegistry,
+  resolveSourceRightsPolicy,
+  rightsPolicySummary
+} from "./source-rights-registry.mjs";
+import { publicationRightsAdvisory } from "./notion-rights-audit.mjs";
 
 const token = process.env.NOTION_TOKEN;
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -30,6 +36,7 @@ if (!new Set(["production", "preview"]).has(mode)) {
 const notion = createNotionClient({ auth: token, transportLabel: "publication-contract" });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 const filter = buildNotionFilter(mode);
+const rightsRegistry = await loadSourceRightsRegistry();
 const pages = [];
 let cursor;
 
@@ -56,6 +63,7 @@ const slugFamilies = new Map();
 const familyMembers = new Map();
 const sourceRecordsById = new Map();
 const failures = [];
+const rightsAdvisories = [];
 const rows = [];
 
 function notionPageUrl(page) {
@@ -93,6 +101,8 @@ for (const page of pages) {
   const editorial = extractEditorialFields(props);
   const label = pageLabel(page, title);
   const notionUrl = notionPageUrl(page);
+  const rightsPolicy = rightsPolicySummary(resolveSourceRightsPolicy(editorial.sourceUrl, rightsRegistry));
+  const rightsAudit = publicationRightsAdvisory(editorial, rightsPolicy);
   let coverPlan = null;
   let presentationFingerprint = null;
 
@@ -142,6 +152,20 @@ for (const page of pages) {
       failures.push(`${label}: translation governance: ${issue}`);
     }
 
+    for (const finding of rightsAudit.findings) {
+      rightsAdvisories.push({
+        pageId: page.id,
+        notionUrl,
+        title,
+        slug,
+        sourceUrl: editorial.sourceUrl,
+        sourceUse: editorial.sourceUse,
+        rightsStatus: editorial.rightsStatus,
+        policy: rightsPolicy,
+        ...finding
+      });
+    }
+
     const previous = manifest?.pages?.[page.id];
     if (previous?.slug && previous.slug !== slug) {
       failures.push(
@@ -180,6 +204,8 @@ for (const page of pages) {
     slug,
     lastEditedTime: page.last_edited_time ?? "",
     ...editorial,
+    rightsPolicy,
+    rightsAudit,
     coverPlan,
     presentationFingerprint
   });
@@ -235,11 +261,20 @@ const report = {
   coverReadyCount: rows.filter(row => row.coverPlan?.ready === true).length,
   semanticCoverNeededCount: rows.filter(row => row.coverPlan?.strategy === "semantic-cover-required").length,
   translationFamilyCount: familyMembers.size,
+  rightsReviewCount: rightsAdvisories.length,
+  rightsAdvisories,
   failures,
   pages: rows
 };
 
 await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+
+for (const advisory of rightsAdvisories) {
+  console.warn(
+    `::warning::${advisory.title || advisory.pageId} [${advisory.pageId}]: rights advisory ` +
+    `${advisory.code}: ${advisory.message}`
+  );
+}
 
 if (failures.length) {
   for (const failure of failures) {
@@ -251,13 +286,14 @@ if (failures.length) {
   }
   console.log(
     `Notion publication health: BLOCKED but non-blocking ` +
-    `(mode=${mode}, issues=${failures.length}, report=${reportPath})`
+    `(mode=${mode}, issues=${failures.length}, rightsReview=${rightsAdvisories.length}, report=${reportPath})`
   );
 } else {
   console.log(
     `Notion publication contract: PASS ` +
     `(mode=${mode}, pages=${rows.length}, public=${report.productionCount}, ` +
     `families=${report.translationFamilyCount}, coverReady=${report.coverReadyCount}, ` +
-    `semanticNeeded=${report.semanticCoverNeededCount}, report=${reportPath})`
+    `semanticNeeded=${report.semanticCoverNeededCount}, rightsReview=${rightsAdvisories.length}, ` +
+    `report=${reportPath})`
   );
 }
