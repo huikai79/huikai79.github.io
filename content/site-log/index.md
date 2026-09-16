@@ -45,6 +45,7 @@ build:
 - 將「沒有 Hero」正式視為合法文章狀態：同步／產生器不再把正文第一張圖片或程序化 fallback 自動升格為 Hero；Social Preview 保持獨立解析與 deterministic fallback，因此「無主圖」不等於「無社群預覽」。
 - 撤回 9 月 10 日把 Notion `last_edited_time` 直接當成讀者可見 Hugo `lastmod` 的做法；Notion 編輯時間仍可供 manifest／同步失效判斷，但不再被當成有編輯語義的「文章更新日期」。Hero 在缺少獨立 alt 契約時預設視為 decorative。
 - 建立 reusable source-rights registry／resolver，讓 source date 與 rights metadata 可以進入 publication contract 與測試；目前採 observability-first，不因新增權利資料就突然阻擋既有內容。外部 canonical source 的翻譯 bundle 也補上正確 routing，既有 translation target 可由 canonical source deterministic backfill 缺少的來源 metadata。
+- 正式內容同步新增《AI 時代，寫部落格依然值得》繁體版本與《寫作建議》簡體版本；9 月 15 日末 production 內容總數收斂為 27 篇／語言版本。
 
 ### Notion → Markdown 語義契約
 
