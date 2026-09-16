@@ -1,6 +1,6 @@
 <div class="article-footer mx-auto mt-12 w-full max-w-3xl px-4">
-  <section class="border-t border-neutral-200 py-6 dark:border-neutral-700" aria-label="{{ i18n "huikai.about_me" }}">
-    <div class="mx-auto flex w-fit max-w-full items-center gap-4 text-left">
+  <section class="article-endcap border-t border-neutral-200 py-6 dark:border-neutral-700" aria-label="{{ i18n "huikai.about_me" }}">
+    <div class="article-endcap__author">
       {{ with .Site.Params.Author.image }}
         <img
           src="{{ . | safeURL }}"
@@ -16,11 +16,17 @@
         {{ with .Site.Params.Author.bio }}
           <div class="author-bio">{{ . }}</div>
         {{ end }}
-        <a
-          class="mt-2 inline-flex text-sm font-medium text-primary-600 hover:underline hover:underline-offset-4 dark:text-primary-400"
-          href="{{ "about/" | relLangURL }}">
-          {{ i18n "huikai.about_more" }}
-        </a>
+      </div>
+    </div>
+
+    <div class="article-endcap__actions">
+      <a
+        class="article-endcap__about-link"
+        href="{{ "about/" | relLangURL }}">
+        {{ i18n "huikai.about_more" }}
+      </a>
+      <div class="article-endcap__share">
+        {{ partial "sharing-links.html" . }}
       </div>
     </div>
   </section>
