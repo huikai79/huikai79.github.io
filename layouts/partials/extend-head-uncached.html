@@ -63,6 +63,31 @@
     margin-bottom: 0.9rem;
   }
 
+  /* Discovery summaries stay intentionally compact. */
+  .huikai-post-list-item .article-link__summary,
+  .related-reading-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+  }
+
+  /* Article archive: text owns the stable scan axis. Images are optional
+     secondary media, so no-image rows remain complete without placeholders. */
+  .huikai-post-list-item > .thumbnail {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+  }
+
+  @media (min-width: 768px) {
+    .huikai-post-list-item > .thumbnail {
+      order: 2;
+      width: clamp(11rem, 28%, 15rem);
+      margin-inline-start: 1.75rem;
+      margin-inline-end: 0;
+    }
+  }
+
   @media (max-width: 767.98px) {
     .article-main > h2 {
       margin-top: 2.5rem;
