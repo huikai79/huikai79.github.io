@@ -24,8 +24,8 @@
   /* Blowfish list pages wrap markdown content in max-w-prose while simple
      pages do not. Remove that template-specific constraint only for entry
      pages using page-lead, then re-apply the shared reading measure to prose
-     blocks. This keeps /projects/ on the same shell as /explore/ and /about/
-     without stretching its two cards or changing the global list template. */
+     blocks. This keeps /posts/ and /projects/ on the same outer shell as
+     /explore/ and /about/ without changing the global list template. */
   #main-content:has(.huikai-page-lead) > section.prose > div:has(> .huikai-page-lead) {
     width: 100%;
     max-width: none;
@@ -38,17 +38,26 @@
     max-width: var(--huikai-entry-reading-measure);
   }
 
+  /* The lead owns the full shell so its divider visibly establishes the same
+     page boundary across Posts, Projects, Explore and About. Only the text
+     inside the lead is constrained to the reading measure. */
   .huikai-page-lead {
-    max-width: var(--huikai-entry-reading-measure);
+    width: 100%;
+    max-width: none;
     margin-top: 0;
     color: rgb(var(--color-neutral-600, 82 82 82));
   }
 
-  .huikai-page-lead > :first-child {
+  .huikai-page-lead__body {
+    width: 100%;
+    max-width: var(--huikai-entry-reading-measure);
+  }
+
+  .huikai-page-lead__body > :first-child {
     margin-top: 0;
   }
 
-  .huikai-page-lead > :last-child {
+  .huikai-page-lead__body > :last-child {
     margin-bottom: 0;
   }
 
