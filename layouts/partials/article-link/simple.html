@@ -90,7 +90,9 @@
 
 <article class="article-link--simple group {{ $postVariantClass }} {{ $cardClasses }}">
   {{ with $featuredURL }}
-    <div class="flex-none relative overflow-hidden {{ if $isPost }}huikai-post-list-media md:mx-0 {{ end }}{{ $imgWrapperClasses }} thumbnail">
+    <div
+      class="flex-none relative overflow-hidden {{ if $isPost }}huikai-post-list-media {{ end }}{{ $imgWrapperClasses }} thumbnail"
+      {{ if $isPost }}style="margin-inline: 0 !important;"{{ end }}>
       <img
         src="{{ . }}"
         alt="{{ $page.Title }}"
