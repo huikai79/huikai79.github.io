@@ -1,6 +1,9 @@
 {{/* HUIKAI override of Blowfish v3.6.0 article-link/simple.html.
-     Keep the theme structure, but make post lists text-first on desktop and
-     use the editorial description (Notion Summary projection) for scanning. */}}
+     Keep post archives text-first on desktop, let optional media sit to the
+     right, and use the editorial description for scanning without enabling
+     summaries globally across unrelated list surfaces. */}}
+{{ $page := .Page }}
+{{ $isPost := eq $page.Section "posts" }}
 {{ $constrainItemsWidth := site.Params.list.constrainItemsWidth | default false }}
 {{ $disableImageOptimization := site.Store.Get "disableImageOptimization" }}
 
@@ -10,18 +13,20 @@
 
 {{ if .Params.showCards | default site.Params.list.showCards }}
   {{ $cardClasses = printf "%s overflow-hidden rounded-lg border border-neutral-300 dark:border-neutral-600" $cardClasses }}
-  {{ $imgWrapperClasses = "" }}
-  {{ $cardContentClasses = printf "%s p-4" $cardContentClasses }}
+  {{ $cardContentClasses = "p-4" }}
 {{ else }}
   {{ $imgWrapperClasses = "thumbnail-shadow" }}
-  {{ $cardContentClasses = printf "%s mt-3 md:mt-0" $cardContentClasses }}
+  {{ $cardContentClasses = "mt-3 md:mt-0" }}
 {{ end }}
 
-{{ if $constrainItemsWidth }}
+{{ if and $constrainItemsWidth (not $isPost) }}
   {{ $cardClasses = printf "%s max-w-prose" $cardClasses }}
 {{ end }}
+{{ if $isPost }}
+  {{ $cardClasses = printf "%s w-full" $cardClasses }}
+  {{ $cardContentClasses = printf "%s min-w-0 flex-1" $cardContentClasses }}
+{{ end }}
 
-{{ $page := .Page }}
 {{ $featured := "" }}
 {{ $featuredURL := "" }}
 {{ $featureImageHover := site.Params.list.featureImageHover | default false }}
@@ -74,7 +79,7 @@
   {{ end }}
 {{ end }}
 
-<article class="article-link--simple group {{ if eq $page.Section "posts" }}huikai-post-list-item {{ end }}{{ $cardClasses }}">
+<article class="article-link--simple group {{ if $isPost }}huikai-post-list-item {{ end }}{{ $cardClasses }}">
   {{ with $featuredURL }}
     <div class="flex-none relative overflow-hidden {{ $imgWrapperClasses }} thumbnail">
       <img
@@ -116,10 +121,10 @@
     <div class="text-sm text-neutral-500 dark:text-neutral-400">
       {{ partial "article-meta/basic.html" . }}
     </div>
-    {{ if and (eq $page.Section "posts") (.Params.showSummary | default (site.Params.list.showSummary | default false)) }}
+    {{ if $isPost }}
       {{ $summary := .Description | default (.Summary | plainify) }}
       {{ with $summary }}
-        <div class="article-link__summary prose dark:prose-invert mt-1 max-w-fit line-clamp-2 text-sm">
+        <div class="article-link__summary prose dark:prose-invert mt-1 max-w-none text-sm">
           {{ . | plainify }}
         </div>
       {{ end }}
