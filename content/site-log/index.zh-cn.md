@@ -18,6 +18,20 @@ build:
 
 - 本页分成三层：已完成事项按日期留下；需要等规模、资料或使用情境成熟后才值得处理的项目放在“待条件成熟再评估”；已有明确下一步但尚未完成的事项放在“下次可完善”。条件达成且实际完成后，再移入当天记录。一般小修补不逐项记录。
 
+## 2026-09-16｜文章列表预览节奏与读后导航完成收敛
+
+### 有图／无图文章的共通版面契约
+
+- `/posts/` 文章列表完成有图／无图混排的几何收敛：桌面版固定文字栏的起止位置与阅读宽度，Hero 只作为 optional media enhancement；没有 Hero 的文章不补 placeholder，也不把短效或无关图片硬塞进版面。
+- 桌面 `853px+` 的文章 preview 设置 180px minimum block height，让无 Hero 文章保留足够垂直呼吸，避免下一篇标题过度贴近；手机版则维持自然高度，不保留桌面用的空白。
+- “继续阅读”维持文字优先的 secondary discovery surface，不改成第二份 Archive；只小幅放松标题与项目垂直节奏，摘要固定最多两行，保留比主要文章目录更紧凑的层级。
+
+### 回归验证与正式上线
+
+- 新增 post preview geometry regression，直接量测有图／无图文字栏左右边界、300px media 栏、桌面 minimum height、文章起点 cadence、853px breakpoint 与 390px 手机回收行为；验证不再只依赖“没有 horizontal scrollbar”。
+- PR #166 先完成文字栏与 Related reading geometry／rhythm 修复；PR #167 再补上无图文章的 desktop vertical rhythm。两轮候选均通过 Hugo build、Chromium／Firefox／WebKit、CJK 长文、TOC、留言、回到顶部与 targeted geometry QA。
+- PR #167 最终 merge commit 为 `0256dfddec6a49e7820f1fa57bd267343c07164f`；deployment run `35081777834` 精确构建并部署同一 SHA 到 GitHub Pages，正式站的 changed-route、reader、post preview geometry／related-reading、TOC、CJK 与 back-to-top live QA 全部通过。
+
 ## 2026-09-16｜文章列表、读后导航与作者／分享语义重新整理
 
 ### Archive、Related 与无图文章

@@ -18,6 +18,20 @@ build:
 
 - 本頁分成三層：已完成事項按日期留下；需要等規模、資料或使用情境成熟後才值得處理的項目放在「待條件成熟再評估」；已有明確下一步但尚未完成的事項放在「下次可完善」。條件達成且實際完成後，再移入當天紀錄。一般小修補不逐項記錄。
 
+## 2026-09-16｜文章列表預覽節奏與讀後導覽完成收斂
+
+### 有圖／無圖文章的共通版面契約
+
+- `/posts/` 文章列表完成有圖／無圖混排的幾何收斂：桌面版固定文字欄的起訖位置與閱讀寬度，Hero 只作 optional media enhancement；沒有 Hero 的文章不補 placeholder，也不把短效或無關圖片硬塞進版面。
+- 桌面 `853px+` 的文章 preview 設定 180px minimum block height，讓無 Hero 文章保留足夠垂直呼吸、避免下一篇標題過度貼近；手機版則維持自然高度，不保留桌面用的空白。
+- 「繼續閱讀」維持文字優先的 secondary discovery surface，不改成第二份 Archive；只小幅放鬆標題與項目垂直節奏，摘要固定最多兩行，保留比主要文章目錄更緊湊的層級。
+
+### 回歸驗證與正式上線
+
+- 新增 post preview geometry regression，直接量測有圖／無圖文字欄左右邊界、300px media 欄、桌面 minimum height、文章起點 cadence、853px breakpoint 與 390px 手機回收行為；驗證不再只依賴「沒有 horizontal scrollbar」。
+- PR #166 先完成文字欄與 Related reading geometry／rhythm 修復；PR #167 再補上無圖文章的 desktop vertical rhythm。兩輪候選均通過 Hugo build、Chromium／Firefox／WebKit、CJK 長文、TOC、留言、回到頂部與 targeted geometry QA。
+- PR #167 最終 merge commit 為 `0256dfddec6a49e7820f1fa57bd267343c07164f`；deployment run `35081777834` 精確建置並部署同一 SHA 到 GitHub Pages，正式站的 changed-route、reader、post preview geometry／related-reading、TOC、CJK 與 back-to-top live QA 全部通過。
+
 ## 2026-09-16｜文章列表、讀後導覽與作者／分享語意重新整理
 
 ### Archive、Related 與無圖文章
@@ -121,7 +135,7 @@ build:
 
 - 「已公開」留言管理由 status-first 扁平清單改為 article-first：先依文章與最近活動找到討論，再進入文章內管理完整 thread；待審核仍維持 queue-first，已隱藏仍作為可恢復的 recovery queue。
 - Worker 新增 `/admin/articles`，並讓文章內留言查詢支援 `articleKey + limit + offset + total + hasMore`；原本超過 100 則後新留言可能不可到達的限制已由真正分頁取代，並加入 101+ 留言回歸。
-- Published 管理改用 effective public visibility：hidden root 下仍為 `approved` 的 descendants 不再被誤算成讀者可見；文章內仍保留 direct-reply、作者身份與讀者／管理員 tombstone，對話資料語義不因管理介面扁平化而遺失。
+- Published 管理改用 effective public visibility：hidden root 下仍為 `approved` 的 descendants 不再被誤算成讀者可見；文章內仍保留 direct-reply、作者身份與讀者／管理員 tombstone，對話資料語意不因管理介面扁平化而遺失。
 - Hugo build-time article manifest 以 `commentKey` 對應文章標題、路徑與語言，不把文章標題重複寫入 D1；多語文章採 exact path 優先、單一 variant fallback，遇到多個 variant 時明確顯示而不自行猜測。
 - V3 前端若遇到尚未升級的 Worker `/admin/articles` 404，會安全退回 V2 Published 清單，讓 Pages 與 Worker 可以分階段部署而不讓管理頁暫時失效。
 
@@ -134,11 +148,11 @@ build:
 
 ## 2026-09-11｜留言生命週期與多輪對話管理完成
 
-### 留言生命週期與對話語義
+### 留言生命週期與對話語意
 
 - HUIKAI 自有留言從單輪審核擴充為完整生命週期：管理端區分「待審核／已公開／已隱藏」，已公開留言可隱藏後再恢復；刪除時則依是否存在後續回覆決定永久刪除或保留匿名 tombstone，避免破壞既有對話脈絡。
-- 讀者撤回語義同步補齊：尚未公開的留言可直接撤回刪除；已公開且已有對話脈絡的內容則轉成「已撤回」節點，兼顧個人撤回權與公開討論的可理解性。
-- 新增 `reply_to_id` 與穩定的 root thread 語義，使讀者與 HUIKAI 可以直接互相回覆多輪；資料保留真正的直接回覆關係，讀者介面仍維持最多兩層的平坦閱讀結構，不讓巢狀對話不斷向右縮排。
+- 讀者撤回語意同步補齊：尚未公開的留言可直接撤回刪除；已公開且已有對話脈絡的內容則轉成「已撤回」節點，兼顧個人撤回權與公開討論的可理解性。
+- 新增 `reply_to_id` 與穩定的 root thread 語意，使讀者與 HUIKAI 可以直接互相回覆多輪；資料保留真正的直接回覆關係，讀者介面仍維持最多兩層的平坦閱讀結構，不讓巢狀對話不斷向右縮排。
 - 留言保存 `page_path`，管理頁可直接看出留言所屬文章、根留言與實際回覆目標；作者回覆也會沿用同一文章與 thread 脈絡。
 
 ### 資料、部署與驗證
@@ -190,7 +204,7 @@ build:
 ### 留言、發布流程與驗證
 
 - 正式留言由 Giscus 切換到 HUIKAI 自有的免帳號留言服務；既有 Giscus 保留為可驗證的 rollback 路徑，而不是同時在 production 載入兩套留言系統。
-- 將留言與讀後導覽正式拆出正文／TOC 閱讀格線，讓 sticky TOC 隨正文結束；留言表單同步收斂高度、空狀態、Turnstile 顯示、欄位語義與狀態處理，降低讀完正文後的視覺競爭。
+- 將留言與讀後導覽正式拆出正文／TOC 閱讀格線，讓 sticky TOC 隨正文結束；留言表單同步收斂高度、空狀態、Turnstile 顯示、欄位語意與狀態處理，降低讀完正文後的視覺競爭。
 - 補齊留言區有留言、0 則留言、載入失敗、桌機／手機、亮／暗模式與窄寬 Turnstile 等回歸，並修正專項截圖保存與 production live-reader QA 的結構判斷，使候選版與正式站使用同一套讀後區邊界。
 - 將純程式／CSS／模板的 code-only release 與 Notion publication health 適度解耦，避免某一篇 Notion 內容資料異常時，連無關的前端修正都無法發布。
 - Notion publication health 改由唯讀流程檢查；真正同步仍維持 fail-closed，且 exact-current-main／exact-SHA 部署邊界保留。
