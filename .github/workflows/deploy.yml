@@ -194,7 +194,7 @@ jobs:
     needs:
       - guard
       - deploy
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: read
     env:
@@ -202,6 +202,8 @@ jobs:
       EXPECTED_SOURCE_SHA: ${{ needs.guard.outputs.source_sha }}
       LIVE_QA_OUTPUT: live-reader-qa
       LIVE_CHANGED_ROUTE_PLAN: live-reader-qa/changed-routes.json
+      ENTRY_PAGE_QA_OUTPUT: live-reader-qa/entry-page-layout
+      ENTRY_MEDIA_QA_OUTPUT: live-reader-qa/entry-media-readiness
     steps:
       - name: Checkout exact QA script source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -214,6 +216,11 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
+
+      - name: Syntax-check production visual verifiers
+        run: |
+          node --check scripts/verify-entry-page-layout.mjs
+          node --check scripts/verify-entry-media-readiness.mjs
 
       - name: Install pinned Playwright runtime
         env:
@@ -238,6 +245,14 @@ jobs:
           done
           echo "::error::Production edge did not expose expected source SHA $SOURCE_SHA"
           exit 1
+
+      - name: Verify production entry page geometry and readability
+        env:
+          WEEKLY_QA_OUTPUT: ${{ env.ENTRY_PAGE_QA_OUTPUT }}
+        run: node scripts/verify-entry-page-layout.mjs
+
+      - name: Verify production entry media readiness before screenshots
+        run: node scripts/verify-entry-media-readiness.mjs
 
       - name: Plan changed article routes from exact source commit
         run: node scripts/changed-article-route-plan.mjs "$LIVE_CHANGED_ROUTE_PLAN"
