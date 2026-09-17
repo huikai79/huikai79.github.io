@@ -37,6 +37,14 @@ export function frontMatterSlug(text = "") {
   return value;
 }
 
+function articleBundleSlug(filePath = "") {
+  const normalized = String(filePath).replaceAll("\\", "/");
+  if (!normalized.startsWith(CONTENT_PREFIX)) return "";
+  const rest = normalized.slice(CONTENT_PREFIX.length);
+  const slash = rest.indexOf("/");
+  return slash > 0 ? rest.slice(0, slash) : "";
+}
+
 export function articlePathInfo(filePath = "", routeSlug = "") {
   const normalized = String(filePath).replaceAll("\\", "/");
   if (!normalized.startsWith(CONTENT_PREFIX)) return null;
@@ -48,13 +56,7 @@ export function articlePathInfo(filePath = "", routeSlug = "") {
   if (!bundleSlug || !relative) return null;
   const language = CONTENT_FILES.get(relative) || "";
   const slug = routeSlug || bundleSlug;
-  return {
-    slug,
-    bundleSlug,
-    relative,
-    language,
-    route: language ? articleRoute(slug, language) : ""
-  };
+  return { slug, relative, language, route: language ? articleRoute(slug, language) : "" };
 }
 
 export function parseNameStatus(text = "") {
@@ -103,11 +105,12 @@ export function planChangedArticleRoutes(changes = [], currentPaths = [], routeS
 
   function touch(filePath, reason) {
     const info = resolvedInfo(filePath);
-    if (!info) return;
-    const entry = touchedBundles.get(info.bundleSlug) ?? { reasons: new Set(), paths: new Set() };
+    const bundleSlug = articleBundleSlug(filePath);
+    if (!info || !bundleSlug) return;
+    const entry = touchedBundles.get(bundleSlug) ?? { reasons: new Set(), paths: new Set() };
     entry.reasons.add(reason);
     entry.paths.add(String(filePath).replaceAll("\\", "/"));
-    touchedBundles.set(info.bundleSlug, entry);
+    touchedBundles.set(bundleSlug, entry);
   }
 
   for (const change of changes) {
@@ -116,13 +119,15 @@ export function planChangedArticleRoutes(changes = [], currentPaths = [], routeS
 
     if (change.status.startsWith("D") && change.path) {
       const info = resolvedInfo(change.path);
-      if (info?.language) deletedContent.push({ ...info, status: change.status });
+      const bundleSlug = articleBundleSlug(change.path);
+      if (info?.language && bundleSlug) deletedContent.push({ ...info, bundleSlug, status: change.status });
     }
     if (/^R\d+/.test(change.status) && change.oldPath) {
       const oldInfo = resolvedInfo(change.oldPath);
       const newInfo = resolvedInfo(change.path);
-      if (oldInfo?.language && (!newInfo || oldInfo.route !== newInfo.route)) {
-        deletedContent.push({ ...oldInfo, status: change.status });
+      const bundleSlug = articleBundleSlug(change.oldPath);
+      if (oldInfo?.language && bundleSlug && (!newInfo || oldInfo.route !== newInfo.route)) {
+        deletedContent.push({ ...oldInfo, bundleSlug, status: change.status });
       }
     }
   }
