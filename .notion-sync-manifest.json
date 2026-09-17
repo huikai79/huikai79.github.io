@@ -108,8 +108,8 @@
       "language": "zh-TW",
       "translationGroup": "my-website-is-a-shifting-house",
       "contentFile": "index.md",
-      "lastEditedTime": "2026-09-16T07:05:00.000Z",
-      "bundleHash": "a3ce7c8e8a0e272bdf4d7f3794525cd7e1189a64963cae49a7e1727fb749cf20",
+      "lastEditedTime": "2026-09-16T16:08:00.000Z",
+      "bundleHash": "c34b99381ca310c6eb54f3351f92f00899e35bc5bbba526f898eb38b13afa9f9",
       "presentationFingerprint": "581a235e441b8c3a3245d435454f1a45f06813e9ff07c3b7099e5031bc9f3cb8"
     },
     "3d97a59e-0439-80ef-a7bb-e7e0898adb62": {
@@ -168,8 +168,8 @@
       "language": "zh-CN",
       "translationGroup": "my-website-is-a-shifting-house",
       "contentFile": "index.zh-cn.md",
-      "lastEditedTime": "2026-09-16T07:04:00.000Z",
-      "bundleHash": "864331875c2eb69d8cf17fb651582db705c2d3830f86aff2d3e983edc3b8c531",
+      "lastEditedTime": "2026-09-16T16:08:00.000Z",
+      "bundleHash": "1f1b1e609d10358cef380adde1569b440620c34efbd2480aacf931dd4b79c2e6",
       "presentationFingerprint": "62303b66b7a769bac1a1c1e23721f9bb44f90a63d47cac3b0e28d9be88306fcd"
     },
     "3da7a59e-0439-8137-b5e1-c3dfb60ede03": {
@@ -271,6 +271,16 @@
       "lastEditedTime": "2026-09-16T06:19:00.000Z",
       "bundleHash": "80c2775587726a6bdd204db933825090cf02547f1bdeb759a17862cdbc69af30",
       "presentationFingerprint": "b78eb8f5e1bde85cd2989d036c76ed35df0e8896dc164e88d714bb0bd156b2c2"
+    },
+    "3dd7a59e-0439-800a-b827-d946ee5dd7a5": {
+      "slug": "articles-may-never-be-read-by-anyone",
+      "bundlePath": "articles-may-never-be-read-by-anyone",
+      "language": "zh-TW",
+      "translationGroup": "articles-may-never-be-read-by-anyone",
+      "contentFile": "index.md",
+      "lastEditedTime": "2026-09-17T02:57:00.000Z",
+      "bundleHash": "621bcfd6ff1102f8e48553102810fb4d7463d085a54fa57b6ae9a6e473659dc0",
+      "presentationFingerprint": "f6ea9c18c712cb8c14c1859bad7beb8c544f0c8ff10e25f1de00012e68af208c"
     }
   }
 }

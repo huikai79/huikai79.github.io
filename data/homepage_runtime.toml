@@ -5,15 +5,10 @@ rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
 selectedLimit = 3
 recentLimit = 5
-pinnedSize = 3
-rotationSlots = 0
-poolSize = 11
-poolOffset = 0
-
-[[selected]]
-pageId = "3d97a59e-0439-80b3-8567-e3e3c96aefdd"
-path = "posts/my-website-is-a-shifting-house"
-source = "pinned"
+pinnedSize = 2
+rotationSlots = 1
+poolSize = 12
+poolOffset = 2
 
 [[selected]]
 pageId = "3da7a59e-0439-8009-b009-dd5dadeb2e88"
@@ -25,6 +20,11 @@ pageId = "3da7a59e-0439-80f8-a843-d980205a55f0"
 path = "posts/website-must-diy"
 source = "pinned"
 
+[[selected]]
+pageId = "3da7a59e-0439-808b-aa01-e27fd36934d0"
+path = "posts/forever-project"
+source = "rotationPool"
+
 [secondary]
 
 rotationKey = "2026-W38"
@@ -34,15 +34,10 @@ rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
 selectedLimit = 3
 recentLimit = 5
-pinnedSize = 3
-rotationSlots = 0
-poolSize = 3
-poolOffset = 0
-
-[[secondary.selected]]
-pageId = "3da7a59e-0439-811d-8ea6-e9205e59ba1f"
-path = "posts/my-website-is-a-shifting-house--zh-cn"
-source = "pinned"
+pinnedSize = 2
+rotationSlots = 1
+poolSize = 4
+poolOffset = 2
 
 [[secondary.selected]]
 pageId = "3da7a59e-0439-81ee-af5a-e8f869c985c3"
@@ -53,3 +48,8 @@ source = "pinned"
 pageId = "3db7a59e-0439-81f2-ade7-c0a11916a5b3"
 path = "posts/website-must-diy--zh-cn"
 source = "pinned"
+
+[[secondary.selected]]
+pageId = "3da7a59e-0439-811d-8ea6-e9205e59ba1f"
+path = "posts/my-website-is-a-shifting-house--zh-cn"
+source = "rotationPool"

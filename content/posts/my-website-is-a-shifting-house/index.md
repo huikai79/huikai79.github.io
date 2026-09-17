@@ -10,7 +10,7 @@ categories: ["創作"]
 entryType: "文章"
 formats: ["文章"]
 contentVisibility: "Public"
-homePlacement: "Pinned"
+homePlacement: "Rotation"
 contentLanguage: "zh-TW"
 translationKey: "my-website-is-a-shifting-house"
 sourceLabel: "Laurel Schwulst / The Creative Independent"
