@@ -18,16 +18,44 @@ export function articleRoute(slug, language) {
   return "";
 }
 
-export function articlePathInfo(filePath = "") {
+export function frontMatterSlug(text = "") {
+  const source = String(text);
+  const frontMatter = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!frontMatter) return "";
+
+  const slugLine = frontMatter[1].match(/^slug:\s*(.*?)\s*$/m);
+  if (!slugLine) return "";
+
+  let value = slugLine[1].trim();
+  if (
+    value.length >= 2 &&
+    ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'")))
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function articleBundleSlug(filePath = "") {
+  const normalized = String(filePath).replaceAll("\\", "/");
+  if (!normalized.startsWith(CONTENT_PREFIX)) return "";
+  const rest = normalized.slice(CONTENT_PREFIX.length);
+  const slash = rest.indexOf("/");
+  return slash > 0 ? rest.slice(0, slash) : "";
+}
+
+export function articlePathInfo(filePath = "", routeSlug = "") {
   const normalized = String(filePath).replaceAll("\\", "/");
   if (!normalized.startsWith(CONTENT_PREFIX)) return null;
   const rest = normalized.slice(CONTENT_PREFIX.length);
   const slash = rest.indexOf("/");
   if (slash <= 0) return null;
-  const slug = rest.slice(0, slash);
+  const bundleSlug = rest.slice(0, slash);
   const relative = rest.slice(slash + 1);
-  if (!slug || !relative) return null;
+  if (!bundleSlug || !relative) return null;
   const language = CONTENT_FILES.get(relative) || "";
+  const slug = routeSlug || bundleSlug;
   return { slug, relative, language, route: language ? articleRoute(slug, language) : "" };
 }
 
@@ -64,18 +92,25 @@ function addRoute(target, slug, language, reason, sourcePath) {
   });
 }
 
-export function planChangedArticleRoutes(changes = [], currentPaths = []) {
+export function planChangedArticleRoutes(changes = [], currentPaths = [], routeSlugs = new Map()) {
   const current = new Set(currentPaths.map(value => String(value).replaceAll("\\", "/")));
+  const slugs = routeSlugs instanceof Map ? routeSlugs : new Map(Object.entries(routeSlugs || {}));
   const touchedBundles = new Map();
   const deletedContent = [];
 
+  function resolvedInfo(filePath) {
+    const normalized = String(filePath).replaceAll("\\", "/");
+    return articlePathInfo(normalized, slugs.get(normalized) || "");
+  }
+
   function touch(filePath, reason) {
-    const info = articlePathInfo(filePath);
-    if (!info) return;
-    const entry = touchedBundles.get(info.slug) ?? { reasons: new Set(), paths: new Set() };
+    const info = resolvedInfo(filePath);
+    const bundleSlug = articleBundleSlug(filePath);
+    if (!info || !bundleSlug) return;
+    const entry = touchedBundles.get(bundleSlug) ?? { reasons: new Set(), paths: new Set() };
     entry.reasons.add(reason);
     entry.paths.add(String(filePath).replaceAll("\\", "/"));
-    touchedBundles.set(info.slug, entry);
+    touchedBundles.set(bundleSlug, entry);
   }
 
   for (const change of changes) {
@@ -83,14 +118,16 @@ export function planChangedArticleRoutes(changes = [], currentPaths = []) {
     if (change.path) touch(change.path, `git:${change.status}`);
 
     if (change.status.startsWith("D") && change.path) {
-      const info = articlePathInfo(change.path);
-      if (info?.language) deletedContent.push({ ...info, status: change.status });
+      const info = resolvedInfo(change.path);
+      const bundleSlug = articleBundleSlug(change.path);
+      if (info?.language && bundleSlug) deletedContent.push({ ...info, bundleSlug, status: change.status });
     }
     if (/^R\d+/.test(change.status) && change.oldPath) {
-      const oldInfo = articlePathInfo(change.oldPath);
-      const newInfo = articlePathInfo(change.path);
-      if (oldInfo?.language && (!newInfo || oldInfo.route !== newInfo.route)) {
-        deletedContent.push({ ...oldInfo, status: change.status });
+      const oldInfo = resolvedInfo(change.oldPath);
+      const newInfo = resolvedInfo(change.path);
+      const bundleSlug = articleBundleSlug(change.oldPath);
+      if (oldInfo?.language && bundleSlug && (!newInfo || oldInfo.route !== newInfo.route)) {
+        deletedContent.push({ ...oldInfo, bundleSlug, status: change.status });
       }
     }
   }
@@ -98,13 +135,14 @@ export function planChangedArticleRoutes(changes = [], currentPaths = []) {
   const present = new Map();
   const absent = new Map();
 
-  for (const [slug, touched] of touchedBundles) {
+  for (const [bundleSlug, touched] of touchedBundles) {
     for (const [filename, language] of CONTENT_FILES) {
-      const sourcePath = `${CONTENT_PREFIX}${slug}/${filename}`;
+      const sourcePath = `${CONTENT_PREFIX}${bundleSlug}/${filename}`;
       if (!current.has(sourcePath)) continue;
+      const routeSlug = slugs.get(sourcePath) || bundleSlug;
       addRoute(
         present,
-        slug,
+        routeSlug,
         language,
         [...touched.reasons].join(","),
         sourcePath
@@ -113,7 +151,7 @@ export function planChangedArticleRoutes(changes = [], currentPaths = []) {
   }
 
   for (const deleted of deletedContent) {
-    const currentPath = `${CONTENT_PREFIX}${deleted.slug}/${deleted.relative}`;
+    const currentPath = `${CONTENT_PREFIX}${deleted.bundleSlug}/${deleted.relative}`;
     if (current.has(currentPath)) continue;
     addRoute(absent, deleted.slug, deleted.language, `deleted:${deleted.status}`, deleted.path);
   }
@@ -130,12 +168,45 @@ function git(...args) {
   return execFileSync("git", args, { encoding: "utf8" });
 }
 
+function slugAtRef(ref, filePath) {
+  if (!ref || !filePath) return "";
+  try {
+    return frontMatterSlug(git("show", `${ref}:${filePath}`));
+  } catch {
+    return "";
+  }
+}
+
+function buildRouteSlugMap({ base, head, changes, currentFiles }) {
+  const slugs = new Map();
+
+  for (const filePath of currentFiles) {
+    const info = articlePathInfo(filePath);
+    if (!info?.language) continue;
+    const slug = slugAtRef(head, filePath);
+    if (slug) slugs.set(filePath, slug);
+  }
+
+  for (const change of changes) {
+    const oldPath = change.oldPath || (change.status.startsWith("D") ? change.path : "");
+    if (!oldPath || slugs.has(oldPath)) continue;
+    const info = articlePathInfo(oldPath);
+    if (!info?.language) continue;
+    const slug = slugAtRef(base, oldPath);
+    if (slug) slugs.set(oldPath, slug);
+  }
+
+  return slugs;
+}
+
 export function buildPlanFromGit({ base = process.env.CHANGED_ROUTE_BASE || "HEAD^", head = "HEAD" } = {}) {
   const diff = git("diff", "--name-status", "-M", base, head, "--", "content/posts");
+  const changes = parseNameStatus(diff);
   const currentFiles = git("ls-files", "content/posts").split(/\r?\n/).filter(Boolean);
-  const plan = planChangedArticleRoutes(parseNameStatus(diff), currentFiles);
+  const routeSlugs = buildRouteSlugMap({ base, head, changes, currentFiles });
+  const plan = planChangedArticleRoutes(changes, currentFiles, routeSlugs);
   return {
-    version: 1,
+    version: 2,
     base,
     head,
     generatedAt: new Date().toISOString(),
