@@ -18,6 +18,20 @@ build:
 
 - 本页分成三层：已完成事项按日期留下；需要等规模、资料或使用情境成熟后才值得处理的项目放在“待条件成熟再评估”；已有明确下一步但尚未完成的事项放在“下次可完善”。条件达成且实际完成后，再移入当天记录。一般小修补不逐项记录。
 
+## 2026-09-17｜正式发布验证与入口页 QA 收敛
+
+### Publication gate 与公开路由
+
+- 正式发布流程重新确认 publication gate 后才继续同步与部署；本轮所需的 production metadata 已存在，因此没有为了让 gate 通过而重复写入 Notion。
+- changed-route QA 改为以 exact source 的 front matter `slug` 解析真正公开网址，不再把 content bundle 文件夹名称直接当作 public route。这修正了简体文章文件夹带有语言后缀时可能出现的假性 404，同时保留 exact-commit 的来源追溯。
+- 路由修复没有放宽原本的 HTTP／内容检查；若公开网址、页面内容或删除状态真的不符合契约，production QA 仍会 fail closed。
+
+### Production rendered QA
+
+- exact-main deployment 现在会先等待正式站 `source-commit.txt` 精确对上预期来源版本，再自动执行 Posts、Projects、Explore、About 的入口页 geometry／readability contract，避免只用 build 绿灯推定画面正确。
+- entry media readiness 会实际滚动页面、等待 lazy image load／decode，并把图片分成 loaded／pending／broken 后才截图；因此全页截图不再把尚未被触发的 lazy image placeholder 当作正式视觉证据。
+- 本轮 exact-main 正式部署与 production rendered QA 已完整通过：繁体／简体入口页桌面与手机版面、media readiness、changed-route、content semantics、live reader、文章预览、TOC、CJK 长文、回到顶部与首页入口均完成验证。
+
 ## 2026-09-16｜文章列表预览节奏与读后导航完成收敛
 
 ### 有图／无图文章的共通版面契约
@@ -117,7 +131,6 @@ build:
 - 修正后的 exact-main deployment 已在 production 成功；Notion-native automatic translation queue 合并后，code-only release、Notion sync 与 GitHub Pages deployment 亦再次成功，确认新自动化已进入正式 `main`，而不只停留在 PR 候选。
 
 ## 2026-09-12｜Entry Header 与 Transmith 翻译基础补齐
-
 ### 内容入口视觉系统
 
 - Posts、Projects、Explore、About 共用 HUIKAI Entry Header v2：桌面统一较强的 H1 尺度、lead 宽度／字号与低调分隔线，手机则保留较克制的 36px 标题，避免 CJK 窄屏标题过度膨胀。
