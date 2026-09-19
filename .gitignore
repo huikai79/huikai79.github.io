@@ -6,3 +6,11 @@ themes/
 .notion-sync-report.json
 content/.posts-staging-*/
 content/.posts-backup-*/
+
+# Local secrets / deployment state
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
