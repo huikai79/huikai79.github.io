@@ -1,0 +1,65 @@
+name: "Content link graph experiment"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/content-link-graph-experiment.yml"
+      - "scripts/content_link_graph.py"
+      - "scripts/test_content_link_graph.py"
+      - "scripts/article_routing.py"
+      - ".notion-sync-manifest.json"
+      - "content/posts/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-link-graph-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Verify graph contract
+        run: |
+          python3 -m py_compile scripts/content_link_graph.py scripts/test_content_link_graph.py
+          python3 scripts/test_content_link_graph.py
+
+      - name: Build graph from committed HUIKAI articles
+        run: |
+          python3 scripts/content_link_graph.py --output content-link-graph.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          graph = json.loads(Path("content-link-graph.json").read_text(encoding="utf-8"))
+          summary = graph["summary"]
+          with Path("content-link-graph-summary.md").open("w", encoding="utf-8") as handle:
+              handle.write("# HUIKAI explicit content-link graph\n\n")
+              handle.write(f"- Nodes: **{summary['nodes']}**\n")
+              handle.write(f"- Explicit edges: **{summary['edges']}**\n")
+              handle.write(f"- Nodes participating in at least one edge: **{summary['linkedNodes']}**\n")
+              handle.write(f"- Unresolved article links: **{summary['unresolvedArticleLinks']}**\n")
+          PY
+          cat content-link-graph-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload graph evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: content-link-graph-${{ github.sha }}
+          path: |
+            content-link-graph.json
+            content-link-graph-summary.md
+          retention-days: 14
+          if-no-files-found: error
