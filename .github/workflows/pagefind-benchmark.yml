@@ -1,0 +1,124 @@
+name: "Pagefind search benchmark"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/pagefind-benchmark.yml"
+      - "content/**"
+      - "layouts/**"
+      - "config/**"
+      - "go.mod"
+      - "go.sum"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pagefind-benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: 0.165.0
+          extended: true
+
+      - name: Build verified HUIKAI candidate
+        run: bash scripts/build-and-verify.sh public
+
+      - name: Record current Blowfish Fuse index metrics
+        run: |
+          set -euo pipefail
+          test -s public/index.json
+          {
+            echo "FUSE_INDEX_BYTES=$(wc -c < public/index.json)"
+            echo "FUSE_INDEX_GZIP_BYTES=$(gzip -c public/index.json | wc -c)"
+            echo "FUSE_DOCUMENTS=$(jq 'length' public/index.json)"
+          } >> "$GITHUB_ENV"
+
+      - name: Build pinned Pagefind candidate index
+        run: |
+          set -euo pipefail
+          npx --yes pagefind@1.5.2 --site public 2>&1 | tee pagefind-build.log
+          test -d public/pagefind
+          test -s public/pagefind/pagefind.js
+
+      - name: Record Pagefind artifact metrics
+        run: |
+          set -euo pipefail
+          pagefind_bytes="$(du -sb public/pagefind | cut -f1)"
+          pagefind_files="$(find public/pagefind -type f | wc -l)"
+          pagefind_gzip_bytes="$(tar -C public -cf - pagefind | gzip -c | wc -c)"
+          {
+            echo "PAGEFIND_BYTES=$pagefind_bytes"
+            echo "PAGEFIND_FILES=$pagefind_files"
+            echo "PAGEFIND_GZIP_TAR_BYTES=$pagefind_gzip_bytes"
+          } >> "$GITHUB_ENV"
+
+      - name: Write benchmark summary
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          lines = [
+              "# HUIKAI search benchmark",
+              "",
+              "This experiment does not replace the production Blowfish/Fuse search UI.",
+              "",
+              "## Current Blowfish/Fuse index",
+              "",
+              f"- Documents in `public/index.json`: **{os.environ['FUSE_DOCUMENTS']}**",
+              f"- Raw JSON bytes: **{os.environ['FUSE_INDEX_BYTES']}**",
+              f"- Gzip-compressed JSON bytes: **{os.environ['FUSE_INDEX_GZIP_BYTES']}**",
+              "",
+              "## Pagefind 1.5.2 candidate",
+              "",
+              f"- Total generated `public/pagefind/` bytes: **{os.environ['PAGEFIND_BYTES']}**",
+              f"- Generated files: **{os.environ['PAGEFIND_FILES']}**",
+              f"- Gzipped tar size of generated bundle: **{os.environ['PAGEFIND_GZIP_TAR_BYTES']}**",
+              "",
+              "## Interpretation boundary",
+              "",
+              "These artifact sizes are not a direct browser-transfer comparison. Blowfish loads one JSON corpus into Fuse; Pagefind loads language/index chunks on demand. A UI/network benchmark is required before any replacement decision.",
+              "",
+          ]
+          Path("pagefind-benchmark-summary.md").write_text("\n".join(lines), encoding="utf-8")
+          PY
+          cat pagefind-benchmark-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Pagefind benchmark evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: pagefind-benchmark-${{ github.sha }}
+          path: |
+            pagefind-benchmark-summary.md
+            pagefind-build.log
+            public/pagefind/
+          retention-days: 14
+          if-no-files-found: error
