@@ -1,0 +1,61 @@
+name: "Weekly external link health observer"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 3 * * 1'
+      timezone: 'Asia/Kuala_Lumpur'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-link-health
+  cancel-in-progress: true
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Observe repository link health
+        id: lychee
+        uses: lycheeverse/lychee-action@649b0e4890508ea3e11ea6b3ee35ce899a25afd5
+        with:
+          args: >-
+            --no-progress
+            --exclude-mail
+            --root-dir "${{ github.workspace }}"
+            './README.md'
+            './docs/**/*.md'
+            './content/**/*.md'
+          fail: false
+          failIfEmpty: false
+          format: markdown
+          jobSummary: true
+          lycheeVersion: v0.24.2
+          output: lychee/out.md
+
+      - name: Classify observer result
+        env:
+          LYCHEE_EXIT_CODE: ${{ steps.lychee.outputs.exit_code }}
+        run: |
+          if [ "${LYCHEE_EXIT_CODE:-1}" = "0" ]; then
+            echo "External link health: HEALTHY"
+          else
+            echo "::warning::External link health found unreachable or invalid links. This observer is intentionally non-blocking; review the attached report before changing content."
+          fi
+
+      - name: Upload link-health evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: external-link-health-${{ github.sha }}
+          path: lychee/out.md
+          retention-days: 30
+          if-no-files-found: warn
