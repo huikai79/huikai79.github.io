@@ -72,27 +72,48 @@ jobs:
           route_list = routes()
           expected = {route.permalink_path for route in route_list}
 
-          fuse = json.loads((public / "index.json").read_text(encoding="utf-8"))
-          fuse_articles = [
-              item for item in fuse
-              if str(item.get("permalink", "")) in expected
-          ]
+          index_files = {
+              "zh-TW": public / "index.json",
+              "zh-CN": public / "zh-cn" / "index.json",
+              "en": public / "en" / "index.json",
+          }
 
-          actual = {str(item.get("permalink", "")) for item in fuse_articles}
-          missing = sorted(expected - actual)
-          unexpected = sorted(actual - expected)
-          if missing or unexpected or len(fuse_articles) != len(route_list):
-              raise SystemExit(
-                  f"Fuse/article routing mismatch: routes={len(route_list)} "
-                  f"fuse_articles={len(fuse_articles)} missing={missing} unexpected={unexpected}"
-              )
+          by_language = {}
+          fuse_articles_by_language = {}
+          fuse_full_by_language = {}
 
-          (Path("fuse-articles.json")).write_text(
-              json.dumps(fuse_articles, ensure_ascii=False, separators=(",", ":")) + "\n",
+          for language in sorted({route.language for route in route_list}):
+              index_file = index_files[language]
+              if not index_file.is_file():
+                  raise SystemExit(f"Fuse language index missing: {language} -> {index_file}")
+              fuse = json.loads(index_file.read_text(encoding="utf-8"))
+              language_routes = [route for route in route_list if route.language == language]
+              language_expected = {route.permalink_path for route in language_routes}
+              fuse_articles = [
+                  item for item in fuse
+                  if str(item.get("permalink", "")) in language_expected
+              ]
+              actual = {str(item.get("permalink", "")) for item in fuse_articles}
+              missing = sorted(language_expected - actual)
+              unexpected = sorted(actual - language_expected)
+              if missing or unexpected or len(fuse_articles) != len(language_routes):
+                  raise SystemExit(
+                      f"Fuse/article routing mismatch for {language}: "
+                      f"routes={len(language_routes)} fuse_articles={len(fuse_articles)} "
+                      f"missing={missing} unexpected={unexpected}"
+                  )
+              fuse_articles_by_language[language] = fuse_articles
+              fuse_full_by_language[language] = fuse
+
+          (Path("fuse-articles-by-language.json")).write_text(
+              json.dumps(fuse_articles_by_language, ensure_ascii=False, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          (Path("fuse-full-by-language.json")).write_text(
+              json.dumps(fuse_full_by_language, ensure_ascii=False, separators=(",", ":")) + "\n",
               encoding="utf-8",
           )
 
-          by_language = {}
           for route in route_list:
               source = route.rendered(public)
               if not source.is_file():
@@ -121,15 +142,34 @@ jobs:
       - name: Record equivalent Blowfish Fuse metrics
         run: |
           set -euo pipefail
-          test -s fuse-articles.json
-          {
-            echo "FUSE_ARTICLE_BYTES=$(wc -c < fuse-articles.json)"
-            echo "FUSE_ARTICLE_GZIP_BYTES=$(gzip -c fuse-articles.json | wc -c)"
-            echo "FUSE_ARTICLE_DOCUMENTS=$(jq 'length' fuse-articles.json)"
-            echo "FUSE_FULL_BYTES=$(wc -c < public/index.json)"
-            echo "FUSE_FULL_GZIP_BYTES=$(gzip -c public/index.json | wc -c)"
-            echo "FUSE_FULL_DOCUMENTS=$(jq 'length' public/index.json)"
-          } >> "$GITHUB_ENV"
+          test -s fuse-articles-by-language.json
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import gzip
+          import json
+          from pathlib import Path
+
+          article_map = json.loads(Path("fuse-articles-by-language.json").read_text(encoding="utf-8"))
+          full_map = json.loads(Path("fuse-full-by-language.json").read_text(encoding="utf-8"))
+
+          def packed(value):
+              return (json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+
+          totals = {"article_docs": 0, "article_raw": 0, "article_gzip": 0}
+          for language, docs in sorted(article_map.items()):
+              raw = packed(docs)
+              gz = gzip.compress(raw)
+              key = language.upper().replace("-", "_")
+              print(f"FUSE_{key}_ARTICLE_DOCUMENTS={len(docs)}")
+              print(f"FUSE_{key}_ARTICLE_BYTES={len(raw)}")
+              print(f"FUSE_{key}_ARTICLE_GZIP_BYTES={len(gz)}")
+              totals["article_docs"] += len(docs)
+              totals["article_raw"] += len(raw)
+              totals["article_gzip"] += len(gz)
+
+          print(f"FUSE_ARTICLE_DOCUMENTS_TOTAL={totals['article_docs']}")
+          print(f"FUSE_ARTICLE_BYTES_TOTAL={totals['article_raw']}")
+          print(f"FUSE_ARTICLE_GZIP_BYTES_TOTAL={totals['article_gzip']}")
+          PY
 
       - name: Build pinned Pagefind index from equivalent article corpus
         run: |
@@ -173,15 +213,11 @@ jobs:
               "",
               "## Blowfish/Fuse — same article corpus",
               "",
-              f"- Documents: **{os.environ['FUSE_ARTICLE_DOCUMENTS']}**",
-              f"- Raw JSON bytes: **{os.environ['FUSE_ARTICLE_BYTES']}**",
-              f"- Gzip-compressed JSON bytes: **{os.environ['FUSE_ARTICLE_GZIP_BYTES']}**",
-              "",
-              "## Current full Blowfish/Fuse corpus",
-              "",
-              f"- Documents: **{os.environ['FUSE_FULL_DOCUMENTS']}**",
-              f"- Raw JSON bytes: **{os.environ['FUSE_FULL_BYTES']}**",
-              f"- Gzip-compressed JSON bytes: **{os.environ['FUSE_FULL_GZIP_BYTES']}**",
+              f"- Total article documents: **{os.environ['FUSE_ARTICLE_DOCUMENTS_TOTAL']}**",
+              f"- Sum of per-language raw JSON bytes: **{os.environ['FUSE_ARTICLE_BYTES_TOTAL']}**",
+              f"- Sum of per-language gzip bytes: **{os.environ['FUSE_ARTICLE_GZIP_BYTES_TOTAL']}**",
+              f"- zh-TW: **{os.environ.get('FUSE_ZH_TW_ARTICLE_DOCUMENTS', '0')} docs / {os.environ.get('FUSE_ZH_TW_ARTICLE_GZIP_BYTES', '0')} gzip bytes**",
+              f"- zh-CN: **{os.environ.get('FUSE_ZH_CN_ARTICLE_DOCUMENTS', '0')} docs / {os.environ.get('FUSE_ZH_CN_ARTICLE_GZIP_BYTES', '0')} gzip bytes**",
               "",
               "## Pagefind 1.5.2 — same article corpus",
               "",
@@ -209,7 +245,8 @@ jobs:
             pagefind-benchmark-summary.md
             pagefind-build.log
             article-corpus-summary.json
-            fuse-articles.json
+            fuse-articles-by-language.json
+            fuse-full-by-language.json
             pagefind-corpus/pagefind/
           retention-days: 14
           if-no-files-found: error
