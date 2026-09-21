@@ -9,6 +9,8 @@ on:
       - "content/**"
       - "layouts/**"
       - "config/**"
+      - "scripts/article_routing.py"
+      - ".notion-sync-manifest.json"
       - "go.mod"
       - "go.sum"
   workflow_dispatch:
@@ -50,29 +52,98 @@ jobs:
       - name: Build verified HUIKAI candidate
         run: bash scripts/build-and-verify.sh public
 
-      - name: Record current Blowfish Fuse index metrics
+      - name: Prepare equivalent article corpus
         run: |
           set -euo pipefail
-          test -s public/index.json
+          rm -rf pagefind-corpus
+          mkdir -p pagefind-corpus
+
+          python3 - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from article_routing import routes
+
+          public = Path("public")
+          corpus = Path("pagefind-corpus")
+          route_list = routes()
+          expected = {route.permalink_path for route in route_list}
+
+          fuse = json.loads((public / "index.json").read_text(encoding="utf-8"))
+          fuse_articles = [
+              item for item in fuse
+              if str(item.get("permalink", "")) in expected
+          ]
+
+          actual = {str(item.get("permalink", "")) for item in fuse_articles}
+          missing = sorted(expected - actual)
+          unexpected = sorted(actual - expected)
+          if missing or unexpected or len(fuse_articles) != len(route_list):
+              raise SystemExit(
+                  f"Fuse/article routing mismatch: routes={len(route_list)} "
+                  f"fuse_articles={len(fuse_articles)} missing={missing} unexpected={unexpected}"
+              )
+
+          (Path("fuse-articles.json")).write_text(
+              json.dumps(fuse_articles, ensure_ascii=False, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+
+          by_language = {}
+          for route in route_list:
+              source = route.rendered(public)
+              if not source.is_file():
+                  raise SystemExit(f"Rendered article missing: {source}")
+              rel = source.relative_to(public)
+              target = corpus / rel
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+              by_language[route.language] = by_language.get(route.language, 0) + 1
+
+          Path("article-corpus-summary.json").write_text(
+              json.dumps(
+                  {
+                      "routes": len(route_list),
+                      "languages": by_language,
+                      "paths": sorted(expected),
+                  },
+                  ensure_ascii=False,
+                  indent=2,
+              ) + "\n",
+              encoding="utf-8",
+          )
+          print(f"Equivalent article corpus: {len(route_list)} routes / {by_language}")
+          PY
+
+      - name: Record equivalent Blowfish Fuse metrics
+        run: |
+          set -euo pipefail
+          test -s fuse-articles.json
           {
-            echo "FUSE_INDEX_BYTES=$(wc -c < public/index.json)"
-            echo "FUSE_INDEX_GZIP_BYTES=$(gzip -c public/index.json | wc -c)"
-            echo "FUSE_DOCUMENTS=$(jq 'length' public/index.json)"
+            echo "FUSE_ARTICLE_BYTES=$(wc -c < fuse-articles.json)"
+            echo "FUSE_ARTICLE_GZIP_BYTES=$(gzip -c fuse-articles.json | wc -c)"
+            echo "FUSE_ARTICLE_DOCUMENTS=$(jq 'length' fuse-articles.json)"
+            echo "FUSE_FULL_BYTES=$(wc -c < public/index.json)"
+            echo "FUSE_FULL_GZIP_BYTES=$(gzip -c public/index.json | wc -c)"
+            echo "FUSE_FULL_DOCUMENTS=$(jq 'length' public/index.json)"
           } >> "$GITHUB_ENV"
 
-      - name: Build pinned Pagefind candidate index
+      - name: Build pinned Pagefind index from equivalent article corpus
         run: |
           set -euo pipefail
-          npx --yes pagefind@1.5.2 --site public 2>&1 | tee pagefind-build.log
-          test -d public/pagefind
-          test -s public/pagefind/pagefind.js
+          npx --yes pagefind@1.5.2 --site pagefind-corpus 2>&1 | tee pagefind-build.log
+          test -d pagefind-corpus/pagefind
+          test -s pagefind-corpus/pagefind/pagefind.js
 
       - name: Record Pagefind artifact metrics
         run: |
           set -euo pipefail
-          pagefind_bytes="$(du -sb public/pagefind | cut -f1)"
-          pagefind_files="$(find public/pagefind -type f | wc -l)"
-          pagefind_gzip_bytes="$(tar -C public -cf - pagefind | gzip -c | wc -c)"
+          pagefind_bytes="$(du -sb pagefind-corpus/pagefind | cut -f1)"
+          pagefind_files="$(find pagefind-corpus/pagefind -type f | wc -l)"
+          pagefind_gzip_bytes="$(tar -C pagefind-corpus -cf - pagefind | gzip -c | wc -c)"
           {
             echo "PAGEFIND_BYTES=$pagefind_bytes"
             echo "PAGEFIND_FILES=$pagefind_files"
@@ -82,29 +153,47 @@ jobs:
       - name: Write benchmark summary
         run: |
           python3 - <<'PY'
+          import json
           import os
           from pathlib import Path
 
+          corpus = json.loads(Path("article-corpus-summary.json").read_text(encoding="utf-8"))
+          languages = ", ".join(
+              f"{key}: {value}" for key, value in sorted(corpus["languages"].items())
+          )
           lines = [
               "# HUIKAI search benchmark",
               "",
               "This experiment does not replace the production Blowfish/Fuse search UI.",
               "",
-              "## Current Blowfish/Fuse index",
+              "## Equivalent article corpus",
               "",
-              f"- Documents in `public/index.json`: **{os.environ['FUSE_DOCUMENTS']}**",
-              f"- Raw JSON bytes: **{os.environ['FUSE_INDEX_BYTES']}**",
-              f"- Gzip-compressed JSON bytes: **{os.environ['FUSE_INDEX_GZIP_BYTES']}**",
+              f"- Routed article pages: **{corpus['routes']}**",
+              f"- Language distribution: **{languages}**",
               "",
-              "## Pagefind 1.5.2 candidate",
+              "## Blowfish/Fuse — same article corpus",
               "",
-              f"- Total generated `public/pagefind/` bytes: **{os.environ['PAGEFIND_BYTES']}**",
+              f"- Documents: **{os.environ['FUSE_ARTICLE_DOCUMENTS']}**",
+              f"- Raw JSON bytes: **{os.environ['FUSE_ARTICLE_BYTES']}**",
+              f"- Gzip-compressed JSON bytes: **{os.environ['FUSE_ARTICLE_GZIP_BYTES']}**",
+              "",
+              "## Current full Blowfish/Fuse corpus",
+              "",
+              f"- Documents: **{os.environ['FUSE_FULL_DOCUMENTS']}**",
+              f"- Raw JSON bytes: **{os.environ['FUSE_FULL_BYTES']}**",
+              f"- Gzip-compressed JSON bytes: **{os.environ['FUSE_FULL_GZIP_BYTES']}**",
+              "",
+              "## Pagefind 1.5.2 — same article corpus",
+              "",
+              f"- Total generated index bytes: **{os.environ['PAGEFIND_BYTES']}**",
               f"- Generated files: **{os.environ['PAGEFIND_FILES']}**",
               f"- Gzipped tar size of generated bundle: **{os.environ['PAGEFIND_GZIP_TAR_BYTES']}**",
               "",
               "## Interpretation boundary",
               "",
-              "These artifact sizes are not a direct browser-transfer comparison. Blowfish loads one JSON corpus into Fuse; Pagefind loads language/index chunks on demand. A UI/network benchmark is required before any replacement decision.",
+              "Generated Pagefind bundle size is not equivalent to browser transfer. "
+              "Fuse fetches the article JSON corpus as one payload; Pagefind fetches language/index chunks on demand. "
+              "A browser/query benchmark is required before any replacement decision.",
               "",
           ]
           Path("pagefind-benchmark-summary.md").write_text("\n".join(lines), encoding="utf-8")
@@ -119,6 +208,8 @@ jobs:
           path: |
             pagefind-benchmark-summary.md
             pagefind-build.log
-            public/pagefind/
+            article-corpus-summary.json
+            fuse-articles.json
+            pagefind-corpus/pagefind/
           retention-days: 14
           if-no-files-found: error
