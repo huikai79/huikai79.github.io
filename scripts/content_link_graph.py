@@ -11,11 +11,11 @@ from article_routing import ArticleRoute, routes
 
 SITE_HOSTS = {"huikai.com.kg", "www.huikai.com.kg"}
 
-INLINE_LINK_RE = re.compile(r"(?<!!)\\[[^\\]]*\\]\\(\\s*(<[^>]+>|[^)\\s]+)(?:\\s+[^)]*)?\\)")
-REFERENCE_LINK_RE = re.compile(r"(?<!!)\\[[^\\]]+\\]\\[([^\\]]*)\\]")
-REFERENCE_DEF_RE = re.compile(r"(?m)^[ \\t]{0,3}\\[([^\\]]+)\\]:[ \\t]*(<[^>]+>|[^\\s]+)")
-HTML_HREF_RE = re.compile(r"""(?i)\\bhref\\s*=\\s*["']([^"']+)["']""")
-INLINE_CODE_RE = re.compile(r"`[^`\\n]*`")
+INLINE_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(\s*(<[^>]+>|[^)\s]+)(?:\s+[^)]*)?\)")
+REFERENCE_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\[([^\]]*)\]")
+REFERENCE_DEF_RE = re.compile(r"(?m)^[ \t]{0,3}\[([^\]]+)\]:[ \t]*(<[^>]+>|[^\s]+)")
+HTML_HREF_RE = re.compile(r"""(?i)\bhref\s*=\s*["']([^"']+)["']""")
+INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 
 
 def strip_front_matter(text: str) -> str:
@@ -26,7 +26,7 @@ def strip_front_matter(text: str) -> str:
         return text
     for index in range(1, len(lines)):
         if lines[index].strip() == "---":
-            return "\\n".join(lines[index + 1 :])
+            return "\n".join(lines[index + 1 :])
     return text
 
 
@@ -48,7 +48,7 @@ def strip_fenced_code(text: str) -> str:
             continue
         if fence is None:
             output.append(line)
-    return "\\n".join(output)
+    return "\n".join(output)
 
 
 def clean_target(raw: str) -> str:
@@ -184,7 +184,7 @@ def main() -> None:
     args = parser.parse_args()
 
     graph = build_graph()
-    payload = json.dumps(graph, ensure_ascii=False, indent=2) + "\\n"
+    payload = json.dumps(graph, ensure_ascii=False, indent=2) + "\n"
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
