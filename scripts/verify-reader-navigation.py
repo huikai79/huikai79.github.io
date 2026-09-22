@@ -53,6 +53,7 @@ class Parser(HTMLParser):
         self.ids: set[str] = set()
         self.classes: set[str] = set()
         self.scroll_label = ""
+        self.mobile_menu_label = ""
         self.article_heading_count = 0
         self.in_article_main = False
         self.toc_has_native_hook = False
@@ -70,6 +71,12 @@ class Parser(HTMLParser):
             self.html_lang = data.get("lang", "")
         if data.get("id") == "scroll-to-top":
             self.scroll_label = data.get("aria-label", "")
+        if (
+            data.get("for") == "mobile-menu-toggle"
+            and data.get("role") == "button"
+            and "aria-label" in data
+        ):
+            self.mobile_menu_label = data["aria-label"]
         if tag.lower() == "article" and "article-main" in classes:
             self.in_article_main = True
         elif self.in_article_main and tag.lower() in {"h2", "h3", "h4"}:
@@ -118,6 +125,12 @@ for path in article_paths:
         fail(f"Short or unstructured article unexpectedly renders Smart TOC: {path.relative_to(PUBLIC)}")
 
     expected_label = "回到頂部" if parser.html_lang == "zh-TW" else "回到顶部"
+    expected_menu_label = "主選單" if parser.html_lang == "zh-TW" else "主菜单"
+    if parser.mobile_menu_label != expected_menu_label:
+        fail(
+            f"Mobile menu accessible-name mismatch for {path.relative_to(PUBLIC)}: "
+            f"lang={parser.html_lang!r}, label={parser.mobile_menu_label!r}, expected={expected_menu_label!r}"
+        )
     if parser.scroll_label != expected_label:
         fail(
             f"Back-to-top label mismatch for {path.relative_to(PUBLIC)}: "
@@ -134,5 +147,5 @@ if ERRORS:
 
 print(
     "Reader navigation verification: PASS "
-    f"(articles={len(article_paths)}, smart-toc-pages={expected_toc_pages}, native-toc-style=all, localized-back-to-top=all)"
+    f"(articles={len(article_paths)}, smart-toc-pages={expected_toc_pages}, native-toc-style=all, localized-mobile-menu=all, localized-back-to-top=all)"
 )
