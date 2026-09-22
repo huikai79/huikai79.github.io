@@ -13,12 +13,6 @@ on:
         required: false
         default: ""
         type: string
-  workflow_run:
-    workflows:
-      - "Notion sync -> validated main commit"
-    types:
-      - completed
-
 permissions:
   contents: read
 
@@ -28,7 +22,6 @@ concurrency:
 
 jobs:
   translate:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout without persisted credentials
@@ -71,8 +64,8 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_TRANSLATION_MODEL: gpt-5.6-luna
-          # Sync-triggered runs are observability/preflight only. Paid model use
-          # and Notion writes require an explicit workflow_dispatch apply=true.
+          # This workflow is manual-only. Paid model use and Notion writes require
+          # an explicit workflow_dispatch apply=true.
           TRANSLATION_APPLY: ${{ github.event_name == 'workflow_dispatch' && inputs.apply && '1' || '0' }}
           TRANSLATION_REPORT_PATH: /tmp/notion-translation-drafts.json
         run: node scripts/generate-translation-drafts.mjs
