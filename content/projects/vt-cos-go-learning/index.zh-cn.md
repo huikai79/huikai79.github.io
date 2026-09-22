@@ -10,6 +10,8 @@ showReadingTime: false
 
 **状态：** 进行中 · 个人实验 · 可离线使用
 
+**英文名：** A Move of Insight
+
 [开始练习](https://huikai.com.kg/vt-cos-go-learning/) · [查看 GitHub 源代码](https://github.com/huikai79/vt-cos-go-learning)
 
 ## 从《棋魂》开始
