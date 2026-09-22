@@ -72,17 +72,27 @@ def parse(text: str) -> Parser:
 
 
 language_config = read(ROOT / "config" / "_default" / "languages.zh-TW.toml", "Language config")
+language_config_zh_cn = read(ROOT / "config" / "_default" / "languages.zh-CN.toml", "Simplified Chinese language config")
 menu_config = read(ROOT / "config" / "_default" / "menus.zh-TW.toml", "Menu config")
+menu_config_zh_cn = read(ROOT / "config" / "_default" / "menus.zh-CN.toml", "Simplified Chinese menu config")
 home_source = read(ROOT / "content" / "_index.md", "Homepage source")
+home_source_zh_cn = read(ROOT / "content" / "_index.zh-cn.md", "Simplified Chinese homepage source")
 about_source = read(ROOT / "content" / "about" / "index.md", "About source")
 about_source_zh_cn = read(ROOT / "content" / "about" / "index.zh-cn.md", "Simplified Chinese About source")
 manifest_source = read(ROOT / "static" / "site.webmanifest", "Web app manifest")
 
-expected_description = "HUIKAI 是莊輝愷的個人網站。澄心之遊，記錄那些值得長期保留的價值，也留下理解如何改變。"
+expected_description = "HUIKAI 是莊輝愷的個人網站。澄心之遊，記錄那些值得長期保留的人事物，也留下理解如何改變。"
+expected_description_zh_cn = "HUIKAI 是庄辉恺的个人网站。澄心之遊，记录那些值得长期保留的人事物，也留下理解如何改变。"
 if 'title = "HUIKAI"' not in language_config:
     fail("Primary site title must use the HUIKAI brand")
 if expected_description not in language_config:
     fail("Site description is not aligned with the HUIKAI positioning")
+if expected_description_zh_cn not in language_config_zh_cn:
+    fail("Simplified Chinese site description is not aligned with the HUIKAI positioning")
+if 'headline = "澄心之遊｜記錄值得長期保留的人事物"' not in language_config:
+    fail("Primary author headline is not aligned with the settled HUIKAI wording")
+if 'headline = "澄心之遊｜记录值得长期保留的人事物"' not in language_config_zh_cn:
+    fail("Simplified Chinese author headline is not aligned with the settled HUIKAI wording")
 for forbidden in (
     "生活分享｜AI 學習｜讀書筆記｜影視心得",
     "記錄生活分享、AI 學習、讀書筆記與影視心得",
@@ -92,14 +102,28 @@ for forbidden in (
         fail(f"Legacy positioning remains in language metadata: {forbidden}")
 if 'pageRef = "about"' not in menu_config or 'name = "關於"' not in menu_config:
     fail("Main navigation does not include the About page")
+if 'pageRef = "about"' not in menu_config_zh_cn or 'name = "关于"' not in menu_config_zh_cn:
+    fail("Simplified Chinese main navigation does not include the About page")
 if 'title: "澄心之遊"' not in home_source or 'heroCaption: "HUIKAI"' not in home_source:
     fail("Homepage source must present HUIKAI with the 澄心之遊 spirit line")
-if 'heroLead: "記錄那些值得長期保留的價值。"' not in home_source:
-    fail("Homepage source must use the settled HUIKAI value statement")
+if 'heroLead: "記錄那些值得長期保留的人事物"' not in home_source:
+    fail("Homepage source must use the settled HUIKAI people-events-things statement")
+if "遊而澄心：在所見、所學、所歷之間，讓雜質慢慢沉下，留下值得回望的自己與價值。" in home_source:
+    fail("Homepage spirit line must not end with a full stop")
 if 'label: "閱讀文章"' not in home_source or 'url: "/posts/"' not in home_source:
     fail("Homepage primary article CTA source contract is missing")
 if 'label: "關於我"' not in home_source or 'url: "/about/"' not in home_source:
     fail("Homepage secondary About CTA source contract is missing")
+if 'title: "澄心之遊"' not in home_source_zh_cn or 'heroCaption: "HUIKAI"' not in home_source_zh_cn:
+    fail("Simplified Chinese homepage source must present HUIKAI with the 澄心之遊 spirit line")
+if 'heroLead: "记录那些值得长期保留的人事物"' not in home_source_zh_cn:
+    fail("Simplified Chinese homepage source must use the settled HUIKAI people-events-things statement")
+if "游而澄心：在所见、所学、所历之间，让杂质慢慢沉下，留下值得回望的自己与价值。" in home_source_zh_cn:
+    fail("Simplified Chinese homepage spirit line must not end with a full stop")
+if 'label: "阅读文章"' not in home_source_zh_cn or 'url: "/zh-cn/posts/"' not in home_source_zh_cn:
+    fail("Simplified Chinese homepage primary article CTA source contract is missing")
+if 'label: "关于我"' not in home_source_zh_cn or 'url: "/zh-cn/about/"' not in home_source_zh_cn:
+    fail("Simplified Chinese homepage secondary About CTA source contract is missing")
 if 'layout: "simple"' not in about_source:
     fail("About page must explicitly use Blowfish native simple layout")
 if 'layout: "simple"' not in about_source_zh_cn:
@@ -126,6 +150,7 @@ if manifest_source:
         fail(f"Web app manifest is invalid JSON: {error}")
 
 home = read(PUBLIC / "index.html", "Rendered homepage")
+home_zh_cn = read(PUBLIC / "zh-cn" / "index.html", "Rendered Simplified Chinese homepage")
 about = read(PUBLIC / "about" / "index.html", "Rendered About page")
 about_zh_cn = read(PUBLIC / "zh-cn" / "about" / "index.html", "Rendered Simplified Chinese About page")
 if home:
@@ -135,8 +160,10 @@ if home:
         fail(f"Homepage must render exactly one H1 named 澄心之遊; found {parser.h1}")
     if "HUIKAI" not in home:
         fail("Rendered homepage is missing the HUIKAI brand")
-    if "記錄那些值得長期保留的價值" not in home:
-        fail("Rendered homepage is missing the settled HUIKAI value statement")
+    if "記錄那些值得長期保留的人事物" not in home:
+        fail("Rendered homepage is missing the settled HUIKAI people-events-things statement")
+    if "記錄那些值得長期保留的價值" in home:
+        fail("Rendered homepage still exposes the superseded HUIKAI value statement")
     if "遊而澄心" not in home:
         fail("Rendered homepage is missing the 澄心之遊 interpretation")
     if ("/posts", "閱讀文章") not in ctas:
@@ -145,6 +172,26 @@ if home:
         fail("Rendered homepage is missing the 關於我 CTA")
     if parser.description != expected_description:
         fail(f"Rendered homepage description mismatch: {parser.description!r}")
+
+if home_zh_cn:
+    parser = parse(home_zh_cn)
+    ctas = {(href.rstrip("/") or "/", text) for href, text in parser.anchors}
+    if parser.h1 != ["澄心之遊"]:
+        fail(f"Simplified Chinese homepage must render exactly one H1 named 澄心之遊; found {parser.h1}")
+    if "HUIKAI" not in home_zh_cn:
+        fail("Rendered Simplified Chinese homepage is missing the HUIKAI brand")
+    if "记录那些值得长期保留的人事物" not in home_zh_cn:
+        fail("Rendered Simplified Chinese homepage is missing the settled HUIKAI people-events-things statement")
+    if "记录那些值得长期保留的价值" in home_zh_cn:
+        fail("Rendered Simplified Chinese homepage still exposes the superseded HUIKAI value statement")
+    if "游而澄心" not in home_zh_cn:
+        fail("Rendered Simplified Chinese homepage is missing the 澄心之遊 interpretation")
+    if ("/zh-cn/posts", "阅读文章") not in ctas:
+        fail("Rendered Simplified Chinese homepage is missing the 阅读文章 CTA")
+    if ("/zh-cn/about", "关于我") not in ctas:
+        fail("Rendered Simplified Chinese homepage is missing the 关于我 CTA")
+    if parser.description != expected_description_zh_cn:
+        fail(f"Rendered Simplified Chinese homepage description mismatch: {parser.description!r}")
 
 if about:
     parser = parse(about)
@@ -187,4 +234,4 @@ if ERRORS:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Site identity verification: PASS (HUIKAI + 澄心之遊, zh-TW/zh-CN About philosophy preserved)")
+print("Site identity verification: PASS (HUIKAI + 澄心之遊, zh-TW/zh-CN homepage and About identity contracts preserved)")
