@@ -4,8 +4,7 @@ global:
 error:
   404_home: "回到首頁"
 
-nav:
-  main_menu: "主選單"
+"nav.main_menu": "主選單"
 
 huikai:
   reading_time:
