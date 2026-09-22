@@ -2,7 +2,7 @@
      Upstream zh-TW/zh-CN translation tables currently omit several nav labels.
      Keep the upstream structure intact; only provide server-rendered locale
      fallbacks so controls retain accessible names. Re-evaluate on Blowfish upgrade. */}}
-{{ $isZhCN := eq .Language.Lang "zh-CN" }}
+{{ $isZhCN := eq .Site.Language.Params.isoCode "zh-CN" }}
 {{ $mainMenuLabel := cond $isZhCN "主菜单" "主選單" }}
 {{ $closeMenuLabel := cond $isZhCN "关闭菜单" "關閉選單" }}
 {{ $mobileMenuLabel := cond $isZhCN "移动菜单" "行動版選單" }}
@@ -116,7 +116,7 @@
             tabindex="0"
             role="button"
             aria-expanded="true"
-            aria-label="{{ cond (eq site.Language.Lang "zh-CN") "展开或收起子菜单" "展開或收合子選單" }}"
+            aria-label="{{ cond (eq site.Language.Params.isoCode "zh-CN") "展开或收起子菜单" "展開或收合子選單" }}"
             class="ms-auto flex items-center justify-center h-10 w-10 cursor-pointer rounded-lg bf-icon-color-hover border bf-border-color bf-border-color-hover">
             {{ partial "icon.html" "chevron-down" }}
           </label>
