@@ -6,7 +6,6 @@
 {{ $mainMenuLabel := i18n "nav.main_menu" | default (cond $isZhCN "主菜单" "主選單") }}
 {{ $closeMenuLabel := i18n "nav.close_menu" | default (cond $isZhCN "关闭菜单" "關閉選單") }}
 {{ $mobileMenuLabel := i18n "nav.mobile_menu" | default (cond $isZhCN "移动菜单" "行動版選單") }}
-{{ $toggleSubmenuLabel := i18n "nav.toggle_submenu" | default (cond $isZhCN "展开或收起子菜单" "展開或收合子選單") }}
 {{ $mobileMenuStyle := .Site.Params.header.mobileMenuStyle | default "fullscreen" }}
 <div class="mobile-header-row relative flex items-center h-14 gap-4">
   {{ if hugo.IsMultilingual }}
@@ -117,7 +116,7 @@
             tabindex="0"
             role="button"
             aria-expanded="true"
-            aria-label="{{ $toggleSubmenuLabel }}"
+            aria-label="{{ i18n "nav.toggle_submenu" | default (cond (eq site.Language.Lang "zh-CN") "展开或收起子菜单" "展開或收合子選單") }}"
             class="ms-auto flex items-center justify-center h-10 w-10 cursor-pointer rounded-lg bf-icon-color-hover border bf-border-color bf-border-color-hover">
             {{ partial "icon.html" "chevron-down" }}
           </label>
