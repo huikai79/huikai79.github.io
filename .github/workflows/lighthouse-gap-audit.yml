@@ -1,0 +1,177 @@
+name: "Lighthouse reader-surface gap audit"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/lighthouse-gap-audit.yml"
+      - "assets/**"
+      - "layouts/**"
+      - "config/**"
+      - "content/**"
+      - "static/**"
+      - "go.mod"
+      - "go.sum"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-gap-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: '1.24.4'
+          cache: true
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: 0.165.0
+          extended: true
+
+      - name: Build verified candidate
+        run: bash scripts/build-and-verify.sh public
+
+      - name: Serve candidate locally
+        run: |
+          python3 -m http.server 4179 --directory public >/tmp/lighthouse-http.log 2>&1 &
+          echo $! >/tmp/lighthouse-http.pid
+          for _ in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:4179/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/lighthouse-http.log || true
+          echo "::error::Lighthouse candidate server did not become ready"
+          exit 1
+
+      - name: Run pinned Lighthouse audits
+        run: |
+          set -euo pipefail
+          mkdir -p lighthouse-gap-audit
+
+          audit() {
+            local name="$1"
+            local path="$2"
+            npx --yes lighthouse@13.5.0 "http://127.0.0.1:4179${path}" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-gpu" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="lighthouse-gap-audit/${name}.json"
+          }
+
+          audit home /
+          audit archive /posts/
+          audit article-hero /posts/small-b-blogging/
+          audit article-no-cover /posts/how-to-grow-an-idea/
+          audit article-zh-cn /zh-cn/posts/small-b-blogging/
+
+      - name: Summarize Lighthouse evidence
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          reports = sorted(Path("lighthouse-gap-audit").glob("*.json"))
+          rows = []
+          issues = []
+
+          for report in reports:
+              data = json.loads(report.read_text(encoding="utf-8"))
+              categories = data.get("categories", {})
+              scores = {
+                  key: round(float(categories.get(key, {}).get("score", 0)) * 100)
+                  for key in ("performance", "accessibility", "best-practices", "seo")
+              }
+              audits = data.get("audits", {})
+              metrics = {
+                  "FCP": audits.get("first-contentful-paint", {}).get("displayValue", ""),
+                  "LCP": audits.get("largest-contentful-paint", {}).get("displayValue", ""),
+                  "TBT": audits.get("total-blocking-time", {}).get("displayValue", ""),
+                  "CLS": audits.get("cumulative-layout-shift", {}).get("displayValue", ""),
+              }
+              rows.append((report.stem, scores, metrics))
+
+              for audit_id, audit in audits.items():
+                  score = audit.get("score")
+                  if score is None or score == 1:
+                      continue
+                  weight = 0
+                  for category in categories.values():
+                      refs = category.get("auditRefs", []) if isinstance(category, dict) else []
+                      for ref in refs:
+                          if ref.get("id") == audit_id:
+                              weight = max(weight, float(ref.get("weight", 0) or 0))
+                  if weight <= 0:
+                      continue
+                  issues.append({
+                      "page": report.stem,
+                      "id": audit_id,
+                      "title": str(audit.get("title", "")),
+                      "score": score,
+                      "weight": weight,
+                      "display": str(audit.get("displayValue", "")),
+                  })
+
+          lines = [
+              "# Lighthouse reader-surface gap audit",
+              "",
+              "Localhost candidate measurements are suitable for regression/gap discovery, not production field-performance claims.",
+              "",
+              "| Surface | Performance | Accessibility | Best practices | SEO | FCP | LCP | TBT | CLS |",
+              "|---|---:|---:|---:|---:|---|---|---|---|",
+          ]
+          for name, scores, metrics in rows:
+              lines.append(
+                  f"| {name} | {scores['performance']} | {scores['accessibility']} | "
+                  f"{scores['best-practices']} | {scores['seo']} | {metrics['FCP']} | "
+                  f"{metrics['LCP']} | {metrics['TBT']} | {metrics['CLS']} |"
+              )
+
+          lines += ["", "## Weighted failing audits", ""]
+          if not issues:
+              lines.append("- None.")
+          else:
+              for issue in sorted(issues, key=lambda item: (-item["weight"], item["page"], item["id"])):
+                  score = "n/a" if issue["score"] is None else round(float(issue["score"]) * 100)
+                  suffix = f" — {issue['display']}" if issue["display"] else ""
+                  lines.append(
+                      f"- **{issue['page']}** · `{issue['id']}` · score {score} · "
+                      f"weight {issue['weight']:g}: {issue['title']}{suffix}"
+                  )
+
+          Path("lighthouse-gap-audit/summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print("\n".join(lines))
+          PY
+          cat lighthouse-gap-audit/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Lighthouse evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: lighthouse-gap-audit-${{ github.sha }}
+          path: lighthouse-gap-audit/
+          retention-days: 14
+          if-no-files-found: error
