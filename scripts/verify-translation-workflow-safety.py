@@ -3,30 +3,43 @@ from __future__ import annotations
 
 from pathlib import Path
 
-WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "translation-drafts.yml"
-text = WORKFLOW.read_text(encoding="utf-8")
+ROOT = Path(__file__).resolve().parents[1]
+TARGETED = ROOT / ".github" / "workflows" / "translation-drafts.yml"
+AUTOMATIC = ROOT / ".github" / "workflows" / "translation-auto-drafts.yml"
+
+targeted = TARGETED.read_text(encoding="utf-8")
+automatic = AUTOMATIC.read_text(encoding="utf-8")
 errors: list[str] = []
 
 manual_expression = "github.event_name == 'workflow_dispatch' && inputs.apply && '1' || '0'"
-if manual_expression not in text:
-    errors.append("Translation apply must require workflow_dispatch with apply=true")
+if manual_expression not in targeted:
+    errors.append("Targeted translation apply must require workflow_dispatch with apply=true")
+if "workflow_dispatch:" not in targeted:
+    errors.append("Targeted translation workflow must expose workflow_dispatch")
+if "workflow_run:" in targeted:
+    errors.append("Targeted translation workflow must not be chained from sync/preflight completion")
+if "schedule:" in targeted or "\n  push:" in targeted:
+    errors.append("Targeted translation workflow must remain manual-only")
+if "TRANSLATION_APPLY:" not in targeted:
+    errors.append("Targeted translation workflow is missing TRANSLATION_APPLY gate")
 
-unsafe_patterns = (
-    "github.event_name == 'workflow_run' || inputs.apply",
-    "github.event_name == 'workflow_run' && '1'",
-)
-for pattern in unsafe_patterns:
-    if pattern in text:
-        errors.append(f"Automatic sync-triggered translation apply is forbidden: {pattern}")
-
-if "workflow_run:" not in text:
-    errors.append("Translation workflow must retain sync-triggered preflight observability")
-if "TRANSLATION_APPLY:" not in text:
-    errors.append("Translation workflow is missing TRANSLATION_APPLY gate")
+if 'cron: "*/15 * * * *"' not in automatic:
+    errors.append("Automatic translation workflow must retain the 15-minute schedule")
+if "workflow_run:" in automatic:
+    errors.append("Automatic translation writes must not be chained from sync/preflight completion")
+if "workflow_dispatch:" in automatic or "\n  push:" in automatic:
+    errors.append("Automatic translation workflow must remain schedule-only")
+if 'TRANSLATION_APPLY: "1"' not in automatic:
+    errors.append("Automatic translation workflow is missing the explicit apply contract")
+if 'TRANSLATION_AUTOMATIC: "1"' not in automatic:
+    errors.append("Automatic translation workflow is missing the automatic queue contract")
 
 if errors:
     for error in errors:
         print(f"::error::{error}")
     raise SystemExit(1)
 
-print("Translation workflow safety verification: PASS (automatic runs are preflight-only)")
+print(
+    "Translation workflow safety verification: PASS "
+    "(targeted=manual-only, automatic=schedule-only)"
+)
