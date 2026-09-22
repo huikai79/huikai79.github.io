@@ -1,5 +1,5 @@
 ---
-title: "一手一懂｜個人圍棋互動學習"
+title: "悟之一手｜個人圍棋互動學習"
 description: "從《棋魂》帶來的學習衝動開始，做一個能依自己的節奏與想法反覆練習、修正與回看的個人圍棋學習工具。"
 layout: "simple"
 weight: 20
@@ -10,6 +10,8 @@ showReadingTime: false
 
 **狀態：** 進行中 · 個人實驗 · 可離線使用
 
+**英文名：** A Move of Insight
+
 [開始練習](https://huikai.com.kg/vt-cos-go-learning/) · [查看 GitHub 原始碼](https://github.com/huikai79/vt-cos-go-learning)
 
 ## 從《棋魂》開始
@@ -18,7 +20,7 @@ showReadingTime: false
 
 一開始並不是想做一個「圍棋平台」，而是很單純地想解決自己的學習需要：我希望隨時都可以照自己的節奏和想法學，不必配合固定課程進度；哪裡沒懂，就回去重看、重做，隔一段時間再看看自己是不是真的還會。
 
-「一手一懂」就是從這個念頭開始。它是我為自己做的圍棋學習工具，也是 VT-COS 底下的一個個人學習原型。
+「悟之一手」就是從這個念頭開始。它是我為自己做的圍棋學習工具，也是 VT-COS 底下的一個個人學習原型。
 
 ## 我想解決的問題
 
@@ -67,5 +69,5 @@ showReadingTime: false
 
 這是一個還在生長中的專案。之後與學習、錯誤、記憶和圍棋相關的反思，會另外以文章留下；這個頁面則保留專案本身目前走到哪裡。
 
-[開始使用一手一懂](https://huikai.com.kg/vt-cos-go-learning/)  
+[開始使用悟之一手](https://huikai.com.kg/vt-cos-go-learning/)  
 [前往 GitHub repository](https://github.com/huikai79/vt-cos-go-learning)
