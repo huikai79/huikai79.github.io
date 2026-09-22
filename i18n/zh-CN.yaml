@@ -4,6 +4,9 @@ global:
 error:
   404_home: "返回首页"
 
+nav:
+  main_menu: "主菜单"
+
 huikai:
   reading_time:
     one: "阅读约 {{ .Count }} 分钟"
