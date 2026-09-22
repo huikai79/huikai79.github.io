@@ -162,6 +162,43 @@ jobs:
                       f"weight {issue['weight']:g}: {issue['title']}{suffix}"
                   )
 
+          lines += ["", "## Diagnostic details", ""]
+          for report in reports:
+              data = json.loads(report.read_text(encoding="utf-8"))
+              audits = data.get("audits", {})
+              for audit_id in ("aria-command-name", "errors-in-console"):
+                  audit = audits.get(audit_id, {})
+                  if audit.get("score") in (None, 1):
+                      continue
+                  items = (audit.get("details", {}) or {}).get("items", []) or []
+                  lines.append(f"### {report.stem} · {audit_id}")
+                  lines.append("")
+                  if not items:
+                      lines.append("- No detail items.")
+                      lines.append("")
+                      continue
+                  for item in items:
+                      node = item.get("node", {}) if isinstance(item, dict) else {}
+                      selector = str(node.get("selector", "")) if isinstance(node, dict) else ""
+                      snippet = str(node.get("snippet", "")) if isinstance(node, dict) else ""
+                      description = str(item.get("description", "")) if isinstance(item, dict) else ""
+                      source = str(item.get("source", "")) if isinstance(item, dict) else ""
+                      url = str(item.get("url", "")) if isinstance(item, dict) else ""
+                      values = []
+                      if selector:
+                          values.append(f"selector=\`{selector}\`")
+                      if snippet:
+                          safe_snippet = snippet.replace("\n", " ").replace("|", "\\|")
+                          values.append(f"snippet=\`{safe_snippet}\`")
+                      if description:
+                          values.append("description=" + description.replace("\n", " "))
+                      if source:
+                          values.append("source=" + source.replace("\n", " "))
+                      if url:
+                          values.append("url=" + url)
+                      lines.append("- " + ("; ".join(values) if values else json.dumps(item, ensure_ascii=False)))
+                  lines.append("")
+
           Path("lighthouse-gap-audit/summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
           print("\n".join(lines))
           PY
