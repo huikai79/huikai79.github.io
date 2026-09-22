@@ -71,8 +71,12 @@ class Parser(HTMLParser):
             self.html_lang = data.get("lang", "")
         if data.get("id") == "scroll-to-top":
             self.scroll_label = data.get("aria-label", "")
-        if data.get("for") == "mobile-menu-toggle" and data.get("role") == "button":
-            self.mobile_menu_label = data.get("aria-label", "")
+        if (
+            data.get("for") == "mobile-menu-toggle"
+            and data.get("role") == "button"
+            and "aria-label" in data
+        ):
+            self.mobile_menu_label = data["aria-label"]
         if tag.lower() == "article" and "article-main" in classes:
             self.in_article_main = True
         elif self.in_article_main and tag.lower() in {"h2", "h3", "h4"}:
