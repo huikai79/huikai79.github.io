@@ -5,6 +5,9 @@ import fs from "node:fs";
 const workflow = fs.readFileSync(".github/workflows/translation-drafts.yml", "utf8");
 
 assert.match(workflow, /source_page_id:/);
+assert.match(workflow, /workflow_dispatch:/);
+assert.ok(!workflow.includes("workflow_run:"), "targeted translation workflow must not be chained from sync/preflight completion");
+assert.ok(!workflow.includes("schedule:"), "targeted translation workflow must remain manual-only");
 assert.match(workflow, /Required when apply=true/);
 assert.match(workflow, /Resolve manually approved translation source/);
 assert.match(workflow, /if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.apply \}\}/);
