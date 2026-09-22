@@ -213,7 +213,7 @@ jobs:
             sleep 1
           done
 
-          cat > /tmp/search-benchmark.mjs <<'JS'
+          cat > search-benchmark.mjs <<'JS'
           import fs from "node:fs";
           import Fuse from "fuse.js";
           import { chromium } from "playwright";
@@ -339,7 +339,7 @@ jobs:
           console.log(md);
           JS
 
-          node /tmp/search-benchmark.mjs
+          node search-benchmark.mjs
           cat search-query-benchmark.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Write benchmark summary
