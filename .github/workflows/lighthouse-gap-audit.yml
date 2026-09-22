@@ -82,11 +82,11 @@ jobs:
               --output-path="lighthouse-gap-audit/${name}.json"
           }
 
+          # Diagnostic rerun: the first five-surface audit already established
+          # the score pattern. Two representative pages are sufficient to
+          # locate the shared accessibility failure and article console errors.
           audit home /
-          audit archive /posts/
-          audit article-hero /posts/small-b-blogging/
           audit article-no-cover /posts/how-to-grow-an-idea/
-          audit article-zh-cn /zh-cn/posts/small-b-blogging/
 
       - name: Summarize Lighthouse evidence
         run: |
