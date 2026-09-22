@@ -18,6 +18,31 @@ build:
 
 - 本頁分成三層：已完成事項按日期留下；需要等規模、資料或使用情境成熟後才值得處理的項目放在「待條件成熟再評估」；已有明確下一步但尚未完成的事項放在「下次可完善」。條件達成且實際完成後，再移入當天紀錄。一般小修補不逐項記錄。
 
+## 2026-09-22｜首頁文案、工作流程邊界與維護觀測補強
+
+### 首頁品牌文案與「悟之一手」
+
+- 首頁主句由「記錄那些值得長期保留的價值。」調整為「記錄那些值得長期保留的人事物」，並移除主句與「遊而澄心」補充句的句末句號；本次只收斂文字語氣，不改 CTA、資訊架構或既有路由。
+- 9 月 21 日新增 VT-COS 圍棋互動學習專案頁，保留《棋魂》帶來的個人學習起點，並明確區分「系統可運作」與「學習方法已被證明有效」；9 月 22 日正式定名為「悟之一手」，英文名為 **A Move of Insight**，既有 `/projects/vt-cos-go-learning/` 與工具網址保持不變。
+
+### 翻譯自動化的副作用邊界
+
+- zizmor gap audit 暴露一個實際 workflow 邊界：原本任何成功的 sync run 都可能透過 `workflow_run` 觸發翻譯流程，使 `preflight_only` 驗證間接造成付費模型與 Notion Draft 寫入。
+- 自動翻譯現改為固定 15 分鐘 schedule-only；指定單篇翻譯維持 manual-only `workflow_dispatch`。驗證器同時禁止兩條翻譯 Workflow 重新引入 `workflow_run`，避免只讀／候選驗證重新取得外部寫入副作用。
+- 這次只修 trigger 與 verifier 邊界，沒有改 Notion schema、翻譯模型、發布核准規則、sync 或 deployment 本身。
+
+### Reader accessibility、外部連結與工具評估
+
+- Lighthouse gap audit 找到繁體／簡體行動版選單 trigger 缺少 accessible name；最後以 Blowfish v3.6.0 的窄範圍 project override 補上正確語系標籤，並把 rendered accessible-name contract 加入既有 navigation verifier，不改 CSS、JavaScript 或導覽結構。Lighthouse 本身仍只作診斷，不因一次發現就升格成每次 PR 的永久 gate。
+- 新增每週／手動的 Lychee external-link observer，讀取 `README.md`、`docs/**` 與 `content/**` 的 Markdown 連結；此 observer 為 read-only、non-blocking，第三方暫時失效不會阻擋發布，報告保留作後續人工判斷。
+- Pagefind 與 explicit-link／backlink graph 本輪仍停留在隔離實驗，沒有進入正式搜尋、taxonomy、Notion schema 或讀者介面。git-sizer 對完整 reachable history 的審計也沒有找到需要重寫 Git history、導入 Git LFS 或進行大範圍清理的證據，因此不為「repository 看起來很大」先做高成本遷移。
+
+## 2026-09-19｜Repository 維護基線與架構邊界文件化
+
+- repository 根目錄新增 README，明確寫出實際 publishing／deployment validation 入口與 production safety 邊界；`docs/architecture.md` 同步記錄 Hugo、Notion sync、Comments Worker、Media Gateway、信任邊界與主要 invariants。
+- `.gitignore` 補上本機 environment 與 Cloudflare／Wrangler state，降低 secrets 或部署狀態誤進版本庫的風險。
+- 本輪選擇把既有邊界文件化，而不是因審計就重寫已經有 runtime tests 與安全契約的兩個 Worker；工程改善維持「先保留可工作的架構，再對真正暴露的缺口做最小修復」。
+
 ## 2026-09-17｜正式發佈驗證與入口頁 QA 收斂
 
 ### Publication gate 與公開路由
