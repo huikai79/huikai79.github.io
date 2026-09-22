@@ -190,6 +190,158 @@ jobs:
             echo "PAGEFIND_GZIP_TAR_BYTES=$pagefind_gzip_bytes"
           } >> "$GITHUB_ENV"
 
+      - name: Install pinned query benchmark runtimes
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund fuse.js@7.5.0 playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Compare known-answer query relevance
+        run: |
+          set -euo pipefail
+          cat > pagefind-corpus/benchmark-zh-tw.html <<'HTML'
+          <!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><title>benchmark</title></head><body></body></html>
+          HTML
+          mkdir -p pagefind-corpus/zh-cn
+          cat > pagefind-corpus/zh-cn/benchmark.html <<'HTML'
+          <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>benchmark</title></head><body></body></html>
+          HTML
+
+          python3 -m http.server 4178 --directory pagefind-corpus >/tmp/pagefind-benchmark-http.log 2>&1 &
+          echo $! >/tmp/pagefind-benchmark-http.pid
+          for _ in $(seq 1 20); do
+            curl --fail --silent --show-error http://127.0.0.1:4178/benchmark-zh-tw.html >/dev/null && break
+            sleep 1
+          done
+
+          cat > /tmp/search-benchmark.mjs <<'JS'
+          import fs from "node:fs";
+          import Fuse from "fuse.js";
+          import { chromium } from "playwright";
+
+          const corpus = JSON.parse(fs.readFileSync("fuse-articles-by-language.json", "utf8"));
+          const cases = [
+            { language: "zh-TW", query: "小寫 b", expected: "/posts/small-b-blogging/" },
+            { language: "zh-TW", query: "知識之河", expected: "/posts/my-website-is-a-shifting-house/" },
+            { language: "zh-TW", query: "無為農法", expected: "/posts/how-to-grow-an-idea/" },
+            { language: "zh-TW", query: "寫作 思考", expected: "/posts/writes-and-write-nots/" },
+            { language: "zh-TW", query: "small b blogging", expected: "/posts/small-b-blogging/" },
+            { language: "zh-CN", query: "小写 b", expected: "/zh-cn/posts/small-b-blogging/" },
+            { language: "zh-CN", query: "世界模型", expected: "/zh-cn/posts/how-you-know/" },
+            { language: "zh-CN", query: "新创公司", expected: "/zh-cn/posts/be-alife/" },
+            { language: "zh-CN", query: "small b blogging", expected: "/zh-cn/posts/small-b-blogging/" },
+          ];
+
+          const fuseOptions = {
+            shouldSort: true,
+            ignoreLocation: true,
+            threshold: 0.0,
+            includeMatches: true,
+            keys: [
+              { name: "title", weight: 0.8 },
+              { name: "section", weight: 0.2 },
+              { name: "summary", weight: 0.6 },
+              { name: "content", weight: 0.4 },
+            ],
+          };
+
+          const fuseByLanguage = new Map(
+            Object.entries(corpus).map(([language, docs]) => [language, new Fuse(docs, fuseOptions)])
+          );
+
+          const browser = await chromium.launch({ headless: true });
+          const rows = [];
+          try {
+            for (const test of cases) {
+              const fuse = fuseByLanguage.get(test.language);
+              if (!fuse) throw new Error(`Missing Fuse corpus for ${test.language}`);
+              const fuseUrls = fuse.search(test.query, { limit: 5 }).map(result =>
+                String(result.item.permalink || "").toLowerCase()
+              );
+
+              const page = await browser.newPage();
+              let pagefindBytes = 0;
+              page.on("response", async response => {
+                if (!response.url().includes("/pagefind/")) return;
+                try {
+                  const body = await response.body();
+                  pagefindBytes += body.length;
+                } catch {}
+              });
+
+              const harness = test.language === "zh-CN"
+                ? "http://127.0.0.1:4178/zh-cn/benchmark.html"
+                : "http://127.0.0.1:4178/benchmark-zh-tw.html";
+              await page.goto(harness, { waitUntil: "domcontentloaded" });
+
+              const pagefindUrls = await page.evaluate(async query => {
+                const pagefind = await import("/pagefind/pagefind.js");
+                await pagefind.init();
+                const search = await pagefind.search(query);
+                const loaded = await Promise.all(search.results.slice(0, 5).map(result => result.data()));
+                return loaded.map(result => String(result.url || "").toLowerCase());
+              }, test.query);
+
+              const normalize = value => {
+                const clean = String(value || "").split("#", 1)[0].split("?", 1)[0].toLowerCase();
+                return clean.endsWith("/") ? clean : clean + "/";
+              };
+              const expected = normalize(test.expected);
+              const fuseRank = fuseUrls.map(normalize).findIndex(url => url === expected);
+              const pagefindRank = pagefindUrls.map(normalize).findIndex(url => url === expected);
+
+              rows.push({
+                ...test,
+                fuseTop5: fuseUrls,
+                pagefindTop5: pagefindUrls,
+                fuseTop3Hit: fuseRank >= 0 && fuseRank < 3,
+                pagefindTop3Hit: pagefindRank >= 0 && pagefindRank < 3,
+                fuseRank: fuseRank >= 0 ? fuseRank + 1 : null,
+                pagefindRank: pagefindRank >= 0 ? pagefindRank + 1 : null,
+                pagefindColdBytes: pagefindBytes,
+              });
+              await page.close();
+            }
+          } finally {
+            await browser.close();
+          }
+
+          const summary = {
+            cases: rows.length,
+            fuseTop3Hits: rows.filter(row => row.fuseTop3Hit).length,
+            pagefindTop3Hits: rows.filter(row => row.pagefindTop3Hit).length,
+            pagefindColdBytesMedian: rows
+              .map(row => row.pagefindColdBytes)
+              .sort((a, b) => a - b)[Math.floor(rows.length / 2)],
+          };
+
+          fs.writeFileSync(
+            "search-query-benchmark.json",
+            JSON.stringify({ summary, rows }, null, 2) + "\n",
+            "utf8"
+          );
+
+          const md = [
+            "# Query relevance benchmark",
+            "",
+            `- Cases: **${summary.cases}**`,
+            `- Fuse Top-3 known-answer hits: **${summary.fuseTop3Hits}/${summary.cases}**`,
+            `- Pagefind Top-3 known-answer hits: **${summary.pagefindTop3Hits}/${summary.cases}**`,
+            `- Median cold Pagefind asset/index bytes observed by Chromium: **${summary.pagefindColdBytesMedian}**`,
+            "",
+            "| Language | Query | Expected | Fuse rank | Pagefind rank | Pagefind cold bytes |",
+            "|---|---|---|---:|---:|---:|",
+            ...rows.map(row =>
+              `| ${row.language} | ${row.query} | ${row.expected} | ${row.fuseRank ?? "—"} | ${row.pagefindRank ?? "—"} | ${row.pagefindColdBytes} |`
+            ),
+            "",
+          ].join("\n");
+          fs.writeFileSync("search-query-benchmark.md", md, "utf8");
+          console.log(md);
+          JS
+
+          node /tmp/search-benchmark.mjs
+          cat search-query-benchmark.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Write benchmark summary
         run: |
           python3 - <<'PY'
@@ -244,6 +396,8 @@ jobs:
           path: |
             pagefind-benchmark-summary.md
             pagefind-build.log
+            search-query-benchmark.json
+            search-query-benchmark.md
             article-corpus-summary.json
             fuse-articles-by-language.json
             fuse-full-by-language.json
