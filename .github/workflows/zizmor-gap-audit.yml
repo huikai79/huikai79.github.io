@@ -1,0 +1,112 @@
+name: "zizmor workflow security gap audit"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - ".github/zizmor.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zizmor-gap-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install pinned zizmor in isolated venv
+        run: |
+          python3 -m venv /tmp/zizmor-venv
+          /tmp/zizmor-venv/bin/python -m pip install --disable-pip-version-check --no-input zizmor==1.30.1
+          /tmp/zizmor-venv/bin/zizmor --version
+
+      - name: Audit workflows without blocking the experiment
+        run: |
+          set -euo pipefail
+          /tmp/zizmor-venv/bin/zizmor \
+            --collect=workflows \
+            --format=json-v1 \
+            --no-exit-codes \
+            . > zizmor-findings.json
+
+          python3 - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          findings = json.loads(Path("zizmor-findings.json").read_text(encoding="utf-8"))
+          severity = Counter()
+          confidence = Counter()
+          rules = Counter()
+
+          rows = []
+          for finding in findings:
+              ident = str(finding.get("ident", "unknown"))
+              determinations = finding.get("determinations", {}) or {}
+              sev = str(determinations.get("severity", "Unknown"))
+              conf = str(determinations.get("confidence", "Unknown"))
+              rules[ident] += 1
+              severity[sev] += 1
+              confidence[conf] += 1
+
+              locations = finding.get("locations", []) or []
+              first = locations[0] if locations else {}
+              symbolic = first.get("symbolic", {}) if isinstance(first, dict) else {}
+              key = symbolic.get("key", {}) if isinstance(symbolic, dict) else {}
+              local = key.get("Local", {}) if isinstance(key, dict) else {}
+              path = str(local.get("verbatim_path", ""))
+              rows.append((sev, conf, ident, path, str(finding.get("desc", ""))))
+
+          lines = [
+              "# zizmor workflow security gap audit",
+              "",
+              f"- Total findings: **{len(findings)}**",
+              "- Severity: " + (", ".join(f"{k}={v}" for k, v in sorted(severity.items())) or "none"),
+              "- Confidence: " + (", ".join(f"{k}={v}" for k, v in sorted(confidence.items())) or "none"),
+              "",
+              "## Rules",
+              "",
+          ]
+          for ident, count in sorted(rules.items(), key=lambda item: (-item[1], item[0])):
+              lines.append(f"- `{ident}`: **{count}**")
+
+          if rows:
+              lines += [
+                  "",
+                  "## Findings",
+                  "",
+                  "| Severity | Confidence | Rule | Workflow | Description |",
+                  "|---|---|---|---|---|",
+              ]
+              for sev, conf, ident, path, desc in rows:
+                  safe = desc.replace("|", "\\|").replace("\n", " ")
+                  lines.append(f"| {sev} | {conf} | {ident} | {path} | {safe} |")
+
+          Path("zizmor-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print("\n".join(lines))
+          PY
+
+          cat zizmor-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload zizmor audit evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: zizmor-gap-audit-${{ github.sha }}
+          path: |
+            zizmor-findings.json
+            zizmor-summary.md
+          retention-days: 14
+          if-no-files-found: error
