@@ -1,7 +1,7 @@
 ---
 title: "澄心之遊"
 heroCaption: "HUIKAI"
-heroLead: "记录那些值得长期保留的价值。"
+heroLead: "记录那些值得长期保留的人事物"
 heroButtons:
   - label: "阅读文章"
     url: "/zh-cn/posts/"
@@ -13,4 +13,4 @@ heroButtons:
     style: "outline"
 ---
 
-游而澄心：在所见、所学、所历之间，让杂质慢慢沉下，留下值得回望的自己与价值。
+游而澄心：在所见、所学、所历之间，让杂质慢慢沉下，留下值得回望的自己与价值
