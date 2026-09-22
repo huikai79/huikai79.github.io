@@ -194,6 +194,16 @@ jobs:
             exit 1
           fi
 
+          if grep -Fq 'workflow_run:' .github/workflows/translation-drafts.yml; then
+            echo "::error::Targeted translation drafts must not be chained from sync/preflight workflow completion"
+            exit 1
+          fi
+          require_fixed 'cron: "*/15 * * * *"' .github/workflows/translation-auto-drafts.yml
+          if grep -Fq 'workflow_run:' .github/workflows/translation-auto-drafts.yml; then
+            echo "::error::Automatic translation writes must be schedule-only; sync/preflight completion must not trigger Notion or paid-model side effects"
+            exit 1
+          fi
+
       - name: Verify homepage selection determinism
         run: |
           cp data/homepage_runtime.toml /tmp/homepage_runtime.original.toml
