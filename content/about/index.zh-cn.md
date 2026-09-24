@@ -1,13 +1,13 @@
 ---
 title: "关于"
 layout: "simple"
-description: "关于庄辉恺，以及 HUIKAI 为什么持续留下这些内容。"
+description: "关于庄辉恺，以及我如何在所见、所学与所历之间，留下观看、经历与思考。"
 showBreadcrumbs: false
 sharingLinks: []
 ---
 
 {{< page-lead >}}
-我是庄辉恺。HUIKAI 是我整理所见、所学与所历的地方；有些内容已整理成文章，有些仍只是正在形成的理解。
+我是庄辉恺。HUIKAI 是我在所见、所学与所历之间，整理观看、经历与思考的地方。有些内容已整理成文章，有些仍在形成之中。
 {{< /page-lead >}}
 
 {{< about-photo alt="庄辉恺坐在车窗旁望向窗外" >}}
