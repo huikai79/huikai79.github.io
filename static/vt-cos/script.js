@@ -10,6 +10,9 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',
 }));
 
 const form=document.querySelector('#contact-form');
-if(form?.dataset.disabled==='true'){
-  form.addEventListener('submit',e=>e.preventDefault());
+if(form){
+  form.addEventListener('submit',()=>{
+    const button=form.querySelector('button[type="submit"]');
+    if(button){button.disabled=true;button.textContent=document.documentElement.lang.startsWith('zh')?'送出中…':'Sending…';}
+  });
 }
