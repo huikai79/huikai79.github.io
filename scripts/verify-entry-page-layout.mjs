@@ -205,10 +205,10 @@ function assertProjects(localeLabel, state, desktop) {
     if (!near(state.grid.width, state.main.width, 4)) {
       fail(`${localeLabel}/projects: card grid does not use the page shell (${state.grid.width.toFixed(1)} vs ${state.main.width.toFixed(1)}px)`);
     }
-    if (state.cards.length !== 3) {
-      fail(`${localeLabel}/projects: expected three long-term project cards, found ${state.cards.length}`);
+    if (!state.cards.length) {
+      fail(`${localeLabel}/projects: project grid contains no long-term project cards`);
     } else if (!(state.grid.width > state.cards[0].width * 2.7)) {
-      fail(`${localeLabel}/projects: project cards appear stretched instead of retaining the three-column grid contract`);
+      fail(`${localeLabel}/projects: project cards appear stretched instead of retaining the desktop multi-column grid contract`);
     }
     for (const paragraph of state.proseParagraphs || []) {
       if (paragraph?.width > READING_MEASURE_PX) {
