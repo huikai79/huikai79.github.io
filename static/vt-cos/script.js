@@ -3,3 +3,13 @@ const sections=links.map(a=>document.querySelector(a.getAttribute('href'))).filt
 const mark=()=>{let current=sections[0]?.id;for(const s of sections){if(s.getBoundingClientRect().top<160) current=s.id}
 links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+current));};
 addEventListener('scroll',mark,{passive:true});mark();
+
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{
+  const target=document.querySelector(a.getAttribute('href'));
+  if(target?.tagName==='DETAILS') target.open=true;
+}));
+
+const form=document.querySelector('#contact-form');
+if(form?.dataset.disabled==='true'){
+  form.addEventListener('submit',e=>e.preventDefault());
+}
