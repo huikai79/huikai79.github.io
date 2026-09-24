@@ -1,13 +1,13 @@
 ---
 title: "關於"
 layout: "simple"
-description: "關於莊輝愷，以及 HUIKAI 為什麼持續留下這些內容。"
+description: "關於莊輝愷，以及我如何在所見、所學與所歷之間，留下觀看、經歷與思考。"
 showBreadcrumbs: false
 sharingLinks: []
 ---
 
 {{< page-lead >}}
-我是莊輝愷。HUIKAI 是我整理所見、所學與所歷的地方；有些內容已整理成文章，有些仍只是正在形成的理解。
+我是莊輝愷。HUIKAI 是我在所見、所學與所歷之間，整理觀看、經歷與思考的地方。有些內容已整理成文章，有些仍在形成之中。
 {{< /page-lead >}}
 
 {{< about-photo alt="莊輝愷坐在車窗旁望向窗外" >}}
