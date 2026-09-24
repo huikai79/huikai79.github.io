@@ -4,6 +4,35 @@ body {
   overflow-x: clip;
 }
 
+/* ----------------- CJK long-form reading tokens ----------------- */
+:root {
+  --huikai-article-width: 680px;
+  --huikai-mobile-padding: 20px;
+  --huikai-font-zh:
+    "Noto Sans TC",
+    "PingFang TC",
+    "Microsoft JhengHei",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  --huikai-font-ja:
+    "Noto Sans JP",
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    "Meiryo",
+    system-ui,
+    sans-serif;
+  --huikai-font-ko:
+    "Pretendard",
+    "Noto Sans KR",
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    system-ui,
+    sans-serif;
+}
+
 /* ----------------- Full-width article hero ----------------- */
 .post-hero {
   width: 100vw;
@@ -253,7 +282,7 @@ body {
   grid-column: 1;
   grid-row: 2;
   width: 100%;
-  max-width: 80ch;
+  max-width: var(--huikai-article-width);
   min-width: 0;
   margin-left: auto;
   margin-right: auto;
@@ -263,9 +292,9 @@ body {
   grid-column: 1;
   grid-row: 1;
   width: 100%;
-  max-width: 80ch;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  max-width: var(--huikai-article-width);
+  padding-left: var(--huikai-mobile-padding);
+  padding-right: var(--huikai-mobile-padding);
   margin: 0 auto 1rem;
 }
 
@@ -292,7 +321,7 @@ body {
 
 @media (min-width: 1280px) {
   .article-reading-layout.has-toc {
-    grid-template-columns: minmax(0, 80ch) minmax(12rem, 18rem);
+    grid-template-columns: minmax(0, var(--huikai-article-width)) minmax(12rem, 18rem);
     column-gap: 2rem;
     justify-content: center;
   }
@@ -341,12 +370,76 @@ body {
 /* ----------------- Article content only ----------------- */
 .article-main {
   width: 100%;
-  max-width: 80ch !important;
+  max-width: var(--huikai-article-width) !important;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: var(--huikai-mobile-padding);
+  padding-right: var(--huikai-mobile-padding);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-align: start;
   overflow-wrap: anywhere;
+}
+
+html:lang(zh) .article-main {
+  font-family: var(--huikai-font-zh);
+}
+
+html:lang(ja) .article-main {
+  font-family: var(--huikai-font-ja);
+}
+
+html:lang(ko) .article-main {
+  font-family: var(--huikai-font-ko);
+}
+
+.article-main [lang^="zh"] {
+  font-family: var(--huikai-font-zh);
+}
+
+.article-main [lang^="ja"] {
+  font-family: var(--huikai-font-ja);
+}
+
+.article-main [lang^="ko"] {
+  font-family: var(--huikai-font-ko);
+}
+
+.article-main :where(p):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0;
+  margin-bottom: 1.1em;
+}
+
+.article-main :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.article-main :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)):hover,
+.article-main :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)):focus-visible {
+  text-decoration-line: underline;
+}
+
+@media (min-width: 640px) {
+  .article-main,
+  .article-toc {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .article-main {
+    line-height: 1.7;
+  }
+
+  .article-footer {
+    padding-left: var(--huikai-mobile-padding) !important;
+    padding-right: var(--huikai-mobile-padding) !important;
+  }
 }
 
 .article-date-line {
@@ -543,6 +636,20 @@ body {
 
 .dark .explore-topic-count {
   color: rgb(var(--color-neutral-400, 163 163 163));
+}
+
+/* ----------------- Reduced motion ----------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 /* ----------------- About page portrait ----------------- */
