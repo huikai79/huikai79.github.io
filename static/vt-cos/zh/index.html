@@ -90,14 +90,14 @@
 <section class="section soft" id="contact"><div class="container two-col">
 <div><div class="eyebrow">聯絡</div><h2>你的工作也有斷掉的知識鏈嗎？</h2>
 <p class="lead">說明你的使用情境。我們先理解問題發生在哪一段。</p>
-<p class="proof-note">目前此表單為 UI 預備狀態；在寄信端點與收件地址完成驗證前不會送出資料。</p></div>
-<form class="contact-form" id="contact-form" data-disabled="true">
+<p class="proof-note">提交後，內容會透過 FormSubmit 寄到 VT-COS 聯絡信箱。首次啟用仍需由收件信箱確認。</p></div>
+<form class="contact-form" id="contact-form" action="https://formsubmit.co/huikai79@gmail.com" method="POST">
 <label>姓名 *<input name="name" autocomplete="name" required></label>
 <label>Email *<input name="email" type="email" autocomplete="email" required></label>
 <label>你正在處理什麼工作？ *<input name="work" required></label>
 <label>知識鏈在哪裡斷掉？ *<textarea name="break" rows="5" required></textarea></label>
-<p class="form-note">請勿提交機密、敏感或個人資料。</p>
-<button class="btn primary" type="submit" disabled>寄送功能待啟用</button>
+<p class="form-note">請勿提交機密、敏感或不必要的個人資料。此表單使用第三方 FormSubmit 傳送與暫存提交內容。</p>
+<input type="hidden" name="_subject" value="VT-COS Website Inquiry"><input type="hidden" name="_template" value="table"><input type="text" name="_honey" tabindex="-1" autocomplete="off" style="display:none"><button class="btn primary" type="submit">送出詢問</button>
 </form></div></section>
 </main>
 <footer class="footer"><div class="container footer-grid"><div><strong>VT-COS System Reference</strong><div>公開系統參考與敘事入口</div></div><div>Vibe Thinking Cognitive Operating System</div></div></footer>
