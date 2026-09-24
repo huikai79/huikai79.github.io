@@ -544,3 +544,16 @@ body {
 .dark .explore-topic-count {
   color: rgb(var(--color-neutral-400, 163 163 163));
 }
+
+/* ----------------- About page portrait ----------------- */
+.about-window-photo {
+  width: min(100%, 28rem);
+  margin: 2rem auto 2.5rem;
+}
+
+.about-window-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
