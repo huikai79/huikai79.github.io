@@ -34,3 +34,16 @@ h3{font-size:1.12rem;margin:.3em 0 .65em}p{margin:.5em 0 0}.lead{font-size:clamp
 .scenario strong{display:block;margin-bottom:6px}.scenario p{color:var(--muted);font-size:.93rem}
 .footer{padding:48px 0 72px;color:var(--muted);font-size:.88rem}.footer-grid{display:flex;justify-content:space-between;gap:22px;flex-wrap:wrap}
 @media(max-width:900px){.nav-inner{align-items:flex-start;padding:15px 0;flex-direction:column}.nav-right{width:100%;align-items:flex-start;flex-direction:column;gap:12px}.nav-links{gap:13px}.hero{padding-top:64px}.c4,.c6{grid-column:span 12}.two-col{grid-template-columns:1fr}.list-row{grid-template-columns:1fr}.scenario{grid-template-columns:1fr}}
+
+/* v1.1 progressive disclosure */
+.scenario-preview{margin-top:28px}
+.scenario-preview .card{display:flex;flex-direction:column}
+.scenario-preview .card .btn{margin-top:auto;align-self:flex-start}
+.details-panel{margin-top:18px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.018);overflow:hidden}
+.details-panel summary{cursor:pointer;padding:17px 20px;font-weight:750;color:#dce7f1;list-style:none}
+.details-panel summary::-webkit-details-marker{display:none}
+.details-panel summary::after{content:"+";float:right;color:var(--accent);font-size:1.2rem}
+.details-panel[open] summary::after{content:"−"}
+.details-panel .details-body{padding:0 20px 20px}
+.proof-note{font-size:.82rem;color:var(--muted);margin-top:12px}
+@media(max-width:900px){.scenario-preview .card{padding:20px}.details-panel summary{padding:15px 17px}}
