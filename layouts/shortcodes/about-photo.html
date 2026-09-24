@@ -1,0 +1,8 @@
+{{- $image := .Page.Resources.GetMatch "about-window.jfif" -}}
+{{- if $image -}}
+  <figure class="about-window-photo not-prose">
+    <img src="{{ $image.RelPermalink }}" alt="{{ .Get "alt" }}" loading="eager" decoding="async">
+  </figure>
+{{- else -}}
+  {{- errorf "About photo resource about-window.jfif was not found for %s" .Page.RelPermalink -}}
+{{- end -}}
