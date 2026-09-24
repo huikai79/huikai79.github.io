@@ -7,88 +7,98 @@
 <link rel="stylesheet" href="styles.css"><link rel="alternate" hreflang="zh-Hant" href="zh/">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 <header class="nav"><div class="container nav-inner">
 <a class="brand" href="#top">VT-COS <small>System Reference</small></a>
-<div class="nav-right"><nav class="nav-links">
-<a href="#what">What</a><a href="#capabilities">Capabilities</a><a href="#use-cases">Use Cases</a><a href="#industries">Industries</a><a href="#trust">Trust</a><a href="#reference">Reference</a><a href="#limitations">Limitations</a>
+<div class="nav-right"><nav class="nav-links" aria-label="Primary navigation">
+<a href="#problem">Problem</a><a href="#trace">Trace</a><a href="#pipeline">Pipeline</a><a href="#industries">Use Cases</a><a href="#trust">Trust</a><a href="#reference">Reference</a><a href="#contact">Contact</a>
 </nav><a class="lang" href="zh/">中文</a></div></div></header>
-
-<main id="top">
-<section class="hero"><div class="container">
-<div class="eyebrow">Evidence-grounded cognitive infrastructure</div>
-<h1>Turn information into knowledge you can trace, challenge, and reuse.</h1>
-<p class="lead">VT-COS is a cognitive operating system for evidence-grounded research, structured reasoning, verification, and knowledge continuity. It keeps sources, claims, evidence, reasoning, and human judgment connected.</p>
-<div class="actions"><a class="btn primary" href="#industries">Explore industry scenarios</a><a class="btn secondary" href="#reference">View system reference</a></div>
-<div class="flow"><span>Signal</span><i>→</i><span>Source</span><i>→</i><span>Evidence</span><i>→</i><span>Claim</span><i>→</i><span>Reasoning</span><i>→</i><span>Verification</span><i>→</i><span>Human Judgment</span><i>→</i><span>Reusable Knowledge</span></div>
+<main id="main">
+<section class="hero" id="top"><div class="container">
+<div class="eyebrow">Keep the basis of important answers inspectable</div>
+<h1>AI gave you an answer.<br>Can you trace what supports it?</h1>
+<p class="lead">Sources, evidence, assumptions, decisions and revisions — kept connected.</p>
+<div class="actions"><a class="btn primary" href="#trace">Trace an example claim ↓</a><a class="btn secondary" href="#reference">View system reference</a></div>
 </div></section>
 
-<section class="section soft" id="what"><div class="container two-col">
-<div><div class="eyebrow">What is VT-COS</div><h2>AI can produce answers quickly. Keeping trustworthy knowledge is harder.</h2>
-<p class="lead">Sources get separated from claims. Assumptions harden into facts. Old conclusions survive new evidence. Teams repeat research because the reasoning behind previous work is hard to recover.</p></div>
-<div class="card emphasis"><div class="metric"><strong>Trace</strong><span>Know where an important claim came from.</span></div><div class="metric"><strong>Challenge</strong><span>See uncertainty, counter-evidence, and limits.</span></div><div class="metric"><strong>Reuse</strong><span>Preserve useful research and reasoning beyond one session.</span></div><div class="metric"><strong>Re-evaluate</strong><span>Update knowledge when the world or evidence changes.</span></div></div>
+<section class="section soft" id="problem"><div class="container">
+<div class="eyebrow">The problem</div><h2>The answer survived. Its context didn't.</h2>
+<div class="grid failure-grid">
+<article class="card c3"><div class="kicker">Source lost</div><h3>Where did this number come from?</h3></article>
+<article class="card c3"><div class="kicker">Evidence blurred</div><h3>Does the source actually support this claim?</h3></article>
+<article class="card c3"><div class="kicker">Decision lost</div><h3>Why did we accept this interpretation?</h3></article>
+<article class="card c3"><div class="kicker">Knowledge stale</div><h3>Which version should we still trust?</h3></article>
+</div></div></section>
+
+<section class="section" id="trace"><div class="container">
+<div class="eyebrow">Trace an example claim</div><h2>See one failure, then follow the chain that resolves it.</h2>
+<div class="trace-shell">
+<div class="trace-step bad"><span>AI answer</span><strong>“Vendor A can exit the contract within 30 days.”</strong></div>
+<div class="trace-arrow">↓</div>
+<div class="trace-step"><span>Claim</span><strong>Vendor A can exit within 30 days</strong></div>
+<div class="trace-arrow">↓</div>
+<div class="trace-step"><span>Source</span><strong>Contract · termination clause</strong></div>
+<div class="trace-arrow">↓</div>
+<div class="trace-step"><span>Evidence</span><strong>Termination notice: 180 days</strong></div>
+<div class="trace-arrow">↓</div>
+<div class="trace-step conflict"><span>Conflict</span><strong>AI summary 30 days ≠ contract 180 days</strong></div>
+<div class="trace-arrow">↓</div>
+<div class="trace-step"><span>Human review</span><strong>The source-supported 180 days is retained</strong></div>
+<div class="trace-arrow">↓</div>
+<div class="trace-step good"><span>Knowledge status</span><strong>30-day claim rejected; reviewed version retained and the earlier claim superseded</strong></div>
+</div>
+<p class="proof-note">Demo status: illustrative public trace. This is not a customer deployment or quantified outcome claim.</p>
 </div></section>
 
-<section class="section" id="capabilities"><div class="container">
-<div class="eyebrow">Capability backbone</div><h2>Stable capabilities, translated into real work.</h2>
-<div class="grid">
-<article class="card c4"><div class="kicker">01</div><h3>Signal Discovery</h3><p>Find sources, changes, and information worth paying attention to.</p></article>
-<article class="card c4"><div class="kicker">02</div><h3>Evidence Traceability</h3><p>Keep claims connected to sources, evidence, source locations, and provenance.</p></article>
-<article class="card c4"><div class="kicker">03</div><h3>Structured Reasoning</h3><p>Separate facts, inference, assumptions, unknowns, and counter-evidence.</p></article>
-<article class="card c4"><div class="kicker">04</div><h3>Verification</h3><p>Make important claims inspectable and re-checkable.</p></article>
-<article class="card c4"><div class="kicker">05</div><h3>Knowledge Continuity</h3><p>Preserve valuable research and decisions as reusable cognitive assets.</p></article>
-<article class="card c4"><div class="kicker">06</div><h3>Knowledge Lifecycle</h3><p>Allow knowledge to be updated, reviewed, degraded, or retired.</p></article>
-</div></div></section>
-
-<section class="section soft" id="use-cases"><div class="container">
-<div class="eyebrow">Job-to-be-Done</div><h2>Start with the work people need to finish.</h2>
-<div class="grid">
-<article class="card c6"><div class="kicker">Research</div><h3>Research a difficult question</h3><p>Build a source-linked evidence base instead of a pile of summaries.</p></article>
-<article class="card c6"><div class="kicker">Verification</div><h3>Review a high-stakes claim</h3><p>Inspect support, contradictions, unknowns, and source locations before relying on it.</p></article>
-<article class="card c6"><div class="kicker">Decision preparation</div><h3>Compare alternatives</h3><p>Keep criteria, evidence, unresolved issues, and assumptions visible to the person deciding.</p></article>
-<article class="card c6"><div class="kicker">Knowledge continuity</div><h3>Preserve expert knowledge</h3><p>Keep the reasoning behind a project, review, or investigation reusable after the work ends.</p></article>
-</div></div></section>
+<section class="section soft" id="pipeline"><div class="container">
+<div class="eyebrow">VT-COS · Vibe Thinking Cognitive Operating System</div><h2>VT-COS keeps these connections from disappearing after the answer is generated.</h2>
+<p class="lead">Turn information into knowledge you can trace, challenge, and reuse.</p>
+<div class="pipeline">
+<div class="pipe-step"><b>01</b><div><h3>Source</h3><p>Where did it come from?</p></div></div><div class="pipe-step"><b>02</b><div><h3>Evidence</h3><p>What does it actually support?</p></div></div><div class="pipe-step"><b>03</b><div><h3>Claim</h3><p>What exactly are we asserting?</p></div></div><div class="pipe-step"><b>04</b><div><h3>Rationale / Decision Record</h3><p>What assumptions, interpretations or decision reasons were recorded?</p></div></div><div class="pipe-step"><b>05</b><div><h3>Verification</h3><p>What could contradict or invalidate it?</p></div></div><div class="pipe-step"><b>06</b><div><h3>Human Review</h3><p>What requires human judgment?</p></div></div><div class="pipe-step"><b>07</b><div><h3>Reusable Knowledge</h3><p>What remains valid and reusable?</p></div></div>
+</div>
+<div class="callout">Rationale means recorded, inspectable decision context — not hidden model chain-of-thought.</div>
+</div></section>
 
 <section class="section" id="industries"><div class="container">
-<div class="eyebrow">Industry × Role × Job</div><h2>See where VT-COS changes the work.</h2>
-<p class="lead">Start with six representative work contexts. These are illustrative workflow scenarios—not customer deployments or quantified outcome claims.</p>
+<div class="eyebrow">Work experience</div><h2>What changes in your work?</h2>
+<p class="lead">These remain illustrative workflow scenarios. They show the experience change, not customer deployments.</p>
 <div class="grid scenario-preview">
-<article class="card c4"><div class="kicker">Research & Evidence</div><h3>From sources to defensible knowledge</h3><p>For analysts and researchers who need to preserve the chain from conclusion back to evidence.</p><div class="actions"><a class="btn secondary" href="#scenario-research">See the workflow</a></div></article>
-<article class="card c4"><div class="kicker">Professional Services</div><h3>Make every project improve the next</h3><p>For consultants and advisors whose useful reasoning often disappears into decks and chats.</p><div class="actions"><a class="btn secondary" href="#scenario-services">See the workflow</a></div></article>
-<article class="card c4"><div class="kicker">Manufacturing & Operations</div><h3>Keep operational knowledge usable</h3><p>For teams working across SOPs, manuals, incidents, fixes, and handovers.</p><div class="actions"><a class="btn secondary" href="#scenario-operations">See the workflow</a></div></article>
-<article class="card c4"><div class="kicker">Education</div><h3>Keep evidence of what changed</h3><p>For educators and learning designers connecting concepts, sources, misconceptions, and review.</p><div class="actions"><a class="btn secondary" href="#scenario-education">See the workflow</a></div></article>
-<article class="card c4"><div class="kicker">Editorial & Media</div><h3>Know what supports each claim</h3><p>For writers, editors, and fact-checkers who need source locations and review state to survive revisions.</p><div class="actions"><a class="btn secondary" href="#scenario-media">See the workflow</a></div></article>
-<article class="card c4"><div class="kicker">Knowledge-intensive Teams</div><h3>Preserve why a decision was made</h3><p>For strategy, product, and policy teams that need rationale to survive across people and time.</p><div class="actions"><a class="btn secondary" href="#scenario-teams">See the workflow</a></div></article>
+<article class="card c4"><div class="kicker">Research & Evidence</div><h3>From sources to defensible knowledge</h3><p>Claims remain attached to evidence, source locations, contradictions, and unresolved questions.</p></article><article class="card c4"><div class="kicker">Professional Services</div><h3>Make every project improve the next</h3><p>Evidence, assumptions, findings and decision context remain reusable after an engagement.</p></article><article class="card c4"><div class="kicker">Manufacturing & Operations</div><h3>Keep operational knowledge usable</h3><p>Procedures, incidents, fixes and lessons stay connected to sources and review state.</p></article><article class="card c4"><div class="kicker">Education</div><h3>Keep evidence of what changed</h3><p>Learning evidence, concepts, explanations and review notes stay connected.</p></article><article class="card c4"><div class="kicker">Editorial & Media</div><h3>Know what supports each claim</h3><p>Claims survive revisions with source locations and verification state intact.</p></article><article class="card c4"><div class="kicker">Knowledge-intensive Teams</div><h3>Preserve why a decision was made</h3><p>Evidence, assumptions, decision rationale and later revisions remain connected.</p></article>
 </div>
-<details class="details-panel" id="scenario-research"><summary>Research & Evidence — workflow experience</summary><div class="details-body"><div class="scenario"><div><strong>Before</strong><p>Twenty tabs and several summaries, but the chain from conclusion back to evidence is fragile.</p></div><div><strong>With VT-COS</strong><p>Claims remain attached to evidence, source locations, contradictions, and unresolved questions.</p></div><div><strong>What feels different</strong><p>Less re-finding; easier to explain why a conclusion is defensible.</p></div></div></div></details>
-<details class="details-panel" id="scenario-services"><summary>Professional Services — workflow experience</summary><div class="details-body"><div class="scenario"><div><strong>Before</strong><p>Useful insight disappears into decks and chats when an engagement ends.</p></div><div><strong>With VT-COS</strong><p>Evidence, assumptions, findings, and decision context remain reusable.</p></div><div><strong>What feels different</strong><p>The next engagement can begin with accumulated context instead of reconstruction.</p></div></div></div></details>
-<details class="details-panel" id="scenario-operations"><summary>Manufacturing & Operations — workflow experience</summary><div class="details-body"><div class="scenario"><div><strong>Before</strong><p>Critical know-how is split across documents, messages, and experienced people.</p></div><div><strong>With VT-COS</strong><p>Procedures, incidents, fixes, and lessons can remain connected to sources and review state.</p></div><div><strong>What feels different</strong><p>Handoffs begin with context and provenance instead of reconstruction.</p></div></div></div></details>
-<details class="details-panel" id="scenario-education"><summary>Education — workflow experience</summary><div class="details-body"><div class="scenario"><div><strong>Before</strong><p>Activities and answers are recorded, while the reasoning behind what changed is hard to preserve.</p></div><div><strong>With VT-COS</strong><p>Learning evidence, concepts, explanations, and review notes stay connected and revisitable.</p></div><div><strong>What feels different</strong><p>Review can focus on what changed, what remains weak, and what needs revisiting.</p></div></div></div></details>
-<details class="details-panel" id="scenario-media"><summary>Editorial & Media — workflow experience</summary><div class="details-body"><div class="scenario"><div><strong>Before</strong><p>Claims move through drafts while source locations and verification status get lost.</p></div><div><strong>With VT-COS</strong><p>Claims stay linked to source pointers, review state, and corrections.</p></div><div><strong>What feels different</strong><p>Fact-checking becomes easier to hand off and audit later.</p></div></div></div></details>
-<details class="details-panel" id="scenario-teams"><summary>Knowledge-intensive Teams — workflow experience</summary><div class="details-body"><div class="scenario"><div><strong>Before</strong><p>Teams can find documents but still struggle to recover why a decision was made.</p></div><div><strong>With VT-COS</strong><p>Evidence, assumptions, reasoning, and later revisions remain connected.</p></div><div><strong>What feels different</strong><p>Less “where did this come from?” and more continuity across people and time.</p></div></div></div></details>
-<p class="proof-note">Scenario status: illustrative. Stronger deployment or outcome claims require Demo, Evaluation, or External Evidence.</p>
+<p class="proof-note">Stronger deployment or outcome claims require Demo, Evaluation, or External Evidence.</p>
 </div></section>
 
 <section class="section soft" id="trust"><div class="container two-col">
-<div><div class="eyebrow">Trust Engineering</div><h2>Trust is a chain you can inspect.</h2><p class="lead">VT-COS treats credibility as something built from traceability, evidence fit, verification, explicit limits, and human judgment—not a confidence label generated by the model itself.</p>
-<div class="list"><div class="list-row"><strong>Source</strong><span>Where the information came from.</span></div><div class="list-row"><strong>Evidence</strong><span>The part that actually supports a claim.</span></div><div class="list-row"><strong>Claim</strong><span>The statement being asserted or evaluated.</span></div><div class="list-row"><strong>Inference</strong><span>What is concluded beyond direct source wording.</span></div><div class="list-row"><strong>Unknown</strong><span>What remains unresolved and should not be silently filled in.</span></div></div></div>
-<div class="card"><h3>Public proof ladder</h3><div class="rule"><b>P0</b><div><h3>Reference</h3><p>Defined concept or architecture; no outcome claim.</p></div></div><div class="rule"><b>P1</b><div><h3>Demonstration</h3><p>A reproducible demo supports a workflow claim.</p></div></div><div class="rule"><b>P2</b><div><h3>Evaluation</h3><p>Tests or benchmarks support a measured statement under stated conditions.</p></div></div><div class="rule"><b>P3</b><div><h3>External evidence</h3><p>Real users, case studies, or third-party validation support outcome claims.</p></div></div></div>
-</div></section>
+<div><div class="eyebrow">Trust Engineering</div><h2>Don't just trust the answer. Inspect the chain.</h2>
+<div class="trust-questions">
+<p>Can I inspect the source?</p><p>Can I see what evidence supports the claim?</p><p>Can I see conflicts and counter-evidence?</p><p>Can I see the recorded rationale and human review?</p><p>Can an old conclusion be superseded?</p>
+</div></div>
+<div class="card"><h3>Public proof ladder</h3>
+<div class="rule"><b>P0</b><div><h3>Reference</h3><p>Public definitions and system model; no outcome claim.</p></div></div>
+<div class="rule"><b>P1</b><div><h3>Demonstration</h3><p>Observable, reproducible workflow demonstration.</p></div></div>
+<div class="rule"><b>P2</b><div><h3>Evaluation</h3><p>Tests or benchmarks under stated conditions.</p></div></div>
+<div class="rule"><b>P3</b><div><h3>External Evidence</h3><p>Real-world or third-party evidence supports outcome claims.</p></div></div>
+</div></div></section>
 
 <section class="section" id="reference"><div class="container two-col">
-<div><div class="eyebrow">System Reference</div><h2>The public definitions behind the website.</h2><p class="lead">Marketing copy should simplify the system, not invent a stronger system than the reference supports.</p>
-<div class="flow"><span>Public definition</span><i>→</i><span>Capability</span><i>→</i><span>Website claim</span><i>→</i><span>Scenario</span><i>→</i><span>Proof</span></div></div>
-<div class="card"><h3>Core public concepts</h3><div class="pill-list"><span class="pill">Insight Arbitrage</span><span class="pill">Cognitive Logistics</span><span class="pill">Trust Engineering</span><span class="pill">Claim / Evidence</span><span class="pill">Provenance</span><span class="pill">Verification</span><span class="pill">Knowledge Lifecycle</span><span class="pill">Human Judgment</span></div>
-<div class="actions"><a class="btn secondary" href="https://afpframework.org/" target="_blank" rel="noopener">AFP / SafeLoop foundation</a></div></div>
+<div><div class="eyebrow">System depth</div><h2>Go deeper after the workflow is clear.</h2>
+<p class="lead">The public reference defines what the website may claim. Marketing can simplify; it cannot outrun the evidence.</p></div>
+<div class="card"><div class="pill-list"><span class="pill">Insight Arbitrage</span><span class="pill">Cognitive Logistics</span><span class="pill">Trust Engineering</span><span class="pill">Atomic Notes</span><span class="pill">MOC</span><span class="pill">Provenance</span><span class="pill">Knowledge Lifecycle</span><span class="pill">Human Judgment</span></div>
+<div class="actions"><a class="btn secondary" href="https://afpframework.org/" target="_blank" rel="noopener">AFP / SafeLoop</a></div></div>
 </div></section>
 
-<section class="section soft" id="limitations"><div class="container">
-<div class="eyebrow">Boundaries</div><h2>Limits are part of the product story.</h2>
-<div class="grid">
-<div class="card c6"><span class="badge warn">Scenarios</span><h3>Industry scenarios are illustrative.</h3><p>They describe how the work experience could change. They are not customer case studies unless explicitly marked as such.</p></div>
-<div class="card c6"><span class="badge warn">Product maturity</span><h3>No unsupported automation claims.</h3><p>If an action loop, integration, or measurable outcome is not publicly supported, this site does not present it as an existing capability.</p></div>
-<div class="card c6"><span class="badge risk">High-stakes domains</span><h3>Research support is not professional judgment.</h3><p>Healthcare, legal, finance, and regulated work require stronger domain evidence and controls before stronger claims are appropriate.</p></div>
-<div class="card c6"><span class="badge good">Human control</span><h3>Evidence supports decisions; it does not own them.</h3><p>Consequential interpretation and final decisions remain with people.</p></div>
-</div></div></section>
+<section class="section soft" id="contact"><div class="container two-col">
+<div><div class="eyebrow">Contact</div><h2>Does your work have a broken knowledge chain?</h2>
+<p class="lead">Discuss a use case. Start by showing where the chain breaks.</p>
+<p class="proof-note">This form is in UI preview mode. It will not transmit data until the delivery endpoint and recipient are verified.</p></div>
+<form class="contact-form" id="contact-form" data-disabled="true">
+<label>Name *<input name="name" autocomplete="name" required></label>
+<label>Email *<input name="email" type="email" autocomplete="email" required></label>
+<label>What are you working on? *<input name="work" required></label>
+<label>Where does the knowledge chain break? *<textarea name="break" rows="5" required></textarea></label>
+<p class="form-note">Do not submit confidential, sensitive, or personal information.</p>
+<button class="btn primary" type="submit" disabled>Delivery not enabled yet</button>
+</form></div></section>
 </main>
 <footer class="footer"><div class="container footer-grid"><div><strong>VT-COS System Reference</strong><div>Public reference and narrative surface</div></div><div>Vibe Thinking Cognitive Operating System</div></div></footer>
 <script src="script.js"></script>
