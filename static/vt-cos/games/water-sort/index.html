@@ -12,48 +12,159 @@
 <header class="top"><a href="/vt-cos/">← VT-COS EXP</a><div class="level">LV.220</div><button id="restartTop" title="重新開始">↻</button></header>
 <section class="hero"><h1>顏色排序認知實驗</h1><p class="budget">剩餘步數：<strong id="budget">42</strong></p><p class="meta">已走 <span id="moves">0</span> 步 · 參考路徑 28 步</p></section>
 <section class="controls"><label>實驗模式<select id="mode"><option value="A">A 基準固定提示</option><option value="B">B 規則個人化</option><option value="C" selected>C VT-COS Evidence</option></select></label></section>
-<div id="boot" class="boot" role="status">互動載入中…</div><section id="board" class="board" aria-label="Water Sort board"><button type="button" class="tube" aria-label="第 1 管" disabled><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#55bce6"></span></div><span class="idx">1</span></button><button type="button" class="tube" aria-label="第 2 管" disabled><div class="stack"><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#55bce6"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#66ba2e"></span></div><span class="idx">2</span></button><button type="button" class="tube" aria-label="第 3 管" disabled><div class="stack"><span class="liquid" style="background:#999baa"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#999baa"></span></div><span class="idx">3</span></button><button type="button" class="tube" aria-label="第 4 管" disabled><div class="stack"><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#55bce6"></span><span class="liquid" style="background:#55bce6"></span></div><span class="idx">4</span></button><button type="button" class="tube" aria-label="第 5 管" disabled><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#999baa"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">5</span></button><button type="button" class="tube" aria-label="第 6 管" disabled><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">6</span></button><button type="button" class="tube" aria-label="第 7 管" disabled><div class="stack"><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#2873b6"></span><span class="liquid" style="background:#999baa"></span></div><span class="idx">7</span></button><button type="button" class="tube" aria-label="第 8 管" disabled><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#7a46b6"></span></div><span class="idx">8</span></button><button type="button" class="tube" aria-label="第 9 管" disabled><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">9</span></button><button type="button" class="tube" aria-label="第 10 管" disabled><div class="stack"></div><span class="idx">10</span></button><button type="button" class="tube" aria-label="第 11 管" disabled><div class="stack"></div><span class="idx">11</span></button></section><noscript><div class="boot warn">目前瀏覽器沒有執行 JavaScript；可先看到初始棋盤，但無法操作。</div></noscript>
+<div id="boot" class="boot" role="status">互動載入中…</div><section id="board" class="board" aria-label="Water Sort board"><button type="button" class="tube" aria-label="第 1 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#55bce6"></span></div><span class="idx">1</span></button><button type="button" class="tube" aria-label="第 2 管"><div class="stack"><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#55bce6"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#66ba2e"></span></div><span class="idx">2</span></button><button type="button" class="tube" aria-label="第 3 管"><div class="stack"><span class="liquid" style="background:#999baa"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#999baa"></span></div><span class="idx">3</span></button><button type="button" class="tube" aria-label="第 4 管"><div class="stack"><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#55bce6"></span><span class="liquid" style="background:#55bce6"></span></div><span class="idx">4</span></button><button type="button" class="tube" aria-label="第 5 管"><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#999baa"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">5</span></button><button type="button" class="tube" aria-label="第 6 管"><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">6</span></button><button type="button" class="tube" aria-label="第 7 管"><div class="stack"><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#2873b6"></span><span class="liquid" style="background:#999baa"></span></div><span class="idx">7</span></button><button type="button" class="tube" aria-label="第 8 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#7a46b6"></span></div><span class="idx">8</span></button><button type="button" class="tube" aria-label="第 9 管"><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">9</span></button><button type="button" class="tube" aria-label="第 10 管"><div class="stack"></div><span class="idx">10</span></button><button type="button" class="tube" aria-label="第 11 管"><div class="stack"></div><span class="idx">11</span></button></section><noscript><div class="boot warn">目前瀏覽器沒有執行 JavaScript；可先看到初始棋盤，但無法操作。</div></noscript>
 <section class="actions"><button id="undo" class="btn">Undo</button><button id="hint" class="btn primary">提示</button><button id="restart" class="btn">重來</button></section><div id="status" class="status" role="status"></div>
 <section class="panel"><h2>Cognitive Adapter</h2><p id="hintText">需要時按「提示」。C 模式會顯示可追溯理由。</p><p id="evidence" class="evi"></p></section>
 <section class="panel"><h2>Player Strategy Profile</h2><div id="profile"><p class="muted">尚無足夠行為證據形成策略 claim。</p></div></section>
 <section class="data"><button id="export" class="btn">匯出 Evidence</button><button id="clear" class="btn">清除本機資料</button></section>
 <p class="foot">Prototype v0.1：Game Core 採 deterministic 規則；Cognitive Adapter 只能提出提示，不能直接修改 GameState。Telemetry 只保存在目前瀏覽器的 localStorage，除非你主動匯出。</p>
 </main><script>
-var __vtBoot=document.getElementById("boot");
-window.onerror=function(msg,src,line,col){
-  if(__vtBoot){
-    __vtBoot.textContent="互動初始化失敗："+String(msg)+" @ "+String(line||"?")+":"+String(col||"?");
-    __vtBoot.className="boot warn";
+(function(){
+  var boot=document.getElementById('boot');
+  function bootText(text,cls){if(boot){boot.textContent=text;boot.className='boot'+(cls?' '+cls:'');}}
+  window.onerror=function(msg,src,line,col){
+    bootText('互動核心錯誤：'+String(msg)+' @ '+String(line||'?')+':'+String(col||'?'),'warn');
+  };
+  bootText('Core 啟動中…');
+
+  var CAP=4;
+  var COLORS={O:['橘','#ef7f1a'],R:['紅','#df3c3c'],C:['青','#55bce6'],G:['深綠','#347b4b'],L:['嫩綠','#66ba2e'],P:['紫','#7a46b6'],X:['灰','#999baa'],B:['藍','#2873b6'],K:['粉紅','#f783a4']};
+  var INITIAL=[['O','O','R','C'],['P','C','G','L'],['X','O','R','X'],['G','R','C','C'],['K','X','G','B'],['K','L','L','B'],['P','L','B','X'],['O','G','K','P'],['K','P','R','B'],[],[]];
+  var BUDGET=42;
+  var state=clone(INITIAL),history=[],selected=-1,used=0;
+  var EK='vtcos.water-sort.events.core.v1';
+
+  function clone(s){var out=[],i;for(i=0;i<s.length;i++)out.push(s[i].slice());return out;}
+  function topInfo(t){
+    if(!t.length)return [null,0];
+    var c=t[t.length-1],n=1,i;
+    for(i=t.length-2;i>=0&&t[i]===c;i--)n++;
+    return [c,n];
   }
-};
-if(__vtBoot){__vtBoot.textContent="JS 基礎執行正常，啟動內嵌遊戲核心…";}
-</script><script>
-const bootNode=document.getElementById('boot');if(bootNode)bootNode.textContent='Script 已載入，正在初始化…';
-const CAP=4,COL={O:['橘','#ef7f1a'],R:['紅','#df3c3c'],C:['青','#55bce6'],G:['深綠','#347b4b'],L:['嫩綠','#66ba2e'],P:['紫','#7a46b6'],X:['灰','#999baa'],B:['藍','#2873b6'],K:['粉紅','#f783a4']};
-const INITIAL=[['O','O','R','C'],['P','C','G','L'],['X','O','R','X'],['G','R','C','C'],['K','X','G','B'],['K','L','L','B'],['P','L','B','X'],['O','G','K','P'],['K','P','R','B'],[],[]],BUDGET=42,REF=28;
-const $=s=>document.querySelector(s),clone=s=>s.map(t=>t.slice()),key=s=>s.map(t=>t.join(',')).join('|');
-function fingerprint(s){let h=0x811c9dc5;for(const ch of key(s)){h^=ch.charCodeAt(0);h=Math.imul(h,0x01000193)}return `fnv1a32:${(h>>>0).toString(16).padStart(8,'0')}`}
-function top(t){if(!t.length)return [null,0];let c=t[t.length-1],n=1;for(let i=t.length-2;i>=0&&t[i]===c;i--)n++;return[c,n]}
-function valid(s,f,t){if(!Number.isInteger(f)||!Number.isInteger(t)||f<0||t<0||f>=s.length||t>=s.length)return{ok:false,r:'out_of_range'};if(f===t)return{ok:false,r:'same_tube'};const a=s[f],b=s[t];if(!a.length)return{ok:false,r:'source_empty'};if(b.length>=CAP)return{ok:false,r:'target_full'};const[c,n]=top(a);if(b.length&&b[b.length-1]!==c)return{ok:false,r:'color_mismatch'};return{ok:true,c,n:Math.min(n,CAP-b.length)}}
-function apply(s,f,t){const v=valid(s,f,t);if(!v.ok)return{ok:v.ok,r:v.r,c:v.c,n:v.n,state:clone(s)};const n=clone(s);n[f].splice(n[f].length-v.n,v.n);for(let j=0;j<v.n;j++)n[t].push(v.c);return{ok:v.ok,r:v.r,c:v.c,n:v.n,state:n}}
-function solved(s){return s.every(t=>!t.length||(t.length===CAP&&t.every(c=>c===t[0])))}
-function moves(s){const out=[],empty=s.findIndex(t=>!t.length);for(let f=0;f<s.length;f++)for(let t=0;t<s.length;t++){const v=valid(s,f,t);if(!v.ok)continue;if(!s[t].length&&empty>=0&&t!==empty)continue;if(!s[t].length&&s[f].length===CAP&&s[f].every(c=>c===s[f][0]))continue;out.push({f,t})}return out}
-function canon(s){return s.map(t=>t.join(',')).sort().join('|')}function runs(t){let r=t.length?1:0;for(let i=1;i<t.length;i++)if(t[i]!==t[i-1])r++;return r}function heu(s){return Math.max(0,s.reduce((a,t)=>a+runs(t),0)-new Set(s.flat()).size)}
-function solve(start,max=120000){if(solved(start))return{ok:true,path:[],exp:0};let q=[{s:clone(start),p:[],g:0,score:heu(start)}],best=new Map([[canon(start),0]]),exp=0;while(q.length&&exp<max){q.sort((a,b)=>a.score-b.score);const n=q.shift();exp++;if(solved(n.s))return{ok:true,path:n.p,exp};for(const m of moves(n.s)){const z=apply(n.s,m.f,m.t).state,g=n.g+1,k=canon(z);if(g>=(best.has(k)?best.get(k):Infinity))continue;best.set(k,g);q.push({s:z,p:n.p.concat([m]),g,score:g+heu(z)})}}return{ok:false,path:[],exp}}
-const EK='vtcos.water-sort.events.v1',PK='vtcos.water-sort.player-id.v1',uid=p=>`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`;
-const storage=(()=>{try{const k='__vtcos_storage_probe__';localStorage.setItem(k,'1');localStorage.removeItem(k);return localStorage}catch{const m=new Map();return{getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)}}})();
-function pid(){let x=storage.getItem(PK);if(!x){x=uid('player');storage.setItem(PK,x)}return x}function events(){try{return JSON.parse(storage.getItem(EK)||'[]')}catch{return[]}}
-function log(type,action=null,details={},before=null,after=null){const a=events(),e={event_id:uid('evt'),event_type:type,player_id:pid(),session_id:session,level_id:220,state_before_hash:before?fingerprint(before):null,state_after_hash:after?fingerprint(after):null,action,details,occurred_at:new Date().toISOString()};a.push(e);try{storage.setItem(EK,JSON.stringify(a))}catch{}return e}
-function profile(){const e=events().filter(x=>['undo','restart','hint','illegal_move','level_complete'].indexOf(x.event_type)>=0),cs=[];const add=(id,text,arr,min)=>{if(arr.length<min)return;const sess=new Set(arr.map(x=>x.session_id)).size,state=arr.length>=4&&sess>=2?'supported':'provisional';cs.push({claim_id:id,claim_text:text,state,confidence:state==='supported'?.82:.58,support_count:arr.length,evidence_event_ids:arr.slice(-12).map(x=>x.event_id)})};add('frequent_undo','經常使用 Undo 回復局面',e.filter(x=>x.event_type==='undo'),2);add('restart_dependency','遇到卡局時偏向重新開始',e.filter(x=>x.event_type==='restart'),2);add('hint_dependency','提示使用頻率偏高',e.filter(x=>x.event_type==='hint'),3);add('rule_friction','常嘗試目前規則不允許的移動',e.filter(x=>x.event_type==='illegal_move'),3);add('route_inefficiency','完成路徑常明顯長於參考路徑',e.filter(x=>x.event_type==='level_complete'&&x.details.moves_used>REF*1.35),2);return{schema:'vtcos-water-sort-strategy-profile-v1',claims:cs,evidence_event_count:e.length}}
-let state=clone(INITIAL),hist=[],sel=null,used=0,session=uid('session'),stats={moves:0,undos:0,restarts:0,hints:0,illegal:0};
-const reason=r=>({same_tube:'來源與目標相同',source_empty:'來源為空',target_full:'目標已滿',color_mismatch:'目標頂層顏色不同',out_of_range:'索引錯誤'})[r]||r;
-function render(){const b=$('#board');b.innerHTML='';state.forEach((t,i)=>{const e=document.createElement('button');e.type='button';e.className='tube'+(sel===i?' sel':'');e.setAttribute('aria-label',`第 ${i+1} 管`);const st=document.createElement('div');st.className='stack';for(const c of t){const q=document.createElement('span');q.className='liquid';q.style.background=COL[c][1];q.title=COL[c][0];st.appendChild(q)}e.appendChild(st);const x=document.createElement('span');x.className='idx';x.textContent=i+1;e.appendChild(x);e.onclick=()=>tap(i);b.appendChild(e)});$('#moves').textContent=used;$('#budget').textContent=BUDGET-used;renderProfile()}
-function tap(i){if(sel===null){if(!state[i].length){stats.illegal++;log('illegal_move',{from:i,to:i},{reason:'source_empty'},state,state);$('#status').textContent='空管不能作為來源。';renderProfile();return}sel=i;$('#status').textContent=`已選第 ${i+1} 管`;render();return}const f=sel;sel=null;const v=valid(state,f,i);if(!v.ok){stats.illegal++;log('illegal_move',{from:f,to:i},{reason:v.r},state,state);$('#status').textContent=`這一步不合法：${reason(v.r)}`;render();return}const before=clone(state),r=apply(state,f,i);hist.push(before);state=r.state;used++;stats.moves++;log('move',{from:f,to:i},{amount:r.n,color:r.c,move_number:used},before,state);$('#status').textContent='';if(solved(state)){log('level_complete',null,{moves_used:used,reference_length:REF,delta_from_reference:used-REF,mode:$('#mode').value},before,state);$('#status').textContent=`完成！使用 ${used} 步；參考路徑 ${REF} 步。`}else if(used>BUDGET)$('#status').textContent='已超出目標步數，但仍可繼續完成。';render()}
-function restart(){const before=clone(state);stats.restarts++;log('restart',null,{moves_before_restart:used},before,INITIAL);state=clone(INITIAL);hist=[];sel=null;used=0;$('#status').textContent='已重新開始本關。';render()}
-function undo(){const x=hist.pop();if(!x)return;const before=clone(state);state=x;used=Math.max(0,used-1);stats.undos++;log('undo',null,{moves_after_undo:used},before,state);$('#status').textContent='已復原一步。';render()}
-function hintLevel(mode,p){if(mode==='A')return 3;if(mode==='B')return stats.hints>=2||stats.illegal>=3?3:stats.undos||stats.moves>=8?2:1;const s=new Set(p.claims.filter(x=>x.state==='supported').map(x=>x.claim_id));if(s.has('hint_dependency'))return 1;if(s.has('rule_friction'))return 2;return stats.hints>=2||stats.illegal>=3?3:stats.undos||stats.moves>=7?2:1}
-function hint(){const p=profile(),mode=$('#mode').value,r=solve(state);if(!r.ok||!r.path.length){$('#hintText').textContent='目前無法在搜尋上限內找到可靠提示。';return}const m=r.path[0],v=valid(state,m.f,m.t),lv=hintLevel(mode,p),empty=!state[m.t].length,color=COL[v.c][0];let text=lv===1?(empty?'先觀察空管的緩衝價值；現在有一個移動可以騰出後續空間。':`先找能直接合併「${color}」的地方。`):lv===2?(empty?`可考慮利用第 ${m.t+1} 管當緩衝，先移開第 ${m.f+1} 管頂層的「${color}」。`:`下一個有效方向是讓第 ${m.f+1} 管的「${color}」與第 ${m.t+1} 管同色合併。`):`明確提示：把第 ${m.f+1} 管倒到第 ${m.t+1} 管。`;const allIds=[];if(mode==='C'){for(let ci=0;ci<p.claims.length;ci++){for(let ei=0;ei<p.claims[ci].evidence_event_ids.length;ei++)allIds.push(p.claims[ci].evidence_event_ids[ei])}}const ids=mode==='C'?allIds.slice(-8):[],ev=log('hint',{from:m.f,to:m.t},{hint_level:lv,reason_code:mode==='C'?'evidence_backed_profile':mode==='B'?'rule_personalization':'fixed_baseline',evidence_event_ids:ids,solver_expansions:r.exp,mode},state,state);stats.hints++;$('#hintText').textContent=text;$('#evidence').textContent=mode==='C'?`reason=evidence_backed_profile · evidence=${ids.length} · hint_event=${ev.event_id}`:`reason=${mode==='B'?'rule_personalization':'fixed_baseline'}`;renderProfile()}
-function renderProfile(){const p=profile(),e=$('#profile');e.innerHTML='';if(!p.claims.length){e.innerHTML='<p class="muted">尚無足夠行為證據形成策略 claim。</p>';return}for(const c of p.claims){const d=document.createElement('div');d.className='claim';d.innerHTML=`<strong>${c.claim_text}</strong><span>${c.state} · confidence ${c.confidence.toFixed(2)} · evidence ${c.support_count}</span>`;e.appendChild(d)}}
-function download(){const obj={schema:'vtcos-water-sort-evidence-v1',exported_at:new Date().toISOString(),player_id:pid(),events:events(),strategy_profile:profile()},u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='vtcos-water-sort-evidence.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),0)}
-$('#restartTop').onclick=$('#restart').onclick=restart;$('#undo').onclick=undo;$('#hint').onclick=hint;$('#export').onclick=download;$('#clear').onclick=()=>{storage.removeItem(EK);$('#status').textContent='已清除本機實驗資料。';renderProfile()};$('#mode').onchange=()=>{$('#status').textContent=`已切換實驗模式 ${$('#mode').value}`;renderProfile()};render();if(bootNode){bootNode.textContent='互動已就緒';bootNode.className='boot ok'}try{log('level_start',null,{mode:$('#mode').value},null,state)}catch(e){$('#status').textContent='遊戲已載入；本機行為紀錄目前不可用。'}
+  function validate(from,to){
+    if(from<0||to<0||from>=state.length||to>=state.length)return {ok:false,reason:'索引錯誤'};
+    if(from===to)return {ok:false,reason:'來源與目標相同'};
+    var a=state[from],b=state[to],info,c,n;
+    if(!a.length)return {ok:false,reason:'來源為空'};
+    if(b.length>=CAP)return {ok:false,reason:'目標已滿'};
+    info=topInfo(a);c=info[0];n=info[1];
+    if(b.length&&b[b.length-1]!==c)return {ok:false,reason:'只能倒入空管或相同顏色'};
+    n=Math.min(n,CAP-b.length);
+    return {ok:true,color:c,amount:n};
+  }
+  function isSolved(){
+    var i,j,t;
+    for(i=0;i<state.length;i++){
+      t=state[i];
+      if(!t.length)continue;
+      if(t.length!==CAP)return false;
+      for(j=1;j<t.length;j++)if(t[j]!==t[0])return false;
+    }
+    return true;
+  }
+  function setStatus(text){var n=document.getElementById('status');if(n)n.textContent=text||'';}
+  function record(type,details){
+    try{
+      var raw=localStorage.getItem(EK),arr=raw?JSON.parse(raw):[];
+      arr.push({type:type,details:details||{},at:new Date().toISOString()});
+      if(arr.length>300)arr=arr.slice(arr.length-300);
+      localStorage.setItem(EK,JSON.stringify(arr));
+    }catch(e){}
+  }
+  function render(){
+    var board=document.getElementById('board'),i,j,tube,stack,liq,idx,c;
+    if(!board){bootText('互動核心錯誤：找不到 board','warn');return;}
+    board.innerHTML='';
+    for(i=0;i<state.length;i++){
+      tube=document.createElement('button');
+      tube.type='button';
+      tube.className='tube'+(selected===i?' sel':'');
+      tube.setAttribute('aria-label','第 '+(i+1)+' 管');
+      tube.setAttribute('data-index',String(i));
+      stack=document.createElement('div');stack.className='stack';
+      for(j=0;j<state[i].length;j++){
+        c=state[i][j];
+        liq=document.createElement('span');
+        liq.className='liquid';
+        liq.style.background=COLORS[c][1];
+        liq.title=COLORS[c][0];
+        stack.appendChild(liq);
+      }
+      tube.appendChild(stack);
+      idx=document.createElement('span');idx.className='idx';idx.textContent=String(i+1);tube.appendChild(idx);
+      tube.onclick=function(){tap(parseInt(this.getAttribute('data-index'),10));};
+      board.appendChild(tube);
+    }
+    document.getElementById('moves').textContent=String(used);
+    document.getElementById('budget').textContent=String(BUDGET-used);
+  }
+  function tap(i){
+    var v,from,before,k;
+    if(selected<0){
+      if(!state[i].length){setStatus('空管不能作為來源。');record('illegal',{from:i,reason:'empty'});return;}
+      selected=i;setStatus('已選第 '+(i+1)+' 管');render();return;
+    }
+    from=selected;selected=-1;v=validate(from,i);
+    if(!v.ok){setStatus('這一步不合法：'+v.reason);record('illegal',{from:from,to:i,reason:v.reason});render();return;}
+    before=clone(state);history.push(before);
+    state[from].splice(state[from].length-v.amount,v.amount);
+    for(k=0;k<v.amount;k++)state[i].push(v.color);
+    used++;
+    record('move',{from:from,to:i,color:v.color,amount:v.amount,move:used});
+    if(isSolved())setStatus('完成！共 '+used+' 步。');
+    else if(used>BUDGET)setStatus('已超出目標步數，但仍可繼續。');
+    else setStatus('');
+    render();
+  }
+  function undo(){
+    if(!history.length){setStatus('目前沒有可復原的步驟。');return;}
+    state=history.pop();used=Math.max(0,used-1);selected=-1;record('undo',{move:used});setStatus('已復原一步。');render();
+  }
+  function restart(){
+    state=clone(INITIAL);history=[];selected=-1;used=0;record('restart',{});setStatus('已重新開始。');render();
+  }
+  function firstLegal(){
+    var f,t,v;
+    for(f=0;f<state.length;f++){
+      for(t=0;t<state.length;t++){
+        v=validate(f,t);
+        if(v.ok&&state[t].length)return {from:f,to:t};
+      }
+    }
+    for(f=0;f<state.length;f++){
+      for(t=0;t<state.length;t++){
+        v=validate(f,t);
+        if(v.ok)return {from:f,to:t};
+      }
+    }
+    return null;
+  }
+  function hint(){
+    var m=firstLegal(),text=document.getElementById('hintText'),mode=document.getElementById('mode').value;
+    if(!m){if(text)text.textContent='目前找不到合法移動。';return;}
+    if(text)text.textContent='可先試：第 '+(m.from+1)+' 管 → 第 '+(m.to+1)+' 管。';
+    record('hint',{mode:mode,from:m.from,to:m.to});
+    setStatus('已提供一個合法移動提示。');
+  }
+  function clearData(){
+    try{localStorage.removeItem(EK);}catch(e){}
+    setStatus('已清除本機 Core 行為資料。');
+  }
+
+  document.getElementById('restartTop').onclick=restart;
+  document.getElementById('restart').onclick=restart;
+  document.getElementById('undo').onclick=undo;
+  document.getElementById('hint').onclick=hint;
+  document.getElementById('clear').onclick=clearData;
+  document.getElementById('export').onclick=function(){
+    var raw='[]';try{raw=localStorage.getItem(EK)||'[]';}catch(e){}
+    var blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='vtcos-water-sort-core-evidence.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},0);
+  };
+  document.getElementById('mode').onchange=function(){setStatus('已切換模式 '+this.value+'；目前 Core 修復版僅記錄模式，不改變遊戲規則。');};
+
+  render();
+  bootText('互動核心已就緒','ok');
+  record('core_ready',{});
+})();
 </script></body></html>
