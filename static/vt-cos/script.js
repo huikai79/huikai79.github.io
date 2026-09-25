@@ -16,3 +16,16 @@ if(form){
     if(button){button.disabled=true;button.textContent=document.documentElement.lang.startsWith('zh')?'送出中…':'Sending…';}
   });
 }
+
+const menuToggle=document.querySelector('.menu-toggle');
+const primaryNav=document.querySelector('#primary-nav');
+if(menuToggle&&primaryNav){
+  menuToggle.addEventListener('click',()=>{
+    const open=primaryNav.classList.toggle('open');
+    menuToggle.setAttribute('aria-expanded',String(open));
+  });
+  primaryNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
+    primaryNav.classList.remove('open');
+    menuToggle.setAttribute('aria-expanded','false');
+  }));
+}
