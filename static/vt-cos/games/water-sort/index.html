@@ -5,14 +5,14 @@
 <title>VT-COS Water Sort Experiment</title>
 <meta name="description" content="VT-COS Water Sort 認知實驗：可驗證遊戲核心、行為證據與個人化提示。">
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#432f25;background:#e9c38e}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#f8ddb2 0 18%,transparent 55%),repeating-linear-gradient(90deg,rgba(113,65,27,.03) 0 2px,transparent 2px 9px),linear-gradient(#e8bd82,#e4b77b)}button,select{font:inherit}.app{max-width:620px;margin:auto;min-height:100vh;background:rgba(255,238,202,.38);box-shadow:0 0 50px rgba(91,55,27,.22)}.top{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px;background:linear-gradient(#7a4c31,#684029);color:#fff4dc;box-shadow:0 4px 12px rgba(80,44,22,.28)}.top a{color:inherit;text-decoration:none;font-size:12px;opacity:.85}.level{font-size:28px;font-weight:600}.top button{justify-self:end;width:40px;height:40px;border:1px solid #ffffff48;border-radius:12px;background:#ffffff18;color:white;cursor:pointer}.hero{text-align:center;padding:18px 16px 4px}.hero h1{margin:0 0 7px;font-size:20px}.budget{font-size:27px;margin:4px 0}.meta{font-size:12px;opacity:.72}.controls{padding:10px 16px}.controls label{display:grid;gap:5px;font-size:12px}.controls select{border:1px solid #50301a33;border-radius:12px;padding:10px 12px;background:#fffaeddb;color:#432f25}.board{display:grid;grid-template-columns:repeat(6,1fr);gap:26px 10px;justify-items:center;align-items:end;min-height:385px;padding:20px 16px 30px}.tube{position:relative;width:52px;height:210px;border:5px solid #6e5747;border-top:0;border-radius:0 0 26px 26px;background:#ffffff2e;cursor:pointer;box-shadow:inset 0 -3px 10px #3c241616;transition:.12s}.tube:before{content:"";position:absolute;left:-6px;right:-6px;top:-5px;height:12px;border:5px solid #6e5747;border-bottom:0;border-radius:9px 9px 0 0}.tube:hover{transform:translateY(-3px)}.tube.sel{transform:translateY(-12px);filter:drop-shadow(0 5px 5px #6335154d)}.stack{position:absolute;left:0;right:0;bottom:0;height:184px;display:flex;flex-direction:column-reverse;overflow:hidden;border-radius:0 0 21px 21px}.liquid{height:46px;flex:0 0 46px;border-top:1px solid #ffffff15}.idx{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);font-size:11px;opacity:.5}.actions,.data{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}.data{grid-template-columns:1fr 1fr;padding-top:4px;padding-bottom:24px}.btn{border:1px solid #50301a2b;border-radius:14px;padding:12px 10px;cursor:pointer;background:#fffaedc7;color:#573c2d}.btn.primary{border:0;background:#6d4630;color:white}.next-level{display:block;width:calc(100% - 32px);margin:0 16px 12px}.next-level[hidden]{display:none}.status{min-height:26px;text-align:center;padding:0 16px 10px;font-size:13px;font-weight:600}.boot{text-align:center;padding:0 16px 12px;font-size:11px;opacity:.68}.boot.ok{color:#2f6f42;opacity:.9}.boot.warn{color:#8a3f2a;opacity:.95}.panel{margin:10px 16px;padding:14px;border:1px solid #59382221;border-radius:18px;background:#fff8e8b8}.panel h2{margin:0 0 8px;font-size:14px}.panel p{margin:4px 0;font-size:13px;line-height:1.45}.evi{font:10px ui-monospace,SFMono-Regular,Menlo,monospace!important;opacity:.62;overflow-wrap:anywhere}.claim{display:grid;gap:2px;padding:8px 0;border-bottom:1px dashed #59382229}.claim:last-child{border:0}.claim strong{font-size:12px}.claim span,.muted{font-size:11px!important;opacity:.66}.foot{padding:0 16px 30px;font-size:11px;line-height:1.5;opacity:.62}@media(max-width:520px){.board{grid-template-columns:repeat(6,1fr);gap:24px 6px}.tube{width:44px;height:176px;border-width:4px}.tube:before{left:-5px;right:-5px;border-width:4px}.stack{height:156px}.liquid{height:39px;flex-basis:39px}}@media(max-width:390px){.board{grid-template-columns:repeat(5,1fr)}.tube{width:47px}}
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#432f25;background:#e9c38e}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#f8ddb2 0 18%,transparent 55%),repeating-linear-gradient(90deg,rgba(113,65,27,.03) 0 2px,transparent 2px 9px),linear-gradient(#e8bd82,#e4b77b)}button,select{font:inherit}.app{max-width:620px;margin:auto;min-height:100vh;background:rgba(255,238,202,.38);box-shadow:0 0 50px rgba(91,55,27,.22)}.top{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px;background:linear-gradient(#7a4c31,#684029);color:#fff4dc;box-shadow:0 4px 12px rgba(80,44,22,.28)}.top a{color:inherit;text-decoration:none;font-size:12px;opacity:.85}.level{font-size:28px;font-weight:600}.top button{justify-self:end;width:40px;height:40px;border:1px solid #ffffff48;border-radius:12px;background:#ffffff18;color:white;cursor:pointer}.hero{text-align:center;padding:18px 16px 4px}.hero h1{margin:0 0 7px;font-size:20px}.budget{font-size:27px;margin:4px 0}.meta{font-size:12px;opacity:.72}.controls{padding:10px 16px}.level-meta{margin:8px 2px 0;text-align:right}.controls label{display:grid;gap:5px;font-size:12px}.controls select{border:1px solid #50301a33;border-radius:12px;padding:10px 12px;background:#fffaeddb;color:#432f25}.board{display:grid;grid-template-columns:repeat(6,1fr);gap:26px 10px;justify-items:center;align-items:end;min-height:385px;padding:20px 16px 30px}.tube{position:relative;width:52px;height:210px;border:5px solid #6e5747;border-top:0;border-radius:0 0 26px 26px;background:#ffffff2e;cursor:pointer;box-shadow:inset 0 -3px 10px #3c241616;transition:.12s}.tube:before{content:"";position:absolute;left:-6px;right:-6px;top:-5px;height:12px;border:5px solid #6e5747;border-bottom:0;border-radius:9px 9px 0 0}.tube:hover{transform:translateY(-3px)}.tube.sel{transform:translateY(-12px);filter:drop-shadow(0 5px 5px #6335154d)}.stack{position:absolute;left:0;right:0;bottom:0;height:184px;display:flex;flex-direction:column-reverse;overflow:hidden;border-radius:0 0 21px 21px}.liquid{height:46px;flex:0 0 46px;border-top:1px solid #ffffff15}.idx{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);font-size:11px;opacity:.5}.actions,.data{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}.data{grid-template-columns:1fr 1fr;padding-top:4px;padding-bottom:24px}.btn{border:1px solid #50301a2b;border-radius:14px;padding:12px 10px;cursor:pointer;background:#fffaedc7;color:#573c2d}.btn.primary{border:0;background:#6d4630;color:white}.next-level{display:block;width:calc(100% - 32px);margin:0 16px 12px}.next-level[hidden]{display:none}.status{min-height:26px;text-align:center;padding:0 16px 10px;font-size:13px;font-weight:600}.boot{text-align:center;padding:0 16px 12px;font-size:11px;opacity:.68}.boot.ok{color:#2f6f42;opacity:.9}.boot.warn{color:#8a3f2a;opacity:.95}.panel{margin:10px 16px;padding:14px;border:1px solid #59382221;border-radius:18px;background:#fff8e8b8}.panel h2{margin:0 0 8px;font-size:14px}.panel p{margin:4px 0;font-size:13px;line-height:1.45}.evi{font:10px ui-monospace,SFMono-Regular,Menlo,monospace!important;opacity:.62;overflow-wrap:anywhere}.claim{display:grid;gap:2px;padding:8px 0;border-bottom:1px dashed #59382229}.claim:last-child{border:0}.claim strong{font-size:12px}.claim span,.muted{font-size:11px!important;opacity:.66}.foot{padding:0 16px 30px;font-size:11px;line-height:1.5;opacity:.62}@media(max-width:520px){.board{grid-template-columns:repeat(6,1fr);gap:24px 6px}.tube{width:44px;height:176px;border-width:4px}.tube:before{left:-5px;right:-5px;border-width:4px}.stack{height:156px}.liquid{height:39px;flex-basis:39px}}@media(max-width:390px){.board{grid-template-columns:repeat(5,1fr)}.tube{width:47px}}
 </style>
 </head>
 <body><main class="app">
-<header class="top"><a href="/vt-cos/">← VT-COS EXP</a><div class="level" id="levelLabel">LV.220</div><button id="restartTop" title="重新開始">↻</button></header>
-<section class="hero"><h1>顏色排序認知實驗</h1><p class="budget">剩餘步數：<strong id="budget">42</strong></p><p class="meta">已走 <span id="moves">0</span> 步 · 參考路徑 <span id="reference">28</span> 步</p></section>
-<section class="controls"><label>實驗模式<select id="mode"><option value="A">A 基準固定提示</option><option value="B">B 規則個人化</option><option value="C" selected>C VT-COS Evidence</option></select></label></section>
-<div id="boot" class="boot" role="status">互動載入中…</div><section id="board" class="board" aria-label="Water Sort board"><button type="button" class="tube" aria-label="第 1 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#55bce6"></span></div><span class="idx">1</span></button><button type="button" class="tube" aria-label="第 2 管"><div class="stack"><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#55bce6"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#66ba2e"></span></div><span class="idx">2</span></button><button type="button" class="tube" aria-label="第 3 管"><div class="stack"><span class="liquid" style="background:#999baa"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#999baa"></span></div><span class="idx">3</span></button><button type="button" class="tube" aria-label="第 4 管"><div class="stack"><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#55bce6"></span><span class="liquid" style="background:#55bce6"></span></div><span class="idx">4</span></button><button type="button" class="tube" aria-label="第 5 管"><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#999baa"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">5</span></button><button type="button" class="tube" aria-label="第 6 管"><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">6</span></button><button type="button" class="tube" aria-label="第 7 管"><div class="stack"><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#66ba2e"></span><span class="liquid" style="background:#2873b6"></span><span class="liquid" style="background:#999baa"></span></div><span class="idx">7</span></button><button type="button" class="tube" aria-label="第 8 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#347b4b"></span><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#7a46b6"></span></div><span class="idx">8</span></button><button type="button" class="tube" aria-label="第 9 管"><div class="stack"><span class="liquid" style="background:#f783a4"></span><span class="liquid" style="background:#7a46b6"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#2873b6"></span></div><span class="idx">9</span></button><button type="button" class="tube" aria-label="第 10 管"><div class="stack"></div><span class="idx">10</span></button><button type="button" class="tube" aria-label="第 11 管"><div class="stack"></div><span class="idx">11</span></button></section><noscript><div class="boot warn">目前瀏覽器沒有執行 JavaScript；可先看到初始棋盤，但無法操作。</div></noscript>
+<header class="top"><a href="/vt-cos/">← VT-COS EXP</a><div class="level" id="levelLabel">LV.001</div><button id="restartTop" title="重新開始">↻</button></header>
+<section class="hero"><h1>顏色排序認知實驗</h1><p class="budget">剩餘步數：<strong id="budget">7</strong></p><p class="meta">已走 <span id="moves">0</span> 步 · 參考路徑 <span id="reference">3</span> 步</p></section>
+<section class="controls"><label>實驗模式<select id="mode"><option value="A">A 基準固定提示</option><option value="B">B 規則個人化</option><option value="C" selected>C VT-COS Evidence</option></select></label><p id="levelMeta" class="meta level-meta">入門 · Classic Visible · 2 色 / 2 空管</p></section>
+<div id="boot" class="boot" role="status">互動載入中…</div><section id="board" class="board" aria-label="Water Sort board"><button type="button" class="tube" aria-label="第 1 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#df3c3c"></span></div><span class="idx">1</span></button><button type="button" class="tube" aria-label="第 2 管"><div class="stack"><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span></div><span class="idx">2</span></button><button type="button" class="tube" aria-label="第 3 管"><div class="stack"></div><span class="idx">3</span></button><button type="button" class="tube" aria-label="第 4 管"><div class="stack"></div><span class="idx">4</span></button></section><noscript><div class="boot warn">目前瀏覽器沒有執行 JavaScript；可先看到初始棋盤，但無法操作。</div></noscript>
 <section class="actions"><button id="undo" class="btn">Undo</button><button id="hint" class="btn primary">提示</button><button id="restart" class="btn">重來</button></section><button id="nextLevel" class="btn primary next-level" hidden>下一關 →</button><div id="status" class="status" role="status"></div>
 <section class="panel"><h2>Cognitive Adapter</h2><p id="hintText">需要時按「提示」。C 模式會顯示可追溯理由。</p><p id="evidence" class="evi"></p></section>
 <section class="panel"><h2>Player Strategy Profile</h2><div id="profile"><p class="muted">尚無足夠行為證據形成策略 claim。</p></div></section>
@@ -30,25 +30,73 @@
   var CAP=4;
   var COLORS={O:['橘','#ef7f1a'],R:['紅','#df3c3c'],C:['青','#55bce6'],G:['深綠','#347b4b'],L:['嫩綠','#66ba2e'],P:['紫','#7a46b6'],X:['灰','#999baa'],B:['藍','#2873b6'],K:['粉紅','#f783a4']};
   var COLOR_KEYS=['O','R','C','G','L','P','X','B','K'];
-  var BASE=[['O','O','R','C'],['P','C','G','L'],['X','O','R','X'],['G','R','C','C'],['K','X','G','B'],['K','L','L','B'],['P','L','B','X'],['O','G','K','P'],['K','P','R','B'],[],[]];
-  var DEFAULT_BUDGET=42,DEFAULT_REFERENCE=28,START_LEVEL=220;
-  var EK='vtcos.water-sort.events.core.v2',LK='vtcos.water-sort.level.v1';
-  var levelId=loadLevelId(),BUDGET=DEFAULT_BUDGET,REFERENCE=DEFAULT_REFERENCE;
-  var INITIAL=makeLevel(levelId),state=clone(INITIAL),history=[],selected=-1,used=0;
+  var START_LEVEL=1;
+  var EK='vtcos.water-sort.events.core.v3',LK='vtcos.water-sort.level.v2';
+
+  var TEMPLATES={
+    2:[
+      {ref:3,board:[['O','O','R','R'],['R','R','O','O'],[],[]]},
+      {ref:7,board:[['O','R','O','R'],['R','O','R','O'],[],[]]}
+    ],
+    3:[
+      {ref:7,board:[['O','O','R','C'],['R','R','C','O'],['C','C','O','R'],[],[]]},
+      {ref:10,board:[['O','R','C','O'],['R','C','O','R'],['C','O','R','C'],[],[]]}
+    ],
+    4:[
+      {ref:13,board:[['O','C','R','G'],['R','O','C','G'],['C','R','C','G'],['O','G','R','O'],[],[]]},
+      {ref:9,board:[['O','R','C','O'],['O','G','O','R'],['R','R','C','C'],['G','G','G','C'],[],[]]}
+    ],
+    5:[
+      {ref:16,board:[['L','G','G','O'],['L','R','C','O'],['O','G','C','R'],['C','G','R','O'],['C','L','L','R'],[],[]]},
+      {ref:15,board:[['L','C','R','G'],['G','C','L','R'],['R','O','L','G'],['O','O','R','O'],['G','C','C','L'],[],[]]}
+    ],
+    6:[
+      {ref:17,board:[['G','L','C','C'],['R','P','G','C'],['P','R','R','O'],['L','O','G','O'],['R','P','G','C'],['O','P','L','L'],[],[]]},
+      {ref:17,board:[['R','C','C','L'],['R','R','O','P'],['G','L','L','G'],['P','L','G','R'],['O','P','C','O'],['G','C','P','O'],[],[]]}
+    ],
+    7:[
+      {ref:21,board:[['L','L','P','P'],['L','R','O','L'],['C','X','O','G'],['O','X','P','C'],['G','R','R','C'],['X','R','C','P'],['G','X','G','O'],[],[]]},
+      {ref:21,board:[['P','O','C','O'],['C','G','R','P'],['O','P','P','L'],['C','C','O','X'],['G','R','L','G'],['G','X','X','R'],['L','R','X','L'],[],[]]}
+    ],
+    8:[
+      {ref:24,board:[['B','G','P','B'],['L','C','O','X'],['O','B','G','R'],['C','B','P','C'],['G','R','R','L'],['X','L','X','O'],['L','G','X','O'],['P','P','C','R'],[],[]]},
+      {ref:25,board:[['R','G','B','C'],['L','P','O','P'],['L','X','L','P'],['G','C','C','R'],['B','X','X','R'],['O','P','B','L'],['G','R','X','O'],['O','G','B','C'],[],[]]}
+    ],
+    9:[
+      {ref:29,board:[['O','P','B','R'],['X','X','P','X'],['C','L','L','C'],['L','B','R','B'],['R','K','C','G'],['O','L','R','O'],['G','K','P','X'],['K','B','K','C'],['O','G','P','G'],[],[]]},
+      {ref:26,board:[['K','R','G','C'],['O','X','B','L'],['B','K','L','K'],['X','B','G','L'],['O','R','P','P'],['C','C','X','X'],['G','B','P','K'],['R','O','R','C'],['L','O','G','P'],[],[]]}
+    ]
+  };
+
+  var levelId=loadLevelId(),levelSpec=makeLevel(levelId),BUDGET=levelSpec.budget,REFERENCE=levelSpec.reference;
+  var INITIAL=clone(levelSpec.board),state=clone(INITIAL),history=[],selected=-1,used=0;
 
   function clone(s){var out=[],i;for(i=0;i<s.length;i++)out.push(s[i].slice());return out;}
+  function pad3(n){n=String(n);while(n.length<3)n='0'+n;return n;}
   function rng(seed){var x=seed>>>0;return function(){x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
   function shuffled(list,rand){var a=list.slice(),i,j,t;for(i=a.length-1;i>0;i--){j=Math.floor(rand()*(i+1));t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function levelBand(id){
+    if(id<=5)return {colors:2,tier:'入門',mechanic:'Classic Foundation'};
+    if(id<=15)return {colors:3,tier:'入門',mechanic:'Classic Foundation'};
+    if(id<=30)return {colors:4,tier:'基礎',mechanic:'Classic Planning'};
+    if(id<=50)return {colors:5,tier:'展開',mechanic:'Classic Planning'};
+    if(id<=75)return {colors:6,tier:'規劃',mechanic:'Classic Constraint'};
+    if(id<=100)return {colors:7,tier:'進階',mechanic:'Classic Constraint'};
+    if(id<=150)return {colors:8,tier:'高階',mechanic:'Classic Master'};
+    return {colors:9,tier:'專家',mechanic:'Classic Master'};
+  }
   function makeLevel(id){
-    if(id===START_LEVEL)return clone(BASE);
-    var rand=rng((id*2654435761)>>>0);
-    var mapped=shuffled(COLOR_KEYS,rand),map={},i,j,t,out=[],order=shuffled([0,1,2,3,4,5,6,7,8,9,10],rand);
-    for(i=0;i<COLOR_KEYS.length;i++)map[COLOR_KEYS[i]]=mapped[i];
+    var band=levelBand(id),templates=TEMPLATES[band.colors],template=templates[(id-1)%templates.length],rand=rng((id*2654435761)>>>0);
+    var usedKeys=COLOR_KEYS.slice(0,band.colors),mapped=shuffled(usedKeys,rand),map={},i,j,out=[],order,t;
+    for(i=0;i<usedKeys.length;i++)map[usedKeys[i]]=mapped[i];
+    order=[];for(i=0;i<template.board.length;i++)order.push(i);
+    order=shuffled(order,rand);
     for(i=0;i<order.length;i++){
-      t=BASE[order[i]];out.push([]);
+      t=template.board[order[i]];out.push([]);
       for(j=0;j<t.length;j++)out[i].push(map[t[j]]);
     }
-    return out;
+    var ref=template.ref,budget=Math.max(ref+4,Math.ceil(ref*1.45));
+    return {board:out,reference:ref,budget:budget,tier:band.tier,mechanic:band.mechanic,colors:band.colors,empties:2};
   }
   function loadLevelId(){try{var n=parseInt(localStorage.getItem(LK)||String(START_LEVEL),10);return isFinite(n)&&n>=START_LEVEL?n:START_LEVEL;}catch(e){return START_LEVEL;}}
   function saveLevelId(){try{localStorage.setItem(LK,String(levelId));}catch(e){}}
@@ -68,14 +116,15 @@
   function record(type,details){
     try{
       var raw=localStorage.getItem(EK),arr=raw?JSON.parse(raw):[];
-      arr.push({type:type,level_id:levelId,details:details||{},at:new Date().toISOString()});
-      if(arr.length>500)arr=arr.slice(arr.length-500);
+      arr.push({type:type,level_id:levelId,tier:levelSpec.tier,mechanic:levelSpec.mechanic,details:details||{},at:new Date().toISOString()});
+      if(arr.length>800)arr=arr.slice(arr.length-800);
       localStorage.setItem(EK,JSON.stringify(arr));
     }catch(e){}
   }
   function updateLevelUI(){
-    document.getElementById('levelLabel').textContent='LV.'+levelId;
+    document.getElementById('levelLabel').textContent='LV.'+pad3(levelId);
     document.getElementById('reference').textContent=String(REFERENCE);
+    document.getElementById('levelMeta').textContent=levelSpec.tier+' · '+levelSpec.mechanic+' · '+levelSpec.colors+' 色 / '+levelSpec.empties+' 空管';
     document.getElementById('nextLevel').hidden=true;
   }
   function render(){
@@ -105,22 +154,22 @@
     for(k=0;k<v.amount;k++)state[i].push(v.color);
     used++;record('move',{from:from,to:i,color:v.color,amount:v.amount,move:used});
     if(isSolved()){
-      setStatus('完成 LV.'+levelId+'！共 '+used+' 步。');
+      setStatus('完成 LV.'+pad3(levelId)+'！共 '+used+' 步。');
       document.getElementById('nextLevel').hidden=false;
-      record('level_complete',{moves:used,reference:REFERENCE});
-    }else if(used>BUDGET)setStatus('已超出目標步數，但仍可繼續。');else setStatus('');
+      record('level_complete',{moves:used,reference:REFERENCE,budget:BUDGET});
+    }else if(used>BUDGET)setStatus('已超出建議步數，但仍可繼續。');else setStatus('');
     render();
   }
   function loadCurrentLevel(message){
-    INITIAL=makeLevel(levelId);state=clone(INITIAL);history=[];selected=-1;used=0;BUDGET=DEFAULT_BUDGET;REFERENCE=DEFAULT_REFERENCE;
-    updateLevelUI();render();if(message)setStatus(message);record('level_start',{});
+    levelSpec=makeLevel(levelId);INITIAL=clone(levelSpec.board);state=clone(INITIAL);history=[];selected=-1;used=0;BUDGET=levelSpec.budget;REFERENCE=levelSpec.reference;
+    updateLevelUI();render();if(message)setStatus(message);record('level_start',{reference:REFERENCE,budget:BUDGET});
   }
-  function nextLevel(){levelId++;saveLevelId();loadCurrentLevel('已進入 LV.'+levelId+'。');}
+  function nextLevel(){levelId++;saveLevelId();loadCurrentLevel('已進入 LV.'+pad3(levelId)+'。');}
   function undo(){if(!history.length){setStatus('目前沒有可復原的步驟。');return;}state=history.pop();used=Math.max(0,used-1);selected=-1;document.getElementById('nextLevel').hidden=true;record('undo',{move:used});setStatus('已復原一步。');render();}
-  function restart(){INITIAL=makeLevel(levelId);state=clone(INITIAL);history=[];selected=-1;used=0;document.getElementById('nextLevel').hidden=true;record('restart',{});setStatus('已重新開始 LV.'+levelId+'。');render();}
+  function restart(){state=clone(INITIAL);history=[];selected=-1;used=0;document.getElementById('nextLevel').hidden=true;record('restart',{});setStatus('已重新開始 LV.'+pad3(levelId)+'。');render();}
   function firstLegal(){var f,t,v;for(f=0;f<state.length;f++)for(t=0;t<state.length;t++){v=validate(f,t);if(v.ok&&state[t].length)return {from:f,to:t};}for(f=0;f<state.length;f++)for(t=0;t<state.length;t++){v=validate(f,t);if(v.ok)return {from:f,to:t};}return null;}
   function hint(){var m=firstLegal(),text=document.getElementById('hintText'),mode=document.getElementById('mode').value;if(!m){if(text)text.textContent='目前找不到合法移動。';return;}if(text)text.textContent='可先試：第 '+(m.from+1)+' 管 → 第 '+(m.to+1)+' 管。';record('hint',{mode:mode,from:m.from,to:m.to});setStatus('已提供一個合法移動提示。');}
-  function clearData(){try{localStorage.removeItem(EK);localStorage.removeItem(LK);}catch(e){}setStatus('已清除本機 Core 行為與關卡進度；重新整理後回到 LV.220。');}
+  function clearData(){try{localStorage.removeItem(EK);localStorage.removeItem(LK);}catch(e){}levelId=START_LEVEL;saveLevelId();loadCurrentLevel('已清除本機資料並回到 LV.001。');}
 
   document.getElementById('restartTop').onclick=restart;
   document.getElementById('restart').onclick=restart;
@@ -128,9 +177,9 @@
   document.getElementById('hint').onclick=hint;
   document.getElementById('nextLevel').onclick=nextLevel;
   document.getElementById('clear').onclick=clearData;
-  document.getElementById('export').onclick=function(){var raw='[]';try{raw=localStorage.getItem(EK)||'[]';}catch(e){}var blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vtcos-water-sort-core-evidence.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},0);};
-  document.getElementById('mode').onchange=function(){setStatus('已切換模式 '+this.value+'；目前 Core 修復版僅記錄模式，不改變遊戲規則。');};
+  document.getElementById('export').onclick=function(){var raw='[]';try{raw=localStorage.getItem(EK)||'[]';}catch(e){}var blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vtcos-water-sort-evidence-v3.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},0);};
+  document.getElementById('mode').onchange=function(){setStatus('已切換模式 '+this.value+'；目前 Baseline v1 先固定遊戲規則，認知層只記錄模式。');};
 
-  updateLevelUI();render();bootText('互動核心已就緒','ok');record('core_ready',{});
+  updateLevelUI();render();bootText('互動核心已就緒','ok');record('core_ready',{reference:REFERENCE,budget:BUDGET});
 })();
 </script></body></html>
