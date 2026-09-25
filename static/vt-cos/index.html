@@ -23,11 +23,11 @@
 
 <section class="section soft" id="problem"><div class="container">
 <div class="eyebrow">The problem</div><h2>The answer survived. Its context didn't.</h2>
-<div class="grid failure-grid">
-<article class="card c3"><div class="kicker">Source lost</div><h3>Where did this number come from?</h3></article>
-<article class="card c3"><div class="kicker">Evidence blurred</div><h3>Does the source actually support this claim?</h3></article>
-<article class="card c3"><div class="kicker">Decision lost</div><h3>Why did we accept this interpretation?</h3></article>
-<article class="card c3"><div class="kicker">Knowledge stale</div><h3>Which version should we still trust?</h3></article>
+<div class="signal-list">
+<div class="signal"><span>01 · Source lost</span><strong>Where did this number come from?</strong></div>
+<div class="signal"><span>02 · Evidence blurred</span><strong>Does the source actually support this claim?</strong></div>
+<div class="signal"><span>03 · Decision lost</span><strong>Why did we accept this interpretation?</strong></div>
+<div class="signal"><span>04 · Knowledge stale</span><strong>Which version should we still trust?</strong></div>
 </div></div></section>
 
 <section class="section" id="trace"><div class="container">
@@ -55,17 +55,31 @@
 <section class="section soft" id="pipeline"><div class="container">
 <div class="eyebrow">VT-COS · Vibe Thinking Cognitive Operating System</div><h2>VT-COS keeps these connections from disappearing after the answer is generated.</h2>
 <p class="lead">Turn information into knowledge you can trace, challenge, and reuse.</p>
-<div class="pipeline">
-<div class="pipe-step"><b>01</b><div><h3>Source</h3><p>Where did it come from?</p></div></div><div class="pipe-step"><b>02</b><div><h3>Evidence</h3><p>What does it actually support?</p></div></div><div class="pipe-step"><b>03</b><div><h3>Claim</h3><p>What exactly are we asserting?</p></div></div><div class="pipe-step"><b>04</b><div><h3>Rationale / Decision Record</h3><p>What assumptions, interpretations or decision reasons were recorded?</p></div></div><div class="pipe-step"><b>05</b><div><h3>Verification</h3><p>What could contradict or invalidate it?</p></div></div><div class="pipe-step"><b>06</b><div><h3>Human Review</h3><p>What requires human judgment?</p></div></div><div class="pipe-step"><b>07</b><div><h3>Reusable Knowledge</h3><p>What remains valid and reusable?</p></div></div>
+<div class="pipeline-flow" aria-label="VT-COS cognitive flow">
+<div class="flow-node"><b>01</b><strong>Source</strong><span>Where it came from</span></div><i>→</i>
+<div class="flow-node"><b>02</b><strong>Evidence</strong><span>What it supports</span></div><i>→</i>
+<div class="flow-node"><b>03</b><strong>Claim</strong><span>What is asserted</span></div><i>→</i>
+<div class="flow-node"><b>04</b><strong>Decision</strong><span>Record the context</span></div><i>→</i>
+<div class="flow-node"><b>05</b><strong>Verify</strong><span>Seek contradiction</span></div><i>→</i>
+<div class="flow-node"><b>06</b><strong>Review</strong><span>Human judgment</span></div><i>→</i>
+<div class="flow-node"><b>07</b><strong>Knowledge</strong><span>Retain and reuse</span></div>
 </div>
+<details class="pipeline-details"><summary>Inspect the full meaning of each step</summary><div class="pipeline-detail-grid">
+<p><b>Source</b>: Where did it come from?</p><p><b>Evidence</b>: What does it actually support?</p><p><b>Claim</b>: What exactly are we asserting?</p><p><b>Rationale / Decision Record</b>: What assumptions, interpretations or decision reasons were recorded?</p><p><b>Verification</b>: What could contradict or invalidate it?</p><p><b>Human Review</b>: What requires human judgment?</p><p><b>Reusable Knowledge</b>: What remains valid and reusable?</p>
+</div></details>
 <div class="callout">Rationale means recorded, inspectable decision context — not hidden model chain-of-thought.</div>
 </div></section>
 
 <section class="section" id="industries"><div class="container">
 <div class="eyebrow">Work experience</div><h2>What changes in your work?</h2>
 <p class="lead">These remain illustrative workflow scenarios. They show the experience change, not customer deployments.</p>
-<div class="grid scenario-preview">
-<article class="card c4"><div class="kicker">Research & Evidence</div><h3>From sources to defensible knowledge</h3><p>Claims remain attached to evidence, source locations, contradictions, and unresolved questions.</p></article><article class="card c4"><div class="kicker">Professional Services</div><h3>Make every project improve the next</h3><p>Evidence, assumptions, findings and decision context remain reusable after an engagement.</p></article><article class="card c4"><div class="kicker">Manufacturing & Operations</div><h3>Keep operational knowledge usable</h3><p>Procedures, incidents, fixes and lessons stay connected to sources and review state.</p></article><article class="card c4"><div class="kicker">Education</div><h3>Keep evidence of what changed</h3><p>Learning evidence, concepts, explanations and review notes stay connected.</p></article><article class="card c4"><div class="kicker">Editorial & Media</div><h3>Know what supports each claim</h3><p>Claims survive revisions with source locations and verification state intact.</p></article><article class="card c4"><div class="kicker">Knowledge-intensive Teams</div><h3>Preserve why a decision was made</h3><p>Evidence, assumptions, decision rationale and later revisions remain connected.</p></article>
+<div class="use-index">
+<div><span>Research & Evidence</span><strong>source → finding → limitation → revised conclusion</strong></div>
+<div><span>Professional Services</span><strong>evidence → assumption → judgment → reusable context</strong></div>
+<div><span>Manufacturing & Operations</span><strong>incident → evidence → decision → updated procedure</strong></div>
+<div><span>Education</span><strong>learning evidence → explanation → review → revision</strong></div>
+<div><span>Editorial & Media</span><strong>source → claim → fact-check → published version</strong></div>
+<div><span>Knowledge-intensive Teams</span><strong>basis → decision → revision → organizational memory</strong></div>
 </div>
 <p class="proof-note">Stronger deployment or outcome claims require Demo, Evaluation, or External Evidence.</p>
 </div></section>
