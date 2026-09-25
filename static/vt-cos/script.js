@@ -23,9 +23,16 @@ if(menuToggle&&primaryNav){
   menuToggle.addEventListener('click',()=>{
     const open=primaryNav.classList.toggle('open');
     menuToggle.setAttribute('aria-expanded',String(open));
+    menuToggle.setAttribute('aria-label',open?(document.documentElement.lang.startsWith('zh')?'關閉導覽':'Close navigation'):(document.documentElement.lang.startsWith('zh')?'開啟導覽':'Open navigation'));
+    const icon=menuToggle.querySelector('b'); if(icon) icon.textContent=open?'×':'☰';
+    document.body.classList.toggle('menu-open',open);
   });
   primaryNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
     primaryNav.classList.remove('open');
     menuToggle.setAttribute('aria-expanded','false');
+    document.body.classList.remove('menu-open');
+    const icon=menuToggle.querySelector('b'); if(icon) icon.textContent='☰';
   }));
 }
+
+addEventListener('keydown',e=>{if(e.key==='Escape'&&primaryNav?.classList.contains('open')){primaryNav.classList.remove('open');document.body.classList.remove('menu-open');menuToggle.setAttribute('aria-expanded','false');menuToggle.setAttribute('aria-label',document.documentElement.lang.startsWith('zh')?'開啟導覽':'Open navigation');const icon=menuToggle.querySelector('b');if(icon)icon.textContent='☰';menuToggle.focus();}});
