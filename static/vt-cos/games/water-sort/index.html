@@ -5,35 +5,24 @@
 <title>VT-COS Water Sort Experiment</title>
 <meta name="description" content="VT-COS Water Sort 認知實驗：把遊戲中的選擇、限制、錯誤與求助轉成可追溯的行為證據，逐步驗證策略模型與個人化提示。">
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#432f25;background:#e9c38e}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#f8ddb2 0 18%,transparent 55%),repeating-linear-gradient(90deg,rgba(113,65,27,.03) 0 2px,transparent 2px 9px),linear-gradient(#e8bd82,#e4b77b)}button,select{font:inherit}.app{max-width:620px;margin:auto;min-height:100vh;background:rgba(255,238,202,.38);box-shadow:0 0 50px rgba(91,55,27,.22)}.top{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px;background:linear-gradient(#7a4c31,#684029);color:#fff4dc;box-shadow:0 4px 12px rgba(80,44,22,.28)}.top a{color:inherit;text-decoration:none;font-size:12px;opacity:.85}.level{font-size:28px;font-weight:600}.top button{justify-self:end;width:40px;height:40px;border:1px solid #ffffff48;border-radius:12px;background:#ffffff18;color:white;cursor:pointer}.hero{text-align:center;padding:18px 16px 4px}.thesis{max-width:520px;margin:8px auto 0;font-size:13px;line-height:1.55;opacity:.78}.explain{margin:14px 16px;padding:16px;border:1px solid #59382229;border-radius:20px;background:#fff8e8cc}.explain h2{margin:0 0 8px;font-size:17px}.explain h3{margin:16px 0 8px;font-size:14px}.explain p{margin:7px 0;font-size:13px;line-height:1.6}.bridge-grid{display:grid;gap:8px;margin-top:10px}.bridge-item{padding:10px 11px;border:1px solid #59382220;border-radius:14px;background:#fffdf5a8}.bridge-item strong{display:block;font-size:12px;margin-bottom:3px}.bridge-item span{display:block;font-size:12px;line-height:1.5;opacity:.78}.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.cap{padding:10px;border-radius:14px;background:#fffdf5a8;border:1px solid #59382220}.cap strong{display:block;font-size:12px;margin-bottom:5px}.cap span{display:block;font-size:11px;line-height:1.5;opacity:.72}.boundary{margin-top:12px;padding:10px 11px;border-left:3px solid #8a6549;background:#fff3d7;border-radius:8px;font-size:11px!important;line-height:1.55!important}.research-card{border:1px solid #59382229;border-radius:16px;background:#fff8e8b8;overflow:hidden}.research-card summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;font-size:12px;list-style:none}.research-card summary::-webkit-details-marker{display:none}.research-card summary strong{font-size:11px;opacity:.68}.research-body{padding:0 12px 12px}.research-body p{margin:7px 0;font-size:12px;line-height:1.55}.research-now{padding:9px 10px;border-radius:12px;background:#fffdf5a8}.arm-grid{display:grid;gap:7px;margin:8px 0}.arm{padding:9px 10px;border:1px solid #59382220;border-radius:12px;background:#fffdf5a8}.arm strong{display:block;font-size:12px;margin-bottom:3px}.arm span{display:block;font-size:11px;line-height:1.5;opacity:.75}.abc-flow{display:grid;gap:5px;margin:9px 0}.abc-flow span{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;padding:6px 8px;border-radius:9px;background:#5c3c2710}.research-note{font-size:11px!important;opacity:.7}@media(max-width:420px){.cap-grid{grid-template-columns:1fr}}.hero h1{margin:0 0 7px;font-size:20px}.budget{font-size:27px;margin:4px 0}.meta{font-size:12px;opacity:.72}.controls{padding:10px 16px}.level-meta{margin:8px 2px 0;text-align:right}.board{display:grid;grid-template-columns:repeat(6,1fr);gap:26px 10px;justify-items:center;align-items:end;min-height:385px;padding:20px 16px 30px}.tube{position:relative;width:52px;height:210px;border:5px solid #6e5747;border-top:0;border-radius:0 0 26px 26px;background:#ffffff2e;cursor:pointer;box-shadow:inset 0 -3px 10px #3c241616;transition:.12s}.tube:before{content:"";position:absolute;left:-6px;right:-6px;top:-5px;height:12px;border:5px solid #6e5747;border-bottom:0;border-radius:9px 9px 0 0}.tube:hover{transform:translateY(-3px)}.tube.sel{transform:translateY(-12px);filter:drop-shadow(0 5px 5px #6335154d)}.stack{position:absolute;left:0;right:0;bottom:0;height:184px;display:flex;flex-direction:column-reverse;overflow:hidden;border-radius:0 0 21px 21px}.liquid{height:46px;flex:0 0 46px;border-top:1px solid #ffffff15}.idx{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);font-size:11px;opacity:.5}.actions,.data{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}.data{grid-template-columns:1fr 1fr;padding-top:4px;padding-bottom:24px}.btn{border:1px solid #50301a2b;border-radius:14px;padding:12px 10px;cursor:pointer;background:#fffaedc7;color:#573c2d}.btn.primary{border:0;background:#6d4630;color:white}.next-level{display:block;width:calc(100% - 32px);margin:0 16px 12px}.next-level[hidden]{display:none}.status{min-height:26px;text-align:center;padding:0 16px 10px;font-size:13px;font-weight:600}.boot{text-align:center;padding:0 16px 12px;font-size:11px;opacity:.68}.boot.ok{color:#2f6f42;opacity:.9}.boot.warn{color:#8a3f2a;opacity:.95}.panel{margin:10px 16px;padding:14px;border:1px solid #59382221;border-radius:18px;background:#fff8e8b8}.panel h2{margin:0 0 8px;font-size:14px}.panel p{margin:4px 0;font-size:13px;line-height:1.45}.evi{font:10px ui-monospace,SFMono-Regular,Menlo,monospace!important;opacity:.62;overflow-wrap:anywhere}.claim{display:grid;gap:3px;padding:9px 0;border-bottom:1px dashed #59382229}.claim:last-child{border:0}.claim strong{font-size:12px}.claim span,.muted{font-size:11px!important;opacity:.68}.profile-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0 10px}.metric{padding:9px 6px;text-align:center;border-radius:12px;background:#fffdf5a8;border:1px solid #59382220}.metric b{display:block;font-size:18px}.metric span{font-size:10px;opacity:.66}.stage{display:inline-block;width:max-content;padding:2px 7px;border-radius:999px;background:#6d463014;font-size:9px!important;text-transform:uppercase;letter-spacing:.04em}.claim-evidence{font:10px ui-monospace,SFMono-Regular,Menlo,monospace!important}.claim-policy{margin-top:9px;border:1px dashed #59382233;border-radius:12px;background:#fffdf5a8;overflow:hidden}.claim-policy summary{cursor:pointer;padding:10px;font-size:11px;font-weight:700}.claim-policy-body{padding:0 10px 10px}.claim-policy-body span{display:block;font-size:11px;line-height:1.5;opacity:.74}.claim-policy-body ul{margin:7px 0 0;padding-left:18px}.claim-policy-body li{margin:4px 0;font-size:11px;line-height:1.45}.foot{padding:0 16px 30px;font-size:11px;line-height:1.5;opacity:.62}@media(max-width:520px){.board{grid-template-columns:repeat(6,1fr);gap:24px 6px}.tube{width:44px;height:176px;border-width:4px}.tube:before{left:-5px;right:-5px;border-width:4px}.stack{height:156px}.liquid{height:39px;flex-basis:39px}}@media(max-width:390px){.board{grid-template-columns:repeat(5,1fr)}.tube{width:47px}}
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#432f25;background:#e9c38e}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#f8ddb2 0 18%,transparent 55%),repeating-linear-gradient(90deg,rgba(113,65,27,.03) 0 2px,transparent 2px 9px),linear-gradient(#e8bd82,#e4b77b)}button,select{font:inherit}.app{max-width:620px;margin:auto;min-height:100vh;background:rgba(255,238,202,.38);box-shadow:0 0 50px rgba(91,55,27,.22)}.top{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px;background:linear-gradient(#7a4c31,#684029);color:#fff4dc;box-shadow:0 4px 12px rgba(80,44,22,.28)}.top a{color:inherit;text-decoration:none;font-size:12px;opacity:.85}.level{font-size:28px;font-weight:600}.top button{justify-self:end;width:40px;height:40px;border:1px solid #ffffff48;border-radius:12px;background:#ffffff18;color:white;cursor:pointer}.hero{text-align:center;padding:18px 16px 4px}.thesis{max-width:520px;margin:8px auto 0;font-size:13px;line-height:1.55;opacity:.78}.explain{margin:14px 16px;padding:16px;border:1px solid #59382229;border-radius:20px;background:#fff8e8cc}.explain h2{margin:0 0 8px;font-size:17px}.explain h3{margin:16px 0 8px;font-size:14px}.explain p{margin:7px 0;font-size:13px;line-height:1.6}.bridge-grid{display:grid;gap:8px;margin-top:10px}.bridge-item{padding:10px 11px;border:1px solid #59382220;border-radius:14px;background:#fffdf5a8}.bridge-item strong{display:block;font-size:12px;margin-bottom:3px}.bridge-item span{display:block;font-size:12px;line-height:1.5;opacity:.78}.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.cap{padding:10px;border-radius:14px;background:#fffdf5a8;border:1px solid #59382220}.cap strong{display:block;font-size:12px;margin-bottom:5px}.cap span{display:block;font-size:11px;line-height:1.5;opacity:.72}.boundary{margin-top:12px;padding:10px 11px;border-left:3px solid #8a6549;background:#fff3d7;border-radius:8px;font-size:11px!important;line-height:1.55!important}.research-card{border:1px solid #59382229;border-radius:16px;background:#fff8e8b8;overflow:hidden}.research-card summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;font-size:12px;list-style:none}.research-card summary::-webkit-details-marker{display:none}.research-card summary strong{font-size:11px;opacity:.68}.research-body{padding:0 12px 12px}.research-body p{margin:7px 0;font-size:12px;line-height:1.55}.research-now{padding:9px 10px;border-radius:12px;background:#fffdf5a8}.arm-grid{display:grid;gap:7px;margin:8px 0}.arm{padding:9px 10px;border:1px solid #59382220;border-radius:12px;background:#fffdf5a8}.arm strong{display:block;font-size:12px;margin-bottom:3px}.arm span{display:block;font-size:11px;line-height:1.5;opacity:.75}.abc-flow{display:grid;gap:5px;margin:9px 0}.abc-flow span{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;padding:6px 8px;border-radius:9px;background:#5c3c2710}.research-note{font-size:11px!important;opacity:.7}@media(max-width:420px){.cap-grid{grid-template-columns:1fr}}.hero h1{margin:0 0 7px;font-size:20px}.budget{font-size:27px;margin:4px 0}.meta{font-size:12px;opacity:.72}.controls{padding:10px 16px}.level-meta{margin:8px 2px 0;text-align:right}.board{display:grid;grid-template-columns:repeat(6,1fr);gap:26px 10px;justify-items:center;align-items:end;min-height:385px;padding:20px 16px 30px}.tube{position:relative;width:52px;height:210px;border:5px solid #6e5747;border-top:0;border-radius:0 0 26px 26px;background:#ffffff2e;cursor:pointer;box-shadow:inset 0 -3px 10px #3c241616;transition:.12s}.tube:before{content:"";position:absolute;left:-6px;right:-6px;top:-5px;height:12px;border:5px solid #6e5747;border-bottom:0;border-radius:9px 9px 0 0}.tube:hover{transform:translateY(-3px)}.tube.sel{transform:translateY(-12px);filter:drop-shadow(0 5px 5px #6335154d)}.stack{position:absolute;left:0;right:0;bottom:0;height:184px;display:flex;flex-direction:column-reverse;overflow:hidden;border-radius:0 0 21px 21px}.liquid{height:46px;flex:0 0 46px;border-top:1px solid #ffffff15}.idx{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);font-size:11px;opacity:.5}.actions,.data{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}.data{grid-template-columns:1fr 1fr;padding-top:4px;padding-bottom:24px}.btn{border:1px solid #50301a2b;border-radius:14px;padding:12px 10px;cursor:pointer;background:#fffaedc7;color:#573c2d}.btn.primary{border:0;background:#6d4630;color:white}.next-level{display:block;width:calc(100% - 32px);margin:0 16px 12px}.next-level[hidden]{display:none}.status{min-height:26px;text-align:center;padding:0 16px 10px;font-size:13px;font-weight:600}.boot{text-align:center;padding:0 16px 12px;font-size:11px;opacity:.68}.boot.ok{color:#2f6f42;opacity:.9}.boot.warn{color:#8a3f2a;opacity:.95}.panel{margin:10px 16px;padding:14px;border:1px solid #59382221;border-radius:18px;background:#fff8e8b8}.panel h2{margin:0 0 8px;font-size:14px}.panel p{margin:4px 0;font-size:13px;line-height:1.45}.evi{font:10px ui-monospace,SFMono-Regular,Menlo,monospace!important;opacity:.62;overflow-wrap:anywhere}.claim{display:grid;gap:3px;padding:9px 0;border-bottom:1px dashed #59382229}.claim:last-child{border:0}.claim strong{font-size:12px}.claim span,.muted{font-size:11px!important;opacity:.68}.profile-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0 10px}.metric{padding:9px 6px;text-align:center;border-radius:12px;background:#fffdf5a8;border:1px solid #59382220}.metric b{display:block;font-size:18px}.metric span{font-size:10px;opacity:.66}.stage{display:inline-block;width:max-content;padding:2px 7px;border-radius:999px;background:#6d463014;font-size:9px!important;text-transform:uppercase;letter-spacing:.04em}.claim-evidence{font:10px ui-monospace,SFMono-Regular,Menlo,monospace!important}.claim-policy{margin-top:9px;border:1px dashed #59382233;border-radius:12px;background:#fffdf5a8;overflow:hidden}.claim-policy summary{cursor:pointer;padding:10px;font-size:11px;font-weight:700}.claim-policy-body{padding:0 10px 10px}.claim-policy-body span{display:block;font-size:11px;line-height:1.5;opacity:.74}.claim-policy-body ul{margin:7px 0 0;padding-left:18px}.claim-policy-body li{margin:4px 0;font-size:11px;line-height:1.45}.demo-card{margin:10px 16px;padding:14px;border-radius:16px;border:1px solid #7b4f3029;background:#fff7e2cc}.demo-card h2{font-size:16px;margin:0 0 6px}.demo-card p{font-size:12px;line-height:1.55;margin:6px 0}.demo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.demo-actions .btn{flex:1;min-width:130px}.demo-badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#9a5f2618;font-size:10px;font-weight:700}.demo-result{margin-top:10px;padding:10px;border-radius:12px;background:#fffdf5;border:1px solid #59382220}.demo-row{display:grid;grid-template-columns:74px 1fr;gap:7px;padding:5px 0;border-bottom:1px dashed #59382220;font-size:11px;line-height:1.45}.demo-row:last-child{border:0}.demo-src{font-weight:700}.demo-synthetic{color:#8a5a2d}.demo-observed{color:#35683f}.demo-claim{margin-top:9px;padding:9px;border-radius:10px;background:#6d46300d}.demo-claim strong{display:block;font-size:12px;margin-bottom:4px}.demo-claim span{display:block;font-size:11px;line-height:1.5}.demo-note{font-size:10px!important;opacity:.7}.foot{padding:0 16px 30px;font-size:11px;line-height:1.5;opacity:.62}@media(max-width:520px){.board{grid-template-columns:repeat(6,1fr);gap:24px 6px}.tube{width:44px;height:176px;border-width:4px}.tube:before{left:-5px;right:-5px;border-width:4px}.stack{height:156px}.liquid{height:39px;flex-basis:39px}}@media(max-width:390px){.board{grid-template-columns:repeat(5,1fr)}.tube{width:47px}}
 </style>
 </head>
 <body><main class="app">
 <header class="top"><a href="/vt-cos/">← VT-COS EXP</a><div class="level" id="levelLabel">LV.001</div><button id="restartTop" title="重新開始">↻</button></header>
 <section class="hero"><h1>顏色排序認知實驗</h1><p class="thesis">你在整理顏色，VT-COS 在記錄你如何處理選擇、限制、錯誤與求助。相似的模式，也可能出現在寫作、學習、AI 使用與工作決策裡。</p><p class="budget">剩餘步數：<strong id="budget">7</strong></p><p class="meta">已走 <span id="moves">0</span> 步 · 參考路徑 <span id="reference">3</span> 步</p></section>
-<section class="controls">
-<details class="research-card">
-<summary><span>研究框架</span><strong>A / B / C 尚未啟用</strong></summary>
-<div class="research-body">
-<p class="research-now"><strong>你現在玩的是 Core Baseline。</strong>目前沒有被分派到 A、B 或 C，也不需要自己選研究組別。遊戲規則與 Hint 先保持一致，避免把尚未驗證的差異誤當成有效功能。</p>
-<div class="arm-grid">
-  <div class="arm"><strong>A｜基準</strong><span>只看目前盤面，提供一致的基礎提示。用途：建立沒有個人化時的比較基準。</span></div>
-  <div class="arm"><strong>B｜規則個人化</strong><span>依 Undo、Restart、Hint、非法移動等近期事件，用預先設定的 if/then 規則調整提示。</span></div>
-  <div class="arm"><strong>C｜VT-COS Evidence</strong><span>先累積跨關卡 Evidence，再形成可回查的策略 claim；只有通過證據門檻後，才允許調整提示或關卡。</span></div>
-</div>
-<div class="abc-flow" aria-label="A B C research comparison">
-  <span>A：State → Hint</span>
-  <span>B：State + Recent Events → Rules → Hint</span>
-  <span>C：State + Historical Evidence → Claim → Gate → Adaptation</span>
-</div>
-<p class="research-note">正式啟用 A/B/C 比較時，研究組別應由系統固定分派並另外告知，避免玩家自行選組造成比較偏差。現在的行為資料只保存在這個瀏覽器，除非你主動匯出。</p>
-</div>
-</details>
-<p id="levelMeta" class="meta level-meta">入門 · Classic Visible · 2 色 / 2 空管</p>
-</section>
+<section class="controls"><p id="levelMeta" class="meta level-meta">入門 · Classic Visible · 2 色 / 2 空管</p></section>
 <div id="boot" class="boot" role="status">互動載入中…</div><section id="board" class="board" aria-label="Water Sort board"><button type="button" class="tube" aria-label="第 1 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#df3c3c"></span></div><span class="idx">1</span></button><button type="button" class="tube" aria-label="第 2 管"><div class="stack"><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span></div><span class="idx">2</span></button><button type="button" class="tube" aria-label="第 3 管"><div class="stack"></div><span class="idx">3</span></button><button type="button" class="tube" aria-label="第 4 管"><div class="stack"></div><span class="idx">4</span></button></section><noscript><div class="boot warn">目前瀏覽器沒有執行 JavaScript；可先看到初始棋盤，但無法操作。</div></noscript>
 <section class="actions"><button id="undo" class="btn">Undo</button><button id="hint" class="btn primary">提示</button><button id="restart" class="btn">重來</button></section><button id="nextLevel" class="btn primary next-level" hidden>下一關 →</button><div id="status" class="status" role="status"></div>
 <section class="panel"><h2>提示現在怎麼運作？</h2><p id="hintText">目前只提供基礎合法移動提示，不會因為你的歷史玩法偷偷改變答案。未來若啟用 B / C，頁面會明確標示差異與依據。</p><p id="evidence" class="evi"></p></section>
+<section class="demo-card" aria-labelledby="quick-demo-title">
+<span class="demo-badge">3–5 分鐘快速體驗</span>
+<h2 id="quick-demo-title">先看一次 VT-COS 完整閉環</h2>
+<p>真實策略需要跨關卡 Evidence。若你只想快速理解 VT-COS，可以載入一組<strong>明確標示為模擬</strong>的歷史資料，立即看 Evidence → Claim → 新證據 → Claim 更新。</p>
+<div class="demo-actions"><button id="demoStart" class="btn primary">載入模擬 Evidence</button><button id="demoStop" class="btn" hidden>退出快速體驗</button></div>
+<div id="demoResult" class="demo-result" hidden></div>
+<p class="demo-note">模擬資料只用於教學，不會寫入你的真實 Strategy Profile，也不能讓真實 claim 升級。你的實際遊戲資料會另外標成「真實」。</p>
+</section>
 <section class="panel"><h2>你的策略紀錄</h2><div id="profile"><p class="muted">完成關卡後，這裡會立即顯示本局觀察；跨關卡重複出現的模式才會逐步升級為策略 claim。</p></div>
 <details class="claim-policy"><summary>策略 claim 怎麼判定？</summary><div class="claim-policy-body"><span>以下是 Strategy Profile v0.1 的可測試門檻。同一策略模式在每一關最多算 1 個獨立觀察，避免重複操作灌高證據量。</span>
 <ul>
@@ -45,7 +34,7 @@
 <section class="data"><button id="export" class="btn">匯出 Evidence</button><button id="clear" class="btn">清除本機資料</button></section><section class="explain" aria-labelledby="why-vtcos">
 <h2 id="why-vtcos">為什麼這和 VT-COS 有關？</h2>
 <p>Water Sort 是一個很小、但狀態清楚的決策環境。你要保留空間、安排順序、承擔前一步的後果；也可能 Undo、重來或求助。VT-COS 關心的是這些「怎麼走到結果」的過程，而不只看你有沒有過關。</p>
-<p>每一次移動、錯誤、Undo、Restart 與 Hint 都可以成為行為證據。未來只有在證據累積足夠時，系統才會形成可回查的策略假說，再測試是否值得調整提示或下一關。</p>
+<p>每一次移動、錯誤、Undo、Restart 與 Hint 都可以成為行為證據。真實 Strategy Profile 只使用你的實際遊戲紀錄；快速體驗則可使用明確標示的 Synthetic Evidence，讓你不用先玩很多關就能看懂 Claim 如何形成、被新證據支持或修正。</p>
 
 <h3>遊戲裡的行為，像哪些真實問題？</h3>
 <div class="bridge-grid">
@@ -63,7 +52,22 @@
 
 <p class="boundary"><strong>邊界：</strong>遊戲行為只能支持「策略假說」，不能直接代表你的個性、智力、能力或真實世界表現。任何從遊戲推到工作／學習的結論，都需要額外證據驗證。</p>
 </section>
-<p class="foot">Prototype v0.4：Game Core 採 deterministic 規則；Strategy Profile v0.1 已啟用 Observation / Emerging / Provisional，僅從本機 Evidence 形成可回查的策略假說。Supported Claim、A/B/C 分組與自動 Adaptation 尚未啟用。Telemetry 只保存在目前瀏覽器的 localStorage，除非你主動匯出。</p>
+<section class="controls">
+<details class="research-card">
+<summary><span>研究與驗證（次要）</span><strong>A / B / C 尚未啟用</strong></summary>
+<div class="research-body">
+<p class="research-now"><strong>目前正式遊戲仍是 Core Baseline。</strong>快速體驗使用的是教學用 Synthetic Evidence，不等於 A/B/C 實驗結果。</p>
+<div class="arm-grid">
+  <div class="arm"><strong>A｜基準</strong><span>只看目前盤面，提供一致的基礎提示，用來建立比較基準。</span></div>
+  <div class="arm"><strong>B｜規則個人化</strong><span>依近期 Undo、Restart、Hint 等事件，以固定規則調整提示。</span></div>
+  <div class="arm"><strong>C｜VT-COS Evidence</strong><span>依跨關卡 Evidence 形成可回查 claim，通過治理門檻後才取得自動調整資格。</span></div>
+</div>
+<div class="abc-flow"><span>A：State → Hint</span><span>B：State + Recent Events → Rules → Hint</span><span>C：Historical Evidence → Claim → Gate → Adaptation</span></div>
+<p class="research-note">A/B/C 是後續驗證 VT-COS 是否真的優於基準／簡單規則的方法，不是快速 Demo 的使用門檻。</p>
+</div>
+</details>
+</section>
+<p class="foot">Prototype v0.5：Game Core 採 deterministic 規則；Strategy Profile v0.1 使用真實本機 Evidence。Quick Demo 使用獨立 Synthetic Evidence 展示 Claim lifecycle，絕不計入真實 Profile。Supported Claim、A/B/C 分組與自動 Adaptation 尚未啟用。Telemetry 只保存在目前瀏覽器的 localStorage，除非你主動匯出。</p>
 </main><script>
 (function(){
   var boot=document.getElementById('boot');
@@ -234,6 +238,35 @@
     }
     root.innerHTML=html;
   }
+  var DEMO_DATA=[
+    {id:'D01',evidence_type:'synthetic',pattern:'buffer_management_friction',text:'模擬玩家在前段同時耗用兩支空管，後段可用緩衝不足。',supports:true},
+    {id:'D02',evidence_type:'synthetic',pattern:'buffer_management_friction',text:'模擬玩家再次在前段耗盡空管，之後出現回退。',supports:true},
+    {id:'D03',evidence_type:'synthetic',pattern:'buffer_management_friction',text:'相同模式第三次出現，足以展示 provisional claim。',supports:true}
+  ];
+  var demoActive=false;
+  function latestObserved(){
+    var list=readJson(SK,[]);return list.length?list[list.length-1]:null;
+  }
+  function observedDemoAssessment(s){
+    if(!s)return null;
+    var inefficient=s.reference>0&&s.moves>=Math.ceil(s.reference*1.35);
+    return {id:'LV.'+pad3(s.level_id),evidence_type:'observed',supports:inefficient,text:inefficient?'你的真實完成步數相對參考路徑偏高；它提供一筆支持「仍有規劃摩擦」的新 Evidence。':'你的真實完成步數接近參考路徑；它提供一筆反證，提醒系統不能把模擬 Claim 當成你的真實特徵。'};
+  }
+  function renderDemo(){
+    var root=document.getElementById('demoResult'),stop=document.getElementById('demoStop'),start=document.getElementById('demoStart');if(!root)return;
+    if(!demoActive){root.hidden=true;if(stop)stop.hidden=true;if(start){start.hidden=false;start.textContent='載入模擬 Evidence';}return;}
+    var rows='',i,d,obs=observedDemoAssessment(latestObserved()),stateText='PROVISIONAL（教學示範）',updateText='目前只有 Synthetic Evidence；完成任一真實關卡後，這裡會加入一筆「真實」Evidence 並重新說明 Claim。';
+    for(i=0;i<DEMO_DATA.length;i++){d=DEMO_DATA[i];rows+='<div class="demo-row"><span class="demo-src demo-synthetic">◇ 模擬 '+d.id+'</span><span>'+d.text+'</span></div>';}
+    if(obs){
+      rows+='<div class="demo-row"><span class="demo-src demo-observed">● 真實 '+obs.id+'</span><span>'+obs.text+'</span></div>';
+      if(obs.supports){stateText='PROVISIONAL → strengthened（示範）';updateText='新的真實 Evidence 與模擬歷史方向一致，因此示範 Claim 的支持增加；但 Synthetic Evidence 仍不會寫入你的真實 Profile。';}
+      else{stateText='PROVISIONAL → contested（示範）';updateText='新的真實 Evidence 與模擬歷史不一致，因此示範 Claim 應降低信心，而不是硬把你套進原本的判斷。';}
+    }
+    root.innerHTML='<strong>Demo Claim：緩衝／規劃摩擦</strong><p class="demo-note">下列來源故意混合展示，但 provenance 明確分開。</p>'+rows+'<div class="demo-claim"><strong>'+stateText+'</strong><span>'+updateText+'</span></div><p class="demo-note">這個 Demo Claim 只存在於畫面，不計入真實 claim 門檻，也不會改變 Hint 或關卡。</p>';
+    root.hidden=false;if(stop)stop.hidden=false;if(start){start.hidden=true;}
+  }
+  function startDemo(){demoActive=true;renderDemo();record('demo_started',{dataset:'synthetic-v1',synthetic_count:DEMO_DATA.length});setStatus('已載入教學用 Synthetic Evidence；真實策略紀錄不受影響。');}
+  function stopDemo(){demoActive=false;renderDemo();record('demo_stopped',{dataset:'synthetic-v1'});setStatus('已退出快速體驗；真實 Strategy Profile 保持不變。');}
   function updateLevelUI(){
     document.getElementById('levelLabel').textContent='LV.'+pad3(levelId);
     document.getElementById('reference').textContent=String(REFERENCE);
@@ -269,7 +302,7 @@
     if(isSolved()){
       setStatus('完成 LV.'+pad3(levelId)+'！共 '+used+' 步。');
       document.getElementById('nextLevel').hidden=false;
-      record('level_complete',{moves:used,reference:REFERENCE,budget:BUDGET});saveLevelSummary();
+      record('level_complete',{moves:used,reference:REFERENCE,budget:BUDGET});saveLevelSummary();if(demoActive)renderDemo();
     }else if(used>BUDGET)setStatus('已超出建議步數，但仍可繼續。');else setStatus('');
     render();
   }
@@ -290,7 +323,9 @@
   document.getElementById('hint').onclick=hint;
   document.getElementById('nextLevel').onclick=nextLevel;
   document.getElementById('clear').onclick=clearData;
-  document.getElementById('export').onclick=function(){var payload={schema:'vtcos-water-sort-evidence-v4',events:readJson(EK,[]),level_summaries:readJson(SK,[])};var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vtcos-water-sort-evidence-v4.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},0);};
+  document.getElementById('demoStart').onclick=startDemo;
+  document.getElementById('demoStop').onclick=stopDemo;
+  document.getElementById('export').onclick=function(){var payload={schema:'vtcos-water-sort-evidence-v5',events:readJson(EK,[]),level_summaries:readJson(SK,[]),demo:demoActive?{status:'teaching_only',evidence_type:'synthetic',dataset:DEMO_DATA}:null};var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='vtcos-water-sort-evidence-v5.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},0);};
   updateLevelUI();render();migrateCompletedEvidence();renderProfile();bootText('互動核心已就緒','ok');record('core_ready',{reference:REFERENCE,budget:BUDGET,research_arm:'unassigned',research_status:'abc_not_enabled'});
 })();
 </script></body></html>
