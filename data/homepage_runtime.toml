@@ -1,5 +1,5 @@
-rotationKey = "2026-W39"
-rotationIndex = 3
+rotationKey = "2026-W40"
+rotationIndex = 4
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
@@ -8,7 +8,7 @@ recentLimit = 5
 pinnedSize = 2
 rotationSlots = 1
 poolSize = 12
-poolOffset = 3
+poolOffset = 4
 
 [[selected]]
 pageId = "3da7a59e-0439-8009-b009-dd5dadeb2e88"
@@ -21,14 +21,14 @@ path = "posts/website-must-diy"
 source = "pinned"
 
 [[selected]]
-pageId = "23b7a59e-0439-81d2-b926-cb11c044d7e9"
-path = "posts/how-to-make-wealth"
+pageId = "3d67a59e-0439-80ca-8ca8-d41b61708ad2"
+path = "posts/How-you-know--zh-tw"
 source = "rotationPool"
 
 [secondary]
 
-rotationKey = "2026-W39"
-rotationIndex = 3
+rotationKey = "2026-W40"
+rotationIndex = 4
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
@@ -37,7 +37,7 @@ recentLimit = 5
 pinnedSize = 2
 rotationSlots = 1
 poolSize = 4
-poolOffset = 3
+poolOffset = 0
 
 [[secondary.selected]]
 pageId = "3da7a59e-0439-81ee-af5a-e8f869c985c3"
@@ -50,6 +50,6 @@ path = "posts/website-must-diy--zh-cn"
 source = "pinned"
 
 [[secondary.selected]]
-pageId = "3da7a59e-0439-8137-b5e1-c3dfb60ede03"
-path = "posts/small-b-blogging--zh-cn"
+pageId = "3db7a59e-0439-81fc-b1a2-f1ccf45920bd"
+path = "posts/forever-project--zh-cn"
 source = "rotationPool"
