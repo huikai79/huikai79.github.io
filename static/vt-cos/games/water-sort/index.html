@@ -14,7 +14,7 @@
 <section class="controls"><p id="levelMeta" class="meta level-meta">入門 · Classic Visible · 2 色 / 2 空管</p></section>
 <div id="boot" class="boot" role="status">互動載入中…</div><section id="board" class="board" aria-label="Water Sort board"><button type="button" class="tube" aria-label="第 1 管"><div class="stack"><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#df3c3c"></span></div><span class="idx">1</span></button><button type="button" class="tube" aria-label="第 2 管"><div class="stack"><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#df3c3c"></span><span class="liquid" style="background:#ef7f1a"></span><span class="liquid" style="background:#ef7f1a"></span></div><span class="idx">2</span></button><button type="button" class="tube" aria-label="第 3 管"><div class="stack"></div><span class="idx">3</span></button><button type="button" class="tube" aria-label="第 4 管"><div class="stack"></div><span class="idx">4</span></button></section><noscript><div class="boot warn">目前瀏覽器沒有執行 JavaScript；可先看到初始棋盤，但無法操作。</div></noscript>
 <section class="actions"><button id="undo" class="btn">Undo</button><button id="hint" class="btn primary">提示</button><button id="restart" class="btn">重來</button></section><button id="nextLevel" class="btn primary next-level" hidden>下一關 →</button><div id="status" class="status" role="status"></div>
-<section class="panel"><h2>提示現在怎麼運作？</h2><p id="hintText">目前只提供基礎合法移動提示，不會因為你的歷史玩法偷偷改變答案。未來若啟用 B / C，頁面會明確標示差異與依據。</p><p id="evidence" class="evi"></p></section>
+<section class="panel"><h2>現在的提示怎麼來？</h2><p id="hintText">目前提示只看這一局的盤面，不會偷偷根據你以前的玩法改答案。以後如果提示開始參考你的過去紀錄，頁面會直接告訴你原因。</p><p id="evidence" class="evi"></p></section>
 <section class="demo-card" aria-labelledby="quick-demo-title">
 <span class="demo-badge">3–5 分鐘快速體驗</span>
 <h2 id="quick-demo-title">看看 VT-COS 會怎麼改變判斷</h2>
@@ -23,34 +23,34 @@
 <div id="demoResult" class="demo-result" hidden></div>
 <p class="demo-note">示範資料只負責讓你快速看到效果，會清楚標成「模擬」，也不會污染你的真實策略紀錄。</p>
 </section>
-<section class="panel"><h2>你的策略紀錄</h2><div id="profile"><p class="muted">完成關卡後，這裡會立即顯示本局觀察；跨關卡重複出現的模式才會逐步升級為策略 claim。</p></div>
-<details class="claim-policy"><summary>策略 claim 怎麼判定？</summary><div class="claim-policy-body"><span>以下是 Strategy Profile v0.1 的可測試門檻。同一策略模式在每一關最多算 1 個獨立觀察，避免重複操作灌高證據量。</span>
+<section class="panel"><h2>你的策略紀錄</h2><div id="profile"><p class="muted">完成一關後，這裡會告訴你系統觀察到什麼。相同情況在不同關卡重複出現時，系統才會把它當成一個值得繼續觀察的玩法模式。</p></div>
+<details class="claim-policy"><summary>系統什麼時候才會相信一個判斷？</summary><div class="claim-policy-body"><span>系統不會因為你在同一關重複很多次，就假裝有很多證據。同一種玩法在每一關最多算一次。以下是目前的測試規則。</span>
 <ul>
-<li><b>1 個關卡</b>：Observation，只描述本局，不形成 claim。</li>
-<li><b>2 個不同關卡</b>：Emerging Pattern，顯示正在浮現的模式。</li>
-<li><b>至少 3 個不同關卡</b>：Provisional Claim，仍是暫時假說。</li>
-<li><b>Supported</b> 仍需至少 5 個不同關卡、跨至少 2 個 session、支持比例 ≥ 70%；v0.1 暫不自動升級，待 session 邊界完成後再啟用。</li>
+<li><b>1 個關卡</b>：只記錄這一局看到的情況，不急著下判斷。</li>
+<li><b>2 個不同關卡</b>：開始提醒「這個玩法可能重複出現」。</li>
+<li><b>至少 3 個不同關卡</b>：形成暫時判斷，但仍可能被後面的資料推翻。</li>
+<li><b>要變成較可靠的判斷</b>：至少需要 5 個不同關卡、2 次不同遊玩期間，而且 70% 以上的相關紀錄方向一致。目前這一步仍在驗證，不會自動套用。</li>
 </ul></div></details></section>
-<section class="data"><button id="export" class="btn">匯出 Evidence</button><button id="clear" class="btn">清除本機資料</button></section><section class="explain" aria-labelledby="why-vtcos">
+<section class="data"><button id="export" class="btn">匯出遊戲紀錄</button><button id="clear" class="btn">清除本機資料</button></section><section class="explain" aria-labelledby="why-vtcos">
 <h2 id="why-vtcos">為什麼這和 VT-COS 有關？</h2>
-<p>Water Sort 是一個很小、但狀態清楚的決策環境。你要保留空間、安排順序、承擔前一步的後果；也可能 Undo、重來或求助。VT-COS 關心的是這些「怎麼走到結果」的過程，而不只看你有沒有過關。</p>
-<p>每一次移動、錯誤、Undo、Restart 與 Hint 都可以成為行為證據。真實 Strategy Profile 只使用你的實際遊戲紀錄；快速體驗則可使用明確標示的 Synthetic Evidence，讓你不用先玩很多關就能看懂 Claim 如何形成、被新證據支持或修正。</p>
+<p>Water Sort 很適合拿來看「你怎麼做決定」。你要保留空間、安排順序，也要承擔前一步造成的後果。VT-COS 會留下你怎麼走到結果的過程，而不只記得你最後有沒有過關。</p>
+<p>每次移動、走錯、復原、重來或求助，都能留下可檢查的紀錄。系統可以從多次紀錄形成暫時判斷；如果後來出現不同情況，也必須修改原本的判斷。快速示範會用清楚標示的模擬資料，讓你不用先玩很多關就能看到完整過程。</p>
 
 <h3>遊戲裡的行為，像哪些真實問題？</h3>
 <div class="bridge-grid">
   <div class="bridge-item"><strong>太早把一支管封死</strong><span>像寫文章或做決策時太早定案，後面才發現條件或反證沒看完。可觀察的是「過早封閉選項」的行為模式。</span></div>
-  <div class="bridge-item"><strong>一直 Undo 或反覆重來</strong><span>像工作反覆改稿、專案遇阻就重做。VT-COS 可以留下「何時改、為何改、是否從錯誤恢復」的證據。</span></div>
-  <div class="bridge-item"><strong>很早就按 Hint</strong><span>像還沒自己推理就先問 AI。重點不是禁止求助，而是觀察何時求助、提示後是否能獨立處理同類問題。</span></div>
+  <div class="bridge-item"><strong>一直復原或反覆重來</strong><span>像工作反覆改稿、專案遇阻就重做。VT-COS 可以留下你何時改、怎麼改，以及之後有沒有改善。</span></div>
+  <div class="bridge-item"><strong>很早就按提示</strong><span>像還沒自己推理就先問 AI。重點不是禁止求助，而是觀察何時求助、提示後是否能獨立處理同類問題。</span></div>
   <div class="bridge-item"><strong>太快耗盡空管</strong><span>像太早用完時間、預算或專案緩衝。遊戲可把「資源保留與配置」變成可觀察的行為。</span></div>
 </div>
 
 <h3>玩的同時，你可以逐步擁有什麼？</h3>
 <div class="cap-grid">
-  <div class="cap"><strong>已實作</strong><span>關卡進度、合法移動、Undo / Restart / Hint、步數與本機 Evidence 事件、可匯出紀錄。</span></div>
-  <div class="cap"><strong>正在驗證</strong><span>Supported Claim、Evidence-backed Hint、動態難度、長期認知變化報告，以及遊戲模式能否遷移到真實工作與學習。</span></div>
+  <div class="cap"><strong>已實作</strong><span>關卡進度、合法移動、復原／重來／提示、步數，以及保存在這台裝置上的遊戲紀錄。</span></div>
+  <div class="cap"><strong>正在驗證</strong><span>讓提示真正參考可靠的長期紀錄、依表現調整難度、追蹤玩法是否改變，以及這些模式能不能在工作與學習中得到驗證。</span></div>
 </div>
 
-<p class="boundary"><strong>邊界：</strong>遊戲行為只能支持「策略假說」，不能直接代表你的個性、智力、能力或真實世界表現。任何從遊戲推到工作／學習的結論，都需要額外證據驗證。</p>
+<p class="boundary"><strong>要注意：</strong>遊戲只能讓系統觀察你的玩法，不能用來判定你的個性、智力或真實工作能力。要把遊戲中的發現套到工作或學習，還需要其他資料證明。</p>
 </section>
 <section class="controls">
 <details class="research-card">
@@ -58,16 +58,16 @@
 <div class="research-body">
 <p class="research-now"><strong>目前正式遊戲仍是 Core Baseline。</strong>快速體驗使用的是教學用 Synthetic Evidence，不等於 A/B/C 實驗結果。</p>
 <div class="arm-grid">
-  <div class="arm"><strong>A｜基準</strong><span>只看目前盤面，提供一致的基礎提示，用來建立比較基準。</span></div>
-  <div class="arm"><strong>B｜規則個人化</strong><span>依近期 Undo、Restart、Hint 等事件，以固定規則調整提示。</span></div>
-  <div class="arm"><strong>C｜VT-COS Evidence</strong><span>依跨關卡 Evidence 形成可回查 claim，通過治理門檻後才取得自動調整資格。</span></div>
+  <div class="arm"><strong>A｜一般模式</strong><span>只看目前盤面，大家得到相同類型的提示，作為比較基準。</span></div>
+  <div class="arm"><strong>B｜簡單個人化</strong><span>看你最近的復原、重來、提示等操作，再用預先寫好的規則調整提示。</span></div>
+  <div class="arm"><strong>C｜VT-COS 模式</strong><span>看多個關卡留下的證據，形成可以回頭檢查的判斷；證據夠可靠後，才允許系統自動調整。</span></div>
 </div>
 <div class="abc-flow"><span>A：State → Hint</span><span>B：State + Recent Events → Rules → Hint</span><span>C：Historical Evidence → Claim → Gate → Adaptation</span></div>
-<p class="research-note">A/B/C 是後續驗證 VT-COS 是否真的優於基準／簡單規則的方法，不是快速 Demo 的使用門檻。</p>
+<p class="research-note">A/B/C 是後續用來比較「一般提示、簡單個人化、VT-COS」實際效果的方法，不影響你使用上面的快速示範。</p><p class="research-note"><strong>白話介面原則：</strong>第一次接觸 VT-COS 的高中生，不查術語也應能回答：系統原本怎麼判斷？新資料改變了什麼？為什麼系統沒有一直沿用舊判斷？</p>
 </div>
 </details>
 </section>
-<p class="foot">Prototype v0.6：Quick Demo 採「結果優先」敘事：先說原本判斷、你的新證據與系統因此如何修正；Evidence／Claim 技術細節退到可展開層。示範資料與真實 Strategy Profile 仍完全分離。Telemetry 只保存在目前瀏覽器的 localStorage，除非你主動匯出。</p>
+<p class="foot">Prototype v0.7：主要畫面採高中程度即可直接理解的白話說明；先說系統看到了什麼、為什麼改變判斷、對使用者有什麼影響。Evidence／Claim／provenance 等專業詞只留在研究與進階資訊層。示範資料與真實策略紀錄仍完全分離。Telemetry 只保存在目前瀏覽器的 localStorage，除非你主動匯出。</p>
 </main><script>
 (function(){
   var boot=document.getElementById('boot');
@@ -215,7 +215,7 @@
   function renderProfile(){
     var root=document.getElementById('profile');if(!root)return;
     var list=readJson(SK,[]),defs=patternDefs(),claims=[],d,i,s,support,levels,relevant,stage,ratio,html='';
-    if(!list.length){root.innerHTML='<p class="muted">尚未完成可分析關卡。完成 LV.001 後就會先看到本局 Observation，不必等到形成 claim。</p>';return;}
+    if(!list.length){root.innerHTML='<p class="muted">尚未完成可分析的關卡。完成 LV.001 後就會先看到本局觀察，不必等很久。</p>';return;}
     html='<div class="profile-summary"><div class="metric"><b>'+list.length+'</b><span>已分析關卡</span></div>';
     var emerging=0,provisional=0;
     for(d=0;d<defs.length;d++){
@@ -228,13 +228,13 @@
     if(!claims.length){
       s=list[list.length-1];
       html+='<div class="claim"><strong>本局 Observation · LV.'+pad3(s.level_id)+'</strong><span>完成 '+s.moves+' 步 / 參考 '+s.reference+' 步；Hint '+s.hints+' · Undo '+s.undos+' · Restart '+s.restarts+' · 非法移動 '+s.illegal+'</span><span class="stage">observation</span></div>';
-      html+='<p class="muted">目前沒有重複到足以形成策略模式。這代表「已分析但未形成 claim」，不是沒有分析。</p>';
+      html+='<p class="muted">目前沒有看到足夠重複的玩法，所以系統先不下判斷。這不代表沒有分析，而是資料還不足。</p>';
     }else{
       for(i=0;i<claims.length;i++){
-        var c=claims[i];stage=c.support>=3?'provisional':(c.support>=2?'emerging':'observation');ratio=Math.round(c.support/c.relevant*100);
+        var c=claims[i];stage=c.support>=3?'暫時判斷':(c.support>=2?'正在形成':'本局觀察');ratio=Math.round(c.support/c.relevant*100);
         html+='<div class="claim"><strong>'+c.def.label+'</strong><span class="stage">'+stage+'</span><span>支持 '+c.support+' / '+c.relevant+' 個已分析關卡（'+ratio+'%）</span><span class="claim-evidence">Evidence: LV.'+c.levels.map(function(n){return pad3(n);}).join(' · LV.')+'</span></div>';
       }
-      html+='<p class="muted">這些是遊戲行為形成的策略假說，不是人格、智力或能力評分。Supported 與自動調整尚未啟用。</p>';
+      html+='<p class="muted">這些只是根據遊戲紀錄形成的暫時判斷，不是人格、智力或能力評分。系統目前也不會自動依此改變你的提示或關卡。</p>';
     }
     root.innerHTML=html;
   }
@@ -276,7 +276,7 @@
       '<div class="demo-outcome"><b>③ 所以系統現在怎麼做</b><strong>'+resultTitle+'</strong><p>'+resultBody+'</p><p><b>'+resultExplain+'</b></p></div>'+
       '</div>'+
       '<div class="real-world"><strong>如果換成工作／學習</strong><p>例如系統曾因過去幾次返工，暫時猜測你「太早定案」。之後的新專案沒有再出現同樣情況，VT-COS 應降低或撤回這個判斷，而不是一直用舊標籤調整你的工作流程。</p></div>'+
-      '<details class="demo-evidence"><summary>查看系統如何得出這個結果</summary><p class="demo-note">◇ 模擬＝教學資料；● 真實＝你的遊戲資料。兩者來源分開。</p>'+rows+'<p class="demo-note">技術狀態：'+(obs?(obs.supports?'provisional → strengthened':'provisional → contested'):'provisional')+'。這個 Demo Claim 不計入真實 claim 門檻，也不會改變 Hint 或關卡。</p></details>';
+      '<details class="demo-evidence"><summary>查看判斷依據</summary><p class="demo-note">◇ 模擬＝教學資料；● 真實＝你的遊戲資料。兩者來源分開。</p>'+rows+'<p class="demo-note">進階資訊：'+(obs?(obs.supports?'provisional → strengthened':'provisional → contested'):'provisional')+'。這個示範判斷不會算進你的真實策略紀錄，也不會改變提示或關卡。</p></details>';
     root.hidden=false;if(stop)stop.hidden=false;if(start)start.hidden=true;
   }
   function startDemo(){demoActive=true;renderDemo();record('demo_started',{dataset:'synthetic-v1',synthetic_count:DEMO_DATA.length});setStatus('示範已開始：先看系統的暫時猜測，再用你的真實關卡檢查它。');}
