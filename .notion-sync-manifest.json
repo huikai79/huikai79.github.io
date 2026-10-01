@@ -281,6 +281,16 @@
       "lastEditedTime": "2026-09-17T02:57:00.000Z",
       "bundleHash": "621bcfd6ff1102f8e48553102810fb4d7463d085a54fa57b6ae9a6e473659dc0",
       "presentationFingerprint": "f6ea9c18c712cb8c14c1859bad7beb8c544f0c8ff10e25f1de00012e68af208c"
+    },
+    "3ec7a59e-0439-8174-afb6-ef72ad2fc047": {
+      "slug": "rulingthread-voice",
+      "bundlePath": "rulingthread-voice",
+      "language": "zh-TW",
+      "translationGroup": "rulingthread-voice",
+      "contentFile": "index.md",
+      "lastEditedTime": "2026-10-01T03:06:00.000Z",
+      "bundleHash": "cbc3e7959a4ab58d441c6e5ea03d6eb5451bda9c5b078c78fcfa61cd39e79337",
+      "presentationFingerprint": "f6ea9c18c712cb8c14c1859bad7beb8c544f0c8ff10e25f1de00012e68af208c"
     }
   }
 }
