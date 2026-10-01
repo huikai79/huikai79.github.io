@@ -10,7 +10,7 @@ categories: ["科技"]
 entryType: "紀錄"
 formats: ["紀錄"]
 contentVisibility: "Public"
-homePlacement: "Rotation"
+homePlacement: "None"
 contentLanguage: "zh-TW"
 translationKey: "rulingthread-voice"
 images: ["social-preview.png"]
