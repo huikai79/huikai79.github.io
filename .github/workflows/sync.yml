@@ -282,10 +282,12 @@ jobs:
       - name: Classify material site change
         id: site_change
         run: |
-          if git diff --quiet -- content/posts data/homepage_runtime.toml; then
-            material_changed=false
-          else
+          # git diff ignores untracked files, which caused brand-new Notion article
+          # bundles to be committed without being classified as a deploy-worthy change.
+          if git status --porcelain --untracked-files=all -- content/posts data/homepage_runtime.toml | grep -q .; then
             material_changed=true
+          else
+            material_changed=false
           fi
           echo "material_changed=$material_changed" >> "$GITHUB_OUTPUT"
           echo "Material site change: $material_changed"
