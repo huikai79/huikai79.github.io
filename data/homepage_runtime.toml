@@ -1,5 +1,5 @@
-rotationKey = "2026-W44"
-rotationIndex = 8
+rotationKey = "2026-W45"
+rotationIndex = 9
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
@@ -8,7 +8,7 @@ recentLimit = 5
 pinnedSize = 2
 rotationSlots = 1
 poolSize = 12
-poolOffset = 8
+poolOffset = 9
 
 [[selected]]
 pageId = "3da7a59e-0439-8009-b009-dd5dadeb2e88"
@@ -21,14 +21,14 @@ path = "posts/website-must-diy"
 source = "pinned"
 
 [[selected]]
-pageId = "3d97a59e-0439-8060-94e2-c70d8239ad88"
-path = "posts/small-b-blogging"
+pageId = "23c7a59e-0439-8054-a78d-c8e89090963e"
+path = "posts/Writes-and-Write-Nots"
 source = "rotationPool"
 
 [secondary]
 
-rotationKey = "2026-W44"
-rotationIndex = 8
+rotationKey = "2026-W45"
+rotationIndex = 9
 rotationEpoch = "2026-W36"
 rotationTimezone = "Asia/Kuala_Lumpur"
 selectedLimitCap = 3
@@ -37,7 +37,7 @@ recentLimit = 5
 pinnedSize = 2
 rotationSlots = 1
 poolSize = 4
-poolOffset = 0
+poolOffset = 1
 
 [[secondary.selected]]
 pageId = "3da7a59e-0439-81ee-af5a-e8f869c985c3"
@@ -50,6 +50,6 @@ path = "posts/website-must-diy--zh-cn"
 source = "pinned"
 
 [[secondary.selected]]
-pageId = "3db7a59e-0439-81fc-b1a2-f1ccf45920bd"
-path = "posts/forever-project--zh-cn"
+pageId = "3da7a59e-0439-81d9-906d-cd22ae9c9b8e"
+path = "posts/if-memory-is-precious-to-you--zh-cn"
 source = "rotationPool"
